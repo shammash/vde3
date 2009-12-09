@@ -18,30 +18,22 @@
 #ifndef __VDE3_PRIV_MODULE_H__
 #define __VDE3_PRIV_MODULE_H__
 
-// es. unixtransport
-unixtransport_accept(struct component * c, ...) {
-  struct unixtransport_state *instance = (struct unixtransport_state*)c->priv;
-}
-
-struct transport_ops unixtransport_ops = {
-  .accept = unixtransport_accept,
-  ...
+struct vde3_module {
+  char* kind,
+  char* .family,
+  struct component_ops *ops, // verra' copiato dal contesto nel componente
+                             // vero e proprio quando viene creato
 };
 
-struct unixtransport_state {
-};
+// funzione invocata al caricamento del modulo, _deve_ essere chiamata
+// "vde3_module_init"
+int vde3_module_init(vde3_context *ctx);
 
-new_unixtransport(struct component *c) {
-  c->ops->transport = unixtransport_ops;
-  t->priv = inizializzi uno state e glielo butti dentro
-  // register commands
-}
-
+// esempio:
 struct vde3_module {
   char* .kind = "transport",
   char* .family = "unix",
-  struct component_ops *ops, // verra' copiato dal contesto nel componente
-                             // vero e proprio quando viene creato
+  struct component_ops *ops,
 } unixtransport_module;
 
 // function name needs to be the same because we need to dlsym
