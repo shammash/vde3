@@ -39,11 +39,11 @@ int vde3_context_new(vde3_context **ctx);
 * @brief Initialize VDE 3 context
 * 
 * @param ctx The context to initialize
-* @param config Configuration file path (might be NULL)
+* @param handler An implementation of event_handler to use
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_context_init(vde3_context *ctx, const char *config);
+int vde3_context_init(vde3_context *ctx, event_handler *handler);
 
 /** 
 * @brief Stop and reset a VDE 3 context
@@ -114,8 +114,25 @@ vde3_list *vde3_context_list_components(vde3_context *ctx);
  */
 int vde3_context_component_del(vde3_context *ctx, vde3_component *component);
 
-config_save
-config_load /* needed ? better here than init ? */
+/** 
+* @brief Save current configuration in a file
+* 
+* @param ctx The context to save the configuration from
+* @param file The file to save the configuration to
+* 
+* @return zero on success, otherwise an error code
+*/
+int vde3_context_config_save(vde3_context *ctx, const char* file);
+
+/** 
+* @brief Load configuration from a file
+* 
+* @param ctx The context to load the configuration into
+* @param file The file to read the configuration from
+* 
+* @return zero on success, otherwise an error code
+*/
+int vde3_context_config_load(vde3_context *ctx, const char* file);
 
 #endif /* __VDE3_CONTEXT_H__ */
 
