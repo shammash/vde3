@@ -18,11 +18,11 @@
 #ifndef __VDE3_PRIV_SIGNAL_H__
 #define __VDE3_PRIV_SIGNAL_H__
 
-struct vde3_signal {
+struct vde_signal {
   char *name,
   char *description,
-  vde3_argument **args,
-  vde3_list *callbacks,
+  vde_argument **args,
+  vde_list *callbacks,
 };
 
 

@@ -18,8 +18,8 @@
 #ifndef __VDE3_PRIV_COMMON_H__
 #define __VDE3_PRIV_COMMON_H__
 
-#define vde3_alloc g_slice_alloc
-#define vde3_calloc g_slice_alloc0
-#define vde3_free g_slice_free
+#define vde_alloc g_slice_alloc
+#define vde_calloc g_slice_alloc0
+#define vde_free g_slice_free
 
 #endif /* __VDE3_PRIV_COMMON_H__ */

@@ -19,7 +19,7 @@
 #define __VDE3_PRIV_CONTEXT_H__
 
 
-int vde3_context_register_module(vde3_context *ctx, vde3_module *module);
+int vde_context_register_module(vde_context *ctx, vde_module *module);
 
 
 #endif /* __VDE3_PRIV_CONTEXT_H__ */

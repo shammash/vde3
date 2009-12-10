@@ -34,7 +34,7 @@ typedef struct {
   char const * const name;
   char const * const description;
   char const * const type;
-} vde3_argument;
+} vde_argument;
 
 // un comando
 typedef struct {
@@ -42,8 +42,8 @@ typedef struct {
   // TODO definire qualcosa al posto di struct json_object
   bool const (*func)(struct json_object *in, struct json_object **out);
   char const * const description;
-  vde3_argument const * const args;
-} vde3_command;
+  vde_argument const * const args;
+} vde_command;
 
 
 

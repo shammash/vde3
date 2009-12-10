@@ -18,7 +18,7 @@
 #ifndef __VDE3_PRIV_MODULE_H__
 #define __VDE3_PRIV_MODULE_H__
 
-struct vde3_module {
+struct vde_module {
   char* kind,
   char* .family,
   struct component_ops *ops, // verra' copiato dal contesto nel componente
@@ -26,19 +26,19 @@ struct vde3_module {
 };
 
 // funzione invocata al caricamento del modulo, _deve_ essere chiamata
-// "vde3_module_init"
-int vde3_module_init(vde3_context *ctx);
+// "vde_module_init"
+int vde_module_init(vde_context *ctx);
 
 // esempio:
-struct vde3_module {
+struct vde_module {
   char* .kind = "transport",
   char* .family = "unix",
   struct component_ops *ops,
 } unixtransport_module;
 
 // function name needs to be the same because we need to dlsym
-int vde3_module_init(vde3_context *ctx) {
-  vde3_context_register_module(ctx, unixtransport_module);
+int vde_module_init(vde_context *ctx) {
+  vde_context_register_module(ctx, unixtransport_module);
 }
 
 #endif /* __VDE3_PRIV_MODULE_H__ */

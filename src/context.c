@@ -19,7 +19,7 @@
 
 #include <vde3/priv/context.h>
 
-struct vde3_context {
+struct vde_context {
   // event_handler
   // container of components
   // container of modules

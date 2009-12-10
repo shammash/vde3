@@ -19,12 +19,12 @@
 #define __VDE3_CONTEXT_H__
 
 
-struct vde3_context;
+struct vde_context;
 
 /** 
 * @brief VDE 3 Context
 */
-typedef struct vde3_context vde3_context;
+typedef struct vde_context vde_context;
 
 /** 
 * @brief Alloc a new VDE 3 context
@@ -33,7 +33,7 @@ typedef struct vde3_context vde3_context;
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_context_new(vde3_context **ctx);
+int vde_context_new(vde_context **ctx);
 
 /** 
 * @brief Initialize VDE 3 context
@@ -43,7 +43,7 @@ int vde3_context_new(vde3_context **ctx);
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_context_init(vde3_context *ctx, event_handler *handler);
+int vde_context_init(vde_context *ctx, event_handler *handler);
 
 /** 
 * @brief Stop and reset a VDE 3 context
@@ -52,14 +52,14 @@ int vde3_context_init(vde3_context *ctx, event_handler *handler);
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_context_fini(vde3_context *ctx);
+int vde_context_fini(vde_context *ctx);
 
 /** 
 * @brief Deallocate a VDE 3 context
 * 
 * @param ctx The context to delete
 */
-void vde3_context_delete(vde3_context *ctx);
+void vde_context_delete(vde_context *ctx);
 
 /** 
 * @brief Alloc a new VDE 3 component
@@ -72,9 +72,9 @@ void vde3_context_delete(vde3_context *ctx);
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_context_new_component(vde3_context *ctx, const char *kind,
+int vde_context_new_component(vde_context *ctx, const char *kind,
                                const char *family, const char *name,
-                               vde3_component **component);
+                               vde_component **component);
 
 /** 
 * @brief Component lookup
@@ -85,7 +85,7 @@ int vde3_context_new_component(vde3_context *ctx, const char *kind,
 * 
 * @return the component, NULL if not found
 */
-vde3_component* vde3_context_get_component(vde3_context *ctx, const char *name);
+vde_component* vde_context_get_component(vde_context *ctx, const char *name);
 
 /** 
 * @brief Get all the components of a context
@@ -98,7 +98,7 @@ vde3_component* vde3_context_get_component(vde3_context *ctx, const char *name);
  *  - change list with something which doesn't need to be generated
  *  - maybe just names are needed..
  */
-vde3_list *vde3_context_list_components(vde3_context *ctx);
+vde_list *vde_context_list_components(vde_context *ctx);
 
 /** 
 * @brief Remove a component from a given context
@@ -112,7 +112,7 @@ vde3_list *vde3_context_list_components(vde3_context *ctx);
  *  - this needs to check reference counter and fail if the component is in use
  *    by another component
  */
-int vde3_context_component_del(vde3_context *ctx, vde3_component *component);
+int vde_context_component_del(vde_context *ctx, vde_component *component);
 
 /** 
 * @brief Save current configuration in a file
@@ -122,7 +122,7 @@ int vde3_context_component_del(vde3_context *ctx, vde3_component *component);
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_context_config_save(vde3_context *ctx, const char* file);
+int vde_context_config_save(vde_context *ctx, const char* file);
 
 /** 
 * @brief Load configuration from a file
@@ -132,7 +132,7 @@ int vde3_context_config_save(vde3_context *ctx, const char* file);
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_context_config_load(vde3_context *ctx, const char* file);
+int vde_context_config_load(vde_context *ctx, const char* file);
 
 #endif /* __VDE3_CONTEXT_H__ */
 

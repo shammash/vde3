@@ -33,7 +33,7 @@
  * @param format The format string
  * @param arg Arguments for the format string
  */
-typedef void (*vde3_log_handler)(int priority, const char *format, va_list arg);
+typedef void (*vde_log_handler)(int priority, const char *format, va_list arg);
 
 /** 
  * @brief Set handler in the logging system
@@ -41,7 +41,7 @@ typedef void (*vde3_log_handler)(int priority, const char *format, va_list arg);
  * @param handler The function responsible to print logs, if NULL stderr will be
  *                used
  */
-void vde3_log_set_handler(vde3_log_handler handler);
+void vde_log_set_handler(vde_log_handler handler);
 
 /** 
  * @brief Log a message using va_list
@@ -50,7 +50,7 @@ void vde3_log_set_handler(vde3_log_handler handler);
  * @param format Message format
  * @param arg Variable arguments list
  */
-void vvde3_log(int priority, const char *format, va_list arg);
+void vvde_log(int priority, const char *format, va_list arg);
 
 /** 
  * @brief Log a message
@@ -58,16 +58,16 @@ void vvde3_log(int priority, const char *format, va_list arg);
  * @param priority Logging priority
  * @param format Message format
  */
-void vde3_log(int priority, const char *format, ...);
+void vde_log(int priority, const char *format, ...);
 
-#define vde3_error(fmt, ...) vde3_log(VDE3_LOG_ERROR, fmt, ##__VA_ARGS__)
-#define vde3_warning(fmt, ...) vde3_log(VDE3_LOG_WARNING, fmt, ##__VA_ARGS__)
-#define vde3_notice(fmt, ...) vde3_log(VDE3_LOG_NOTICE, fmt, ##__VA_ARGS__)
-#define vde3_info(fmt, ...) vde3_log(VDE3_LOG_INFO, fmt, ##__VA_ARGS__)
+#define vde_error(fmt, ...) vde_log(VDE3_LOG_ERROR, fmt, ##__VA_ARGS__)
+#define vde_warning(fmt, ...) vde_log(VDE3_LOG_WARNING, fmt, ##__VA_ARGS__)
+#define vde_notice(fmt, ...) vde_log(VDE3_LOG_NOTICE, fmt, ##__VA_ARGS__)
+#define vde_info(fmt, ...) vde_log(VDE3_LOG_INFO, fmt, ##__VA_ARGS__)
 #ifdef VDE3_DEBUG
-#define vde3_debug(fmt, ...) vde3_log(VDE3_LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define vde_debug(fmt, ...) vde_log(VDE3_LOG_DEBUG, fmt, ##__VA_ARGS__)
 #else
-#define vde3_debug(fmt, ...)
+#define vde_debug(fmt, ...)
 #endif
 
 #endif /* __VDE3_LOGGING_H__ */

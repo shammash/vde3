@@ -19,14 +19,14 @@
 
 #include <vde3/priv/logging.h>
 
-static vde3_log_handler global_log_handler = NULL;
+static vde_log_handler global_log_handler = NULL;
 
-int vde3_log_set_handler(vde3_log_handler handler)
+int vde_log_set_handler(vde_log_handler handler)
 {
   global_log_handler = handler;
 }
 
-void vvde3_log(int priority, const char *format, va_list arg)
+void vvde_log(int priority, const char *format, va_list arg)
 {
   if (global_log_handler)
     global_log_handler(priority,format,arg);
@@ -36,11 +36,11 @@ void vvde3_log(int priority, const char *format, va_list arg)
   }
 }
 
-void vde3_log(int priority, const char *format, ...)
+void vde_log(int priority, const char *format, ...)
 {
   va_list arg;
   va_start (arg, format);
-  vvde3_log(priority, format, arg);
+  vvde_log(priority, format, arg);
   va_end (arg);
 }
 

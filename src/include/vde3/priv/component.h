@@ -33,7 +33,7 @@ struct component_ops {
 // per adesso usiamo le union, poi vediamo come mettere qualcosa che permetta
 // di avere sotto-sottoclassi in un modo piu` pulito (adesso non si riesce a
 // fare una sottoclasse di transport.. ma nemmeno ci serve per ora)
-struct vde3_component {
+struct vde_component {
   struct component_ops *cops;
   union ops {
     struct transport_ops *transport;
@@ -44,8 +44,8 @@ struct vde3_component {
   char *family,
   char *name,
   int refcnt,
-  struct vde3_command commands[];
-  struct vde3_signal signals[];
+  struct vde_command commands[];
+  struct vde_signal signals[];
   void *priv,
 };
 
@@ -58,7 +58,7 @@ struct vde3_component {
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_component_get(vde3_component *component, int *count);
+int vde_component_get(vde_component *component, int *count);
 
 /** 
 * @brief Decrease reference counter
@@ -73,29 +73,29 @@ int vde3_component_get(vde3_component *component, int *count);
  *  - define if the component must be fini()+free() automatically when the
  *    refcounter reaches zero
  */
-int vde3_component_put(vde3_component *component, int *count);
+int vde_component_put(vde_component *component, int *count);
 
 /** 
-* @brief vde3_component utility to add a command
+* @brief vde_component utility to add a command
 * 
 * @param component The component to add the command to
 * @param command The command to add
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_component_command_add(vde3_component *component,
-                               vde3_command *command);
+int vde_component_command_add(vde_component *component,
+                               vde_command *command);
 
 /** 
-* @brief vde3_component utility to remove a command
+* @brief vde_component utility to remove a command
 * 
 * @param component The component to remove the command from
 * @param command The command to remove
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_component_command_del(vde3_component *component,
-                               vde3_command *command);
+int vde_component_command_del(vde_component *component,
+                               vde_command *command);
 
 /** 
 * @brief Lookup for a command in a component
@@ -105,7 +105,7 @@ int vde3_component_command_del(vde3_component *component,
 * 
 * @return a vde command, NULL if not found
 */
-vde3_command *vde3_component_command_get(vde3_component *component,
+vde_command *vde_component_command_get(vde_component *component,
                                         const char *name);
 
 /** 
@@ -115,29 +115,29 @@ vde3_command *vde3_component_command_get(vde3_component *component,
 * 
 * @return A null terminated array of commands
 */
-vde3_command **vde3_component_commands_list(vde3_component *component);
+vde_command **vde_component_commands_list(vde_component *component);
 
 /** 
-* @brief vde3_component utility to add a signal
+* @brief vde_component utility to add a signal
 * 
 * @param component The component to add the signal to
 * @param signal The signal to add
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_component_signal_add(vde3_component *component,
-                              vde3_signal *signal);
+int vde_component_signal_add(vde_component *component,
+                              vde_signal *signal);
 
 /** 
-* @brief vde3_component utility to remove a signal
+* @brief vde_component utility to remove a signal
 * 
 * @param component The component to remove the signal from
 * @param signal The signal to remove
 * 
 * @return zero on success, otherwise an error code
 */
-int vde3_component_signal_del(vde3_component *component,
-                              vde3_signal *signal);
+int vde_component_signal_del(vde_component *component,
+                              vde_signal *signal);
 
 /** 
 * @brief Lookup for a signal in a component
@@ -147,7 +147,7 @@ int vde3_component_signal_del(vde3_component *component,
 * 
 * @return a vde signal, NULL if not found
 */
-vde3_signal *vde3_component_signal_get(vde3_component *component,
+vde_signal *vde_component_signal_get(vde_component *component,
                                        const char *name);
 
 /** 
@@ -157,7 +157,7 @@ vde3_signal *vde3_component_signal_get(vde3_component *component,
 * 
 * @return A null terminated array of signals
 */
-vde3_signals **vde3_component_signals_list(vde3_component *component);
+vde_signals **vde_component_signals_list(vde_component *component);
 
 /** 
 * @brief Signature of a signal callback
@@ -168,7 +168,7 @@ vde3_signals **vde3_component_signals_list(vde3_component *component);
 *              destroyed
 * @param data Callback private data
 */
-void vde3_component_signal_callback(vde3_component *component,
+void vde_component_signal_callback(vde_component *component,
                                     const char *signal, json_object *infos,
                                     void *data);
 
@@ -182,8 +182,8 @@ void vde3_component_signal_callback(vde3_component *component,
 *
 * @return zero on success, otherwise an error code
 */
-int vde3_component_signal_attach(vde3_component *component, const char *signal,
-                                  vde3_component_signal_callback (*callback),
+int vde_component_signal_attach(vde_component *component, const char *signal,
+                                  vde_component_signal_callback (*callback),
                                   void *data);
 
 /** 
@@ -195,7 +195,7 @@ int vde3_component_signal_attach(vde3_component *component, const char *signal,
 *
 * @return zero on success, otherwise an error code
 */
-int vde3_component_signal_detach(vde3_component *component, const char *signal,
-                                 vde3_component_signal_callback (*callback));
+int vde_component_signal_detach(vde_component *component, const char *signal,
+                                 vde_component_signal_callback (*callback));
 
 #endif /* __VDE3_PRIV_COMPONENT_H__ */

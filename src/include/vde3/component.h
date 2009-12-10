@@ -18,12 +18,12 @@
 #ifndef __VDE3_COMPONENT_H__
 #define __VDE3_COMPONENT_H__
 
-struct vde3_component;
+struct vde_component;
 
 /** 
 * @brief VDE 3 Component
 */
-typedef struct vde3_component vde3_component;
+typedef struct vde_component vde_component;
 
 
 
