@@ -19,6 +19,14 @@
 #define __VDE3_PRIV_CONTEXT_H__
 
 
+/**
+ * @brief Register a vde_module inside the context
+ *
+ * @param ctx The context to register the module into
+ * @param module The module to register
+ *
+ * @return zero on success, otherwise an error code
+ */
 int vde_context_register_module(vde_context *ctx, vde_module *module);
 
 
