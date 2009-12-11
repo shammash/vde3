@@ -1,2 +1,9 @@
 .*.swp
 *.pyc
+
+*.o
+
+# libtool stuff
+*.lo
+.libs
+.deps

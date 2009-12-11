@@ -27,7 +27,9 @@
 struct vde_context {
   bool initialized,
   event_handler *event_handler,
-  vde_dataset *components,
+  // hash table vde_quark component_name: vde_component *component
+  vde_hash *components,
+  // list of vde_module*
   vde_list *modules,
   // configuration path
   // list of startup commands (from configuration)
@@ -47,7 +49,8 @@ static vde_module *vde_context_lookup_module(vde_context *ctx,
                                              const char *family)
 {
   vde_component_kind module_kind;
-  char *comp_family, *module_family, *comp_module_family;
+  char *module_family;
+  vde_quark comp_family, comp_module_family;
   vde_list *iter;
   vde_module *module = NULL;
 
@@ -56,13 +59,13 @@ static vde_module *vde_context_lookup_module(vde_context *ctx,
               __PRETTY_FUNCTION__);
     return -1;
   }
-  comp_family = vde_comparable_string(family);
+  comp_family = vde_quark_from_string(family);
   iter = vde_list_first(ctx->modules);
   while(iter != NULL) {
     module = vde_list_get_data(iter);
     module_kind = vde_module_get_kind(module);
     module_family = vde_module_get_family(module);
-    comp_module_family = vde_comparable_string(module_family);
+    comp_module_family = vde_quark_from_string(module_family);
     if (kind == module_kind && comp_family == comp_module_family) {
       return module;
     }
@@ -127,7 +130,7 @@ void vde_context_delete(vde_context *ctx)
     vde_error("%s: cannot delete context", __PRETTY_FUNCTION__);
     return;
   }
-  vde_free(vde_context, ctx);
+  vde_free(ctx);
   return;
 }
 

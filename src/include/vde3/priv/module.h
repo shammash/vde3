@@ -31,7 +31,7 @@ vde_component_kind vde_module_get_kind(vde_module *module) {
   return module->kind;
 }
 
-char *vde_module_get_family(vde_module *module) {
+const char *vde_module_get_family(vde_module *module) {
   return module->family;
 }
 

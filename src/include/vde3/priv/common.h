@@ -50,7 +50,12 @@ typedef GHashTable vde_hash;
 #define vde_hash_delete(h) g_hash_table_destroy(h)
 
 typedef GQuark vde_quark;
-#define vde_comparable_string
+#define vde_quark_try_string(s) g_quark_try_string(s)
+#define vde_quark_from_string(s) g_quark_from_string(s)
+
+typedef gchar vde_char;
+#define vde_strdup(s) g_strdup(s)
+#define vde_strndup(s, n) g_strndup(s, n)
 
 enum vde_component_kind {
   VDE_ENGINE,
