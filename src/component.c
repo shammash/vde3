@@ -69,3 +69,178 @@ int vde_component_init(vde_component *component, vde_quark quark,
   // call module component init with args
 }
 
+void vde_component_fini(vde_component *component);
+
+void vde_component_delete(vde_component *component);
+
+int vde_component_get(vde_component *component, int *count)
+{
+  if (component == NULL) {
+    vde_error("%s: cannot get NULL component", __PRETTY_FUNCTION__);
+    return -1;
+  }
+  component->refcount++;
+  if(count) {
+      *count = component->refcount;
+  }
+  return 0;
+}
+
+int vde_component_put(vde_component *component, int *count)
+{
+  if (component == NULL) {
+    vde_error("%s: cannot put NULL component", __PRETTY_FUNCTION__);
+    return -1;
+  }
+  component->refcount--;
+  if(count) {
+      *count = component->refcount;
+  }
+  return 0;
+}
+
+int vde_component_put_if_last(vde_component *component, int *count)
+{
+  if (component == NULL) {
+    vde_error("%s: cannot put NULL component", __PRETTY_FUNCTION__);
+    return -1;
+  }
+  if (component->refcount != 1) {
+    return 1;
+  } else {
+    return vde_component_put(component, count);
+  }
+}
+
+vde_quark vde_component_get_qname(vde_component *component)
+{
+  if (component == NULL) {
+    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
+    return -1;
+  }
+  return component->qname;
+}
+
+/**
+* @brief vde_component utility to add a command
+*
+* @param component The component to add the command to
+* @param command The command to add
+*
+* @return zero on success, otherwise an error code
+*/
+int vde_component_command_add(vde_component *component,
+                               vde_command *command);
+
+/**
+* @brief vde_component utility to remove a command
+*
+* @param component The component to remove the command from
+* @param command The command to remove
+*
+* @return zero on success, otherwise an error code
+*/
+int vde_component_command_del(vde_component *component,
+                               vde_command *command);
+
+/**
+* @brief Lookup for a command in a component
+*
+* @param component The component to look into
+* @param name The name of the command
+*
+* @return a vde command, NULL if not found
+*/
+vde_command *vde_component_command_get(vde_component *component,
+                                        const char *name);
+
+/**
+* @brief List all commands of a component
+*
+* @param component The component
+*
+* @return A null terminated array of commands
+*/
+vde_command **vde_component_commands_list(vde_component *component);
+
+/**
+* @brief vde_component utility to add a signal
+*
+* @param component The component to add the signal to
+* @param signal The signal to add
+*
+* @return zero on success, otherwise an error code
+*/
+int vde_component_signal_add(vde_component *component,
+                              vde_signal *signal);
+
+/**
+* @brief vde_component utility to remove a signal
+*
+* @param component The component to remove the signal from
+* @param signal The signal to remove
+*
+* @return zero on success, otherwise an error code
+*/
+int vde_component_signal_del(vde_component *component,
+                              vde_signal *signal);
+
+/**
+* @brief Lookup for a signal in a component
+*
+* @param component The component to look into
+* @param name The name of the signal
+*
+* @return a vde signal, NULL if not found
+*/
+vde_signal *vde_component_signal_get(vde_component *component,
+                                       const char *name);
+
+/**
+* @brief List all signals of a component
+*
+* @param component The component
+*
+* @return A null terminated array of signals
+*/
+vde_signals **vde_component_signals_list(vde_component *component);
+
+/**
+* @brief Signature of a signal callback
+*
+* @param component The component raising the signal
+* @param signal The signal name
+* @param infos Serialized signal parameters, if NULL the signal is being
+*              destroyed
+* @param data Callback private data
+*/
+void vde_component_signal_callback(vde_component *component,
+                                    const char *signal, json_object *infos,
+                                    void *data);
+
+/**
+* @brief Attach a callback to a signal
+*
+* @param component The component to receive signals from
+* @param signal The signal name
+* @param callback The callback function
+* @param data Callback private data
+*
+* @return zero on success, otherwise an error code
+*/
+int vde_component_signal_attach(vde_component *component, const char *signal,
+                                  vde_component_signal_callback (*callback),
+                                  void *data);
+
+/**
+* @brief Detach a callback from a signal
+*
+* @param component The component to stop receiving signals from
+* @param signal The signal name
+* @param callback The callback function to detach
+*
+* @return zero on success, otherwise an error code
+*/
+int vde_component_signal_detach(vde_component *component, const char *signal,
+                                 vde_component_signal_callback (*callback));
+

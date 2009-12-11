@@ -56,19 +56,15 @@ int vde_component_init(vde_component *component, vde_quark quark,
  * @brief Stop and reset a VDE 3 component
  *
  * @param component The component to fini
- *
- * @return zero on success, otherwise an error code
  */
-int vde_component_fini(vde_component *component);
+void vde_component_fini(vde_component *component);
 
 /**
  * @brief Deallocate a VDE 3 component
  *
  * @param component The component to delete
- *
- * @return zero on success, otherwise an error code
  */
-int vde_component_delete(vde_component *component);
+void vde_component_delete(vde_component *component);
 
 /**
 * @brief Increase reference counter
@@ -86,11 +82,27 @@ void vde_component_get(vde_component *component, int *count);
 * @param count The pointer where to store reference counter value (might be
 * NULL)
 */
-/* XXX(shammash):
- *  - define if the component must be fini()+free() automatically when the
- *    refcounter reaches zero
- */
 void vde_component_put(vde_component *component, int *count);
+
+/**
+ * @brief Decrease reference counter if there's only one reference
+ *
+ * @param component The component
+ * @param count The pointer where to store reference counter value (might be
+ * NULL)
+ *
+ * @return zero if there was only one reference, 1 otherwise, an error code
+ */
+int vde_component_put_if_last(vde_component *component, int *count);
+
+/**
+ * @brief Return component name
+ *
+ * @param component The component
+ *
+ * @return The quark of component name
+ */
+vde_quark vde_component_get_qname(vde_component *component);
 
 /**
 * @brief vde_component utility to add a command
