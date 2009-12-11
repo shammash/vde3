@@ -20,9 +20,19 @@
 
 #include <glib.h>
 
-#define vde_alloc(s) g_slice_alloc(s)
-#define vde_calloc(s) g_slice_alloc0(s)
-#define vde_free(t, d) g_slice_free(t, d)
+#define vde_cached_alloc(s) g_slice_alloc(s)
+#define vde_cached_calloc(s) g_slice_alloc0(s)
+#define vde_cached_free_type(t, d) g_slice_free(t, d)
+/*
+ * XXX(shammash):
+ *  This cannot be easily remapped to a non-sliced allocator, so let's not use
+ *  it until we're sure sliced-stuff will give us a good speedup.
+#define vde_cached_free_chunk(s, d) g_slice_free1(s, d)
+ */
+
+#define vde_alloc(s) g_malloc(s)
+#define vde_calloc(s) g_malloc0(s)
+#define vde_free(s) g_free(s)
 
 typedef GList vde_list;
 #define vde_list_first(list) g_list_first(list)
