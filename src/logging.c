@@ -29,10 +29,10 @@ int vde_log_set_handler(vde_log_handler handler)
 void vvde_log(int priority, const char *format, va_list arg)
 {
   if (global_log_handler)
-    global_log_handler(priority,format,arg);
+    global_log_handler(priority, format, arg);
   else {
-    vfprintf(stderr,format,arg);
-    fprintf(stderr,"\n");
+    vfprintf(stderr, format, arg);
+    fprintf(stderr, "\n");
   }
 }
 
