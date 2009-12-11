@@ -70,13 +70,12 @@ int vde_component_init(vde_component *component, vde_quark qname,
 
   component->qname = qname;
   component->kind = vde_module_get_kind(module);
-  component->family = vde_strdup(vde_module_get_family(module));
+  component->family = vde_module_get_family(module);
   component->cops = vde_module_get_component_ops(module);
 
   // XXX(godog): init can be NULL here? needs checking
   retval = component->cops->init(component, args);
   if (!retval) {
-    vde_free(component->family);
     vde_error("%s: cannot initialize component, init returned %d",
               __PRETTY_FUNCTION__, retval);
     return -2;
@@ -101,7 +100,6 @@ void vde_component_fini(vde_component *component)
 
   component->cops->fini(component);
 
-  vde_free(component->family);
   component->initialized = false;
 }
 
@@ -112,7 +110,6 @@ void vde_component_delete(vde_component *component)
     return;
   }
 
-  component->cops->delete(component);
   vde_free(component);
 }
 

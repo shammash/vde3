@@ -20,14 +20,14 @@
 
 // le operazioni che il contesto invoca sul componente
 struct component_ops {
-  char* .new = NULL, // called when a context creates a new component
-  char* .init = NULL,// called when a context init a new component
-  char* .fini = NULL,// called when a context closes a component
-  char* .delete = NULL,// called when a context destroys a component
-  char* .get_configuration = NULL, // called to get a serializable config
-  char* .set_configuration = NULL, // called to set a serializable config
-  char* .get_policy = NULL, // called to get a serializable policy
-  char* .set_policy = NULL, // called to set a serializable policy
+  // called when a context init a new component
+  int (*init)(vde_component*, va_list),
+  // called when a context closes a component
+  void (*fini)(vde_component*),
+  char* get_configuration, // called to get a serializable config
+  char* set_configuration, // called to set a serializable config
+  char* get_policy, // called to get a serializable policy
+  char* set_policy, // called to set a serializable policy
 };
 
 /**
