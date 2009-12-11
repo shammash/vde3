@@ -49,19 +49,15 @@ int vde_context_init(vde_context *ctx, event_handler *handler);
 * @brief Stop and reset a VDE 3 context
 *
 * @param ctx The context to fini
-*
-* @return zero on success, otherwise an error code
 */
-int vde_context_fini(vde_context *ctx);
+void vde_context_fini(vde_context *ctx);
 
 /**
 * @brief Deallocate a VDE 3 context
 *
 * @param ctx The context to delete
-*
-* @return zero on success, otherwise an error code
 */
-int vde_context_delete(vde_context *ctx);
+void vde_context_delete(vde_context *ctx);
 
 /**
 * @brief Alloc a new VDE 3 component

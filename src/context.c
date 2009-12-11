@@ -93,15 +93,16 @@ int vde_context_init(vde_context *ctx, event_handler *handler)
   }
   ctx->event_handler = handler;
   ctx->modules = NULL;
+  ctx->components = vde_hash_init();
   ctx->initialized = true;
   return 0;
 }
 
-int vde_context_fini(vde_context *ctx)
+void vde_context_fini(vde_context *ctx)
 {
   if (ctx == NULL || ctx->initialized != true) {
     vde_error("%s: cannot finalize context", __PRETTY_FUNCTION__);
-    return -1;
+    return;
   }
   ctx->event_handler = NULL;
   /* XXX(shammash): modules here are not deleted because are supposed to be
@@ -109,31 +110,27 @@ int vde_context_fini(vde_context *ctx)
    */
   vde_list_delete(ctx->modules);
   ctx->modules = NULL;
+  // XXX: here components should be fini-shed, but that requires doing two
+  // passes, first fini the connection managers and then the other components
+  // because CM has dependency on both transport and engine.
+
+  // another option would be to have a global connection manager which manages
+  // transports associated with engines, this should be investigated.
+  vde_hash_delete(ctx->components);
   ctx->initialized = false;
-  return 0;
+  return;
 }
 
-int vde_context_delete(vde_context *ctx)
+void vde_context_delete(vde_context *ctx)
 {
   if (ctx == NULL || ctx->initialized != false) {
     vde_error("%s: cannot delete context", __PRETTY_FUNCTION__);
-    return -1;
+    return;
   }
   vde_free(vde_context, ctx);
-  return 0;
+  return;
 }
 
-/**
-* @brief Alloc a new VDE 3 component
-*
-* @param ctx The context where to allocate this component
-* @param kind The component kind  (transport, engine, ...)
-* @param family The component family (unix, data, ...)
-* @param name The component unique name
-* @param component reference to new component pointer
-*
-* @return zero on success, otherwise an error code
-*/
 int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
                                const char *family, const char *name,
                                vde_component **component, ...)
@@ -149,8 +146,7 @@ int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
     return -1;
   }
   // TODO(shammash): check name is not 'context' or 'commands' for config
-  qname = vde_quark_try_string(name);
-  if (vde_hash_lookup(ctx->components, qname)) {
+  if (vde_context_get_component(ctx, name)) {
     vde_error("%s: cannot create new component, %s already exists",
               __PRETTY_FUNCTION__);
     return -2;
@@ -177,16 +173,18 @@ int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
   return 0;
 }
 
-/**
-* @brief Component lookup
-*        Lookup for a component by name
-*
-* @param ctx The context where to lookup
-* @param name The component name
-*
-* @return the component, NULL if not found
-*/
-vde_component* vde_context_get_component(vde_context *ctx, const char *name);
+vde_component* vde_context_get_component(vde_context *ctx, const char *name)
+{
+  vde_quark qname;
+
+  if (ctx == NULL || ctx->initialized != true) {
+    vde_error("%s: cannot get component, context not initialized",
+              __PRETTY_FUNCTION__);
+    return -1;
+  }
+  qname = vde_quark_try_string(name);
+  return vde_hash_lookup(ctx->components, qname);
+}
 
 /**
 * @brief Get all the components of a context
@@ -199,21 +197,50 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name);
  *  - change list with something which doesn't need to be generated
  *  - maybe just names are needed..
  */
+/* XXX(godog): this is supposed to be a command for the rpcengine */
 vde_list *vde_context_list_components(vde_context *ctx);
 
-/**
-* @brief Remove a component from a given context
-*
-* @param ctx The context where to remove from
-* @param component the component pointer to remove
-*
-* @return zero on success, otherwise an error code
-*/
-/* XXX(shammash):
- *  - this needs to check reference counter and fail if the component is in use
- *    by another component
- */
-int vde_context_component_del(vde_context *ctx, vde_component *component);
+int vde_context_component_del(vde_context *ctx, vde_component *component)
+{
+  int not_in_use;
+  vde_quark qname;
+
+  if (ctx == NULL || ctx->initialized != true) {
+    vde_error("%s: cannot delete component, context not initialized",
+              __PRETTY_FUNCTION__);
+    return -1;
+  }
+  if (component == NULL) {
+    vde_error("%s: cannot delete component, component is NULL",
+              __PRETTY_FUNCTION__);
+    return -2;
+  }
+  qname = vde_component_get_qname(component);
+  if (vde_context_get_component(ctx, qname) == NULL) {
+    vde_error("%s: cannot delete component, component not found",
+              __PRETTY_FUNCTION__);
+    return -3;
+  }
+  not_in_use = vde_component_put_if_last(component, NULL);
+  if (!not_in_use) {
+    vde_error("%s: cannot delete component, component is in use",
+              __PRETTY_FUNCTION__);
+    return -4;
+  }
+  if (!vde_hash_remove(ctx->components, qname)) {
+    vde_component_get(component, NULL);
+    vde_error("%s: cannot delete component, error removing from hash table",
+              __PRETTY_FUNCTION__);
+    return -5;
+  }
+
+  // here the component is deleted because it doesn't make sense to have it out
+  // of the vde_context
+  vde_component_fini(component);
+  vde_component_delete(component);
+
+  return 0;
+}
 
 /**
 * @brief Save current configuration in a file
