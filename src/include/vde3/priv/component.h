@@ -49,7 +49,7 @@ int vde_component_new(vde_component **component);
  *
  * @return zero on success, otherwise an error code
  */
-int vde_component_init(vde_component *component, vde_quark quark,
+int vde_component_init(vde_component *component, vde_quark qname,
                        vde_module *module, va_list args);
 
 /**

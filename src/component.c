@@ -31,9 +31,9 @@ struct vde_component {
     struct engine_ops *engine;
     struct connection_manager_ops *connection_manager;
   },
-  vde_quark *qname,
+  vde_quark qname,
   vde_component_kind kind,
-  char *family,
+  vde_char *family,
   int refcnt,
   struct vde_command commands[],
   struct vde_signal signals[],
@@ -58,20 +58,63 @@ int vde_component_new(vde_component **component)
 /* XXX(godog): add to the component something like a format string to validate
  * va_list?
  */
-int vde_component_init(vde_component *component, vde_quark quark,
+int vde_component_init(vde_component *component, vde_quark qname,
                        vde_module *module, va_list args)
 {
+  int retval;
+
   if (component == NULL) {
     vde_error("%s: cannot initialize NULL component", __PRETTY_FUNCTION__);
     return -1;
   }
-  // set kind family name, component_ops
-  // call module component init with args
+
+  component->qname = qname;
+  component->kind = vde_module_get_kind(module);
+  component->family = vde_strdup(vde_module_get_family(module));
+  component->cops = vde_module_get_component_ops(module);
+
+  // XXX(godog): init can be NULL here? needs checking
+  retval = component->cops->init(component, args);
+  if (!retval) {
+    vde_free(component->family);
+    vde_error("%s: cannot initialize component, init returned %d",
+              __PRETTY_FUNCTION__, retval);
+    return -2;
+  }
+  component->initialized = true;
+  return 0;
 }
 
-void vde_component_fini(vde_component *component);
+void vde_component_fini(vde_component *component)
+{
+  if (component == NULL || component->initialized != true) {
+    vde_error("%s: component not initialized or NULL", __PRETTY_FUNCTION__);
+    return;
+  }
 
-void vde_component_delete(vde_component *component);
+  /* XXX(godog): switch this on only if debugging
+  if (component->refcount) {
+    vde_warning("%s: component reference count %d, cannot fini",
+                __PRETTY_FUNCTION__, component->refcount);
+  }
+  */
+
+  component->cops->fini(component);
+
+  vde_free(component->family);
+  component->initialized = false;
+}
+
+void vde_component_delete(vde_component *component)
+{
+  if (component == NULL || component->initialized != false) {
+    vde_error("%s: component initialized or NULL", __PRETTY_FUNCTION__);
+    return;
+  }
+
+  component->cops->delete(component);
+  vde_free(component);
+}
 
 int vde_component_get(vde_component *component, int *count)
 {
