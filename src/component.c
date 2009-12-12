@@ -25,6 +25,7 @@
 // di avere sotto-sottoclassi in un modo piu` pulito (adesso non si riesce a
 // fare una sottoclasse di transport.. ma nemmeno ci serve per ora)
 struct vde_component {
+  vde_context *ctx; // TODO: implement getter/setter
   struct component_ops *cops;
   union ops {
     struct transport_ops *transport;
