@@ -36,9 +36,27 @@ struct vde_conn_manager {
 
 typedef struct vde_conn_manager vde_conn_manager;
 
+/**
+ * @brief Put the underlying transport in listen mode
+ *
+ * @param cm The connection manager to use
+ *
+ * @return zero on successful listen, an error code otherwise
+ */
 int vde_conn_manager_listen(vde_conn_manager *cm);
 
-int vde_conn_manager_connect(vde_conn_manager *cm, local_request,
-                             remote_request);
+/**
+ * @brief Initiate a new connection using the underlying transport
+ *
+ * @param cm The connection manager for the connection
+ * @param local_request The request for the local system
+ * @param remote_request The request for the remote system
+ *
+ * @return zero on successful queuing of connection, an error code otherwise
+ */
+// TODO: memory handling, what happens to local_request/remote_request? should
+// the caller hand them over?
+int vde_conn_manager_connect(vde_conn_manager *cm, vde_request *local_request,
+                             vde_request *remote_request);
 
 #endif /* __VDE3_PRIV_CONN_MANAGER_H__ */
