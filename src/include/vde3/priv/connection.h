@@ -75,4 +75,37 @@ int vde_conn_read(vde_connection *conn, ...) {
 void vde_conn_set_callbacks(vde_connection *conn, read_cb, write_cb, error_cb,
                             void *cb_priv);
 
+// LocalConnection
+//
+// Created by context, then each engine closes its side.
+//
+// A LocalConnection derives from a vde_connection and has its peer stored in
+// connection->priv
+//
+// new_localconn()
+//   c = new_conn()
+//   c2 = new_conn()
+//   c.set_peer(c2)
+//   c2.set_peer(c)
+//
+// vde_context_connect_engines(ctx, e1, e2, req1, req2)
+//   lc = new_localconn()
+//   lcpeer = lc.get_peer()
+//   /* normalize requests */
+//   e1.new_conn(lc, req1)
+//   e2.new_conn(lcpeer, req2)
+//
+// localconn_write(pkt)
+//   peer = get_peer()
+//   /* Here we can have a flag in localconn which says if we will call
+//    * read_cb() directly or we will schedule an event with timeout 0.
+//    */
+//   rv = peer.read_cb(pkt, peer.cb_priv)
+//   if rv == error
+//     error_cb(error, cb_priv)
+//
+// localconn_close()
+//   peer = get_peer()
+//   peer.error_cb(error_close, peer.cb_priv)
+
 #endif /* __VDE3_PRIV_CONNECTION_H__ */
