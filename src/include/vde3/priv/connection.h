@@ -22,8 +22,7 @@ struct vde_connection {
   int (*read)(vde_connection *, vde_packet *), // probably not needed
   int (*write)(vde_connection *, vde_packet *),
   int (*read_cb)(vde_connection *, vde_packet *, void *),
-  int (*write_cb)(vde_connection *, vde_packet *, void *), // probably not
-                                                           // needed
+  int (*write_cb)(vde_connection *, vde_packet *, void *),
   void (*close)(vde_connection *), // probably called in fini()
   int (*error_cb)(vde_connection *, error_type, void *);
   vde_attributes *attributes,

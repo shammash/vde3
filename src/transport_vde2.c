@@ -43,3 +43,65 @@ int transport_vde2_module_init(vde_context *ctx)
 {
   return vde_context_register_module(ctx, &transport_vde2_module);
 }
+
+/*
+ * the connection has several parameters to handle the queuing of packets:
+ *  - if a transient error during write to fd is encountered, the write is tried
+ * MAX_TRIES * MAX_TIMEOUT times and after that error_cb(CONN_PKT_DROP, pkt) is
+ * called for the pkt we are currently trying to drop but before the pkt is
+ * freed
+ *  - if a permanent error during write to fd is encountered
+ * error_cb(CONN_CLOSED) (or sth) is called
+ *
+ * conn.write() must return error on queue full
+ *
+ * the queue is sized by the connection
+ *
+ * write_cb(conn, pkt) if specified is called after each packet has been
+ * successfully written to the operating system but before the packet is freed
+ *
+ * OPTIONAL: the return value of error_cb/write_cb can indicate what to do with
+ * the packet
+ *
+ */
+
+/*
+ * per-connection packet dequeue:
+ * a callback which flushes the queue is linked to write event for the conn fd.
+ * whenever a packet is added to the queue the event is enabled if not already.
+ * whenever the queue is empty the event is disabled.
+ *
+ * struct event_queue {
+ *   vde_event event; // the event related to this queue
+ *   vde_dequeue *pktqueue; // the packet queue itself
+ *   vde_conn *conn; // the connection owning this queue
+ * }
+ *
+ * conn_init(...) {
+ *   ...
+ *   conn->priv->conn = conn;
+ *   event_set(conn->priv->event, conn->fd, conn_write_internal_cb, conn->priv);
+ * }
+ *
+ * conn_write(conn, pkt) {
+ *   conn->priv->pktqueue.append(pkt)
+ *   if (conn->priv->event is not active)
+ *     event_add(conn->priv->event)
+ *
+ *   return success
+ * }
+ *
+ * conn_write_internal_cb(fd, type, arg) {
+ *   event_queue queue = arg;
+ *   write(conn_fd, pop_packet, size);
+ *   if success:
+ *     remove packet from queue
+ *
+ * }
+ *
+ * //TODO for the STREAM case also available_data needs to be taken care of to
+ * // know when a packet has been fully written to the network and thus can be
+ * // removed from the queue
+ *
+ */
+
