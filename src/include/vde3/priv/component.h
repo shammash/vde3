@@ -30,6 +30,11 @@ struct component_ops {
   char* set_policy, // called to set a serializable policy
 };
 
+// Connection manager ops
+typedef int (*cm_listen)(vde_component *cm);
+typedef int (*cm_connect)(vde_component *cm, vde_request *local,
+                          vde_request *remote);
+
 /**
  * @brief Alloc a new VDE 3 component
  *
@@ -226,5 +231,27 @@ int vde_component_signal_attach(vde_component *component, const char *signal,
 */
 int vde_component_signal_detach(vde_component *component, const char *signal,
                                  vde_component_signal_callback (*callback));
+
+/**
+ * @brief Put the underlying transport in listen mode
+ *
+ * @param cm The connection manager to use
+ *
+ * @return zero on successful listen, an error code otherwise
+ */
+int vde_component_conn_manager_listen(vde_component *cm);
+
+/**
+ * @brief Initiate a new connection using the underlying transport
+ *
+ * @param cm The connection manager for the connection
+ * @param local_request The request for the local system
+ * @param remote_request The request for the remote system
+ *
+ * @return zero on successful queuing of connection, an error code otherwise
+ */
+int vde_component_conn_manager_connect(vde_component *cm,
+                                       vde_request *local_request,
+                                       vde_request *remote_request);
 
 #endif /* __VDE3_PRIV_COMPONENT_H__ */

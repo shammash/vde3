@@ -25,21 +25,21 @@
 // di avere sotto-sottoclassi in un modo piu` pulito (adesso non si riesce a
 // fare una sottoclasse di transport.. ma nemmeno ci serve per ora)
 struct vde_component {
-  vde_context *ctx; // TODO: implement getter/setter
-  struct component_ops *cops;
-  union ops {
-    struct transport_ops *transport;
-    struct engine_ops *engine;
-    struct connection_manager_ops *connection_manager;
-  },
+  vde_context *ctx,
+  struct component_ops *cops,
   vde_quark qname,
   vde_component_kind kind,
   vde_char *family,
   int refcnt,
   struct vde_command commands[],
   struct vde_signal signals[],
-  void *priv;
-  bool initialized;
+  void *priv,
+  bool initialized,
+  // Ops connection_manager specific:
+  cm_listen cm_listen,
+  cm_connect cm_connect,
+  // Ops transport specific:
+  // Ops engine specific:
 };
 
 int vde_component_new(vde_component **component)
@@ -76,7 +76,7 @@ int vde_component_init(vde_component *component, vde_quark qname,
 
   // XXX(godog): init can be NULL here? needs checking
   retval = component->cops->init(component, args);
-  if (!retval) {
+  if (retval) {
     vde_error("%s: cannot initialize component, init returned %d",
               __PRETTY_FUNCTION__, retval);
     return -2;
@@ -151,6 +151,42 @@ int vde_component_put_if_last(vde_component *component, int *count)
   } else {
     return vde_component_put(component, count);
   }
+}
+
+void *vde_component_get_priv(vde_component *component)
+{
+  if (component == NULL) {
+    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
+    return -1;
+  }
+  return component->priv;
+}
+
+void vde_component_set_priv(vde_component *component, void *priv)
+{
+  if (component == NULL) {
+    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
+    return -1;
+  }
+  component->priv = priv;
+}
+
+vde_context *vde_component_get_context(vde_component *component)
+{
+  if (component == NULL) {
+    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
+    return -1;
+  }
+  return component->ctx;
+}
+
+vde_component_kind vde_component_get_kind(vde_component *component)
+{
+  if (component == NULL) {
+    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
+    return -1;
+  }
+  return component->kind;
 }
 
 vde_quark vde_component_get_qname(vde_component *component)
@@ -284,4 +320,41 @@ int vde_component_signal_attach(vde_component *component, const char *signal,
 */
 int vde_component_signal_detach(vde_component *component, const char *signal,
                                  vde_component_signal_callback (*callback));
+
+void vde_component_set_conn_manager_ops(vde_component *cm, cm_listen listen,
+                                        cm_connect connect)
+{
+  cm->cm_connect = connect;
+  cm->cm_listen = listen;
+}
+
+int vde_component_conn_manager_listen(vde_component *cm)
+{
+  if (cm == NULL) {
+    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
+    return -1;
+  }
+  if (cm.type != VDE_CONNECTION_MANAGER) {
+    vde_error("%s: component is not a conn. manager", __PRETTY_FUNCTION__);
+    return -2;
+  }
+  return cm->cm_listen(cm);
+}
+
+/* TODO: memory handling, what happens to local_request/remote_request? should
+ * the caller hand them over? */
+int vde_component_conn_manager_connect(vde_component *cm,
+                                       vde_request *local,
+                                       vde_request *remote)
+{
+  if (cm == NULL) {
+    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
+    return -1;
+  }
+  if (cm.type != VDE_CONNECTION_MANAGER) {
+    vde_error("%s: component is not a conn. manager", __PRETTY_FUNCTION__);
+    return -2;
+  }
+  return cm->cm_connect(cm, local, remote);
+}
 

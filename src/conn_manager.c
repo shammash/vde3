@@ -22,32 +22,77 @@
 
 #include <vde3/priv/conn_manager.h>
 
+enum vde_conn_state {};
+
 struct pending_conn {
-  vde_connection *connection;
-  vde_request *lreq;
-  vde_request *rreq;
-  // TODO: add state here?
+  vde_connection *connection,
+  vde_request *lreq,
+  vde_request *rreq,
+  vde_conn_state state
 };
 
-int vde_conn_manager_init(vde_component *cm, va_list args)
+struct conn_manager {
+  vde_component *transport,
+  vde_component *engine,
+  vde_list *pending_conns,
+  bool do_remote_authorization
+}
+
+typedef struct conn_manager conn_manager;
+
+// XXX: is it better to pass transport/engine as a quark/string?
+int conn_manager_init(vde_component *component, vde_component *transport,
+                      vde_component *engine, bool do_remote_authorization)
 {
-  // TODO: vde_conn_manager as component->priv or directly into component?
-  cm->priv = vde_calloc(sizeof(vde_conn_manager));
+  conn_manager *cm;
 
-  // TODO: unpack args into transport, engine, remote_authorization
-  cm->priv->transport = transport;
-  cm->priv->engine = engine;
-  cm->priv->do_remote_authorization = remote_authorization;
-  cm->priv->pending_conns = NULL;
+  if (component == NULL || transport == NULL || engine == NULL) {
+    vde_error("%s: either component, transport or engine is NULL",
+              __PRETTY_FUNCTION__);
+    return -1;
+  }
+  if (vde_component_get_kind(transport) != VDE_TRANSPORT) {
+    vde_error("%s: component transport is not a transport",
+              __PRETTY_FUNCTION__);
+    return -2;
+  }
+  if (vde_component_get_kind(engine) != VDE_ENGINE) {
+    vde_error("%s: component engine is not a engine",
+              __PRETTY_FUNCTION__);
+    return -2;
+  }
+  cm = (conn_manager *)vde_calloc(sizeof(conn_manager));
+  if (cm == NULL) {
+    vde_error("%s: could not allocate private data", __PRETTY_FUNCTION__);
+    return -4;
+  }
 
-  vde_component_get(transport);
-  vde_component_get(engine);
+  cm->transport = transport;
+  cm->engine = engine;
+  cm->do_remote_authorization = do_remote_authorization
+  cm->pending_conns = NULL;
+
+  /* Increase reference counter of tracked components */
+  vde_component_get(transport, NULL);
+  vde_component_get(engine, NULL);
 
   vde_transport_set_callbacks(transport,
                               cm_connect_cb, cm_accept_cb, cm_error_cb, cm);
+
+  vde_component_set_conn_manager_ops(component, &conn_manager_listen,
+                                     &conn_manager_connect);
+
+  vde_component_set_priv(component, cm);
+  return 0;
 }
 
-int vde_conn_manager_connect(vde_conn_manager *cm, vde_request *local_request,
+int conn_manager_va_init(vde_component *component, va_list args)
+{
+  return conn_manager_init(component, va_arg(args, vde_component *),
+                           va_arg(args, vde_component *), va_arg(args, bool));
+}
+
+int conn_manager_connect(vde_component *cm, vde_request *local_request,
                              vde_request *remote_request)
 {
   vde_connection *conn;
@@ -84,7 +129,7 @@ int post_authorization(vde_component *cm, vde_connection *conn)
   // TODO: remove conn from cm->priv->pending_conns (and free requests memory?)
 }
 
-int vde_conn_manager_listen(vde_component *cm)
+int conn_manager_listen(vde_component *cm)
 {
   return vde_transport_listen(cm->priv->transport);
 }
@@ -107,12 +152,8 @@ static int accept_cb(vde_conn *conn, void *cm)
 // TODO cm_read_cb / cm_error_cb, they need to be different for accept/connect
 // callbacks?
 
-struct connection_manager_ops {
-
-} connection_manager_ops;
-
 struct component_ops {
-  .init = conn_manager_init,
+  .init = conn_manager_va_init,
   .fini = conn_manager_fini,
   .get_configuration = transport_vde2_get_configuration,
   .set_configuration = transport_vde2_set_configuration,
