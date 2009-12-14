@@ -26,9 +26,12 @@
 
 struct vde_context {
   bool initialized,
-  event_handler *event_handler,
+  event_handler *event_handler, /* XXX(shammash): consider embedding the
+                                   structure in the context to save 1 pointer
+                                   jump for each event add */
   // hash table vde_quark component_name: vde_component *component
-  vde_hash *components,
+  vde_hash *components, /* XXX(shammash): couple this hash with a list to keep
+                           an order, needed in save configuration */
   // list of vde_module*
   vde_list *modules,
   // configuration path
