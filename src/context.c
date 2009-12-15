@@ -20,9 +20,9 @@
 
 #include <vde3.h>
 
-#include <vde3/priv/common.h>
+#include <vde3/common.h>
 
-#include <vde3/priv/context.h>
+#include <vde3/context.h>
 
 struct vde_context {
   bool initialized,

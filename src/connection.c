@@ -17,7 +17,7 @@
 
 #include <vde3.h>
 
-#include <vde3/priv/connection.h>
+#include <vde3/connection.h>
 
 struct vde_connection {
   int (*read)(vde_connection *, vde_packet *), // probably not needed

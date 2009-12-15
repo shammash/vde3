@@ -19,7 +19,7 @@
 
 #include <vde3.h>
 
-#include <vde3/priv/component.h>
+#include <vde3/component.h>
 
 struct vde_component {
   vde_context *ctx,

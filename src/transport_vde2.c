@@ -17,8 +17,8 @@
 
 #include <vde3.h>
 
-#include <vde3/priv/module.h>
-#include <vde3/priv/component.h>
+#include <vde3/module.h>
+#include <vde3/component.h>
 
 #define LISTEN_QUEUE 15
 

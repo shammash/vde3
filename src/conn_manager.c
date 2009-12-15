@@ -17,10 +17,10 @@
 
 #include <vde3.h>
 
-#include <vde3/priv/module.h>
-#include <vde3/priv/component.h>
+#include <vde3/module.h>
+#include <vde3/component.h>
 
-#include <vde3/priv/conn_manager.h>
+#include <vde3/conn_manager.h>
 
 enum vde_conn_state {
   CONNECT_WAIT,
