@@ -22,11 +22,25 @@
 
 #define LISTEN_QUEUE 15
 
+// taken from vde2 datasock.c
+#define REQBUFLEN 256
+#define SWITCH_MAGIC 0xfeedface
+
+struct request_v3 {
+  uint32_t magic;
+  uint32_t version;
+  enum request_type type;
+  struct sockaddr_un sock;
+  char description[];
+} __attribute__((packed));
+
+typedef struct request_v3 request;
+
 struct vde2_pending_conn {
   int fd,
   void *event,
   char *local_path,
-  char *remote_path,
+  request *remote_request,
   vde_connection *conn,
   vde_component *transport
 };
@@ -36,8 +50,22 @@ struct transport_vde2 {
   char *vdesock_ctl,
   int listen_fd,
   void *listen_event,
+  unsigned int connections;
   vde_list *pending_conns
 };
+
+pending_conn_delete(struct vde2_pending_conn *pc) {
+  // XXX pc->event is not removed
+  if (pc->local_path) {
+    vde_free(pc->local_path);
+  }
+
+  if (pc->remote_request) {
+    vde_free(pc->remote_request);
+  }
+
+  vde_free(pc);
+}
 
 typedef struct transport_vde2 transport_vde2;
 
@@ -64,8 +92,91 @@ static int vde2_remove_sock_if_unused(struct sockaddr_un *sa_unix)
   return ret;
 }
 
-void vde2_srv_get_auth(int fd, short event_type, void *arg)
+void vde2_srv_send_request(int fd, short event_type, void *arg)
 {
+  struct sockaddr_un sun;
+  vde2_pending_conn *pc = (vde2_pending_conn *)arg;
+  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(pc->component);
+
+  pc->local_path = (char *)vde_calloc(sizeof(sun.sun_path));
+  if (!pc->local_path) {
+    vde_error("%s: cannot allocate memory for local path",
+              __PRETTY_FUNCTION__);
+    goto error;
+  }
+
+  snprintf(pc->local_path, sizeof(sun.sun_path), "%s/%04d",
+           tr->vdesock_dir, connections);
+
+  snprintf(sun.sun_path, sizeof(sun.sun_path), "%s", pc->local_path);
+
+  len = write(fd, &sun, sizeof(sun));
+  if (len != sizeof(sun)) {
+    vde_error("%s: cannot reply to peer", __PRETTY_FUNCTION__);
+    goto error;
+  }
+
+  tr->connections++;
+
+  // popolate conn (add fd)
+  // add peer credentials to conn.attributes
+  // call connection manager accept_cb with the conn
+
+error:
+  tr->pending_conns = vde_list_delete(tr->pending_conns, pc);
+  pending_conn_delete(pc);
+}
+
+void vde2_srv_get_request(int fd, short event_type, void *arg)
+{
+  int len;
+  char reqbuf[REQBUFLEN+1];
+  request *req=(request *)reqbuf;
+  vde2_pending_conn *pc = (vde2_pending_conn *)arg;
+  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(pc->component);
+
+  len = read(pc->fd, reqbuf, REQBUFLEN);
+  if (len < 0) {
+    if (errno != EAGAIN) {
+      goto error;
+    }
+  } else if (len == 0) {
+    goto error;
+  } else {
+    if (req->magic != SWITCH_MAGIC || req->version != 3) {
+      vde_error("%s: received an invalid request", __PRETTY_FUNCTION__);
+      goto error;
+    }
+
+    reqbuf[len] = 0;
+
+    if (req->sock.sun_path[0] == 0) {
+      vde_error("%s: received an invalid socket path", __PRETTY_FUNCTION__);
+      goto error;
+    }
+
+    if (access(req->sock.sun_path, R_OK | W_OK) != 0) {
+      vde_error("%s: cannot access peer socket %s", __PRETTY_FUNCTION__,
+                req->sock.sun_path);
+      goto error;
+    }
+
+    pc->remote_request = (request *)vde_alloc(len);
+    if (!pc->remote_request) {
+      vde_error("%s: cannot allocate memory for remote request",
+                __PRETTY_FUNCTION__);
+      goto error;
+    }
+    memcpy(pc->remote_request, reqbuf, len);
+
+    // XXX: add event write on pc->fd for vde2_srv_send_request
+  }
+
+  return;
+
+error:
+  tr->pending_conns = vde_list_delete(tr->pending_conns, pc);
+  pending_conn_delete(pc);
 }
 
 void vde2_accept(int listen_fd, short event_type, void *arg)
@@ -106,7 +217,7 @@ void vde2_accept(int listen_fd, short event_type, void *arg)
   pc->transport = component;
   tr->pending_conns = vde_list_prepend(tr->pending_conns, pc);
 
-  // XXX: add event on pc->fd for vde2_srv_get_auth
+  // XXX: add event read on pc->fd for vde2_srv_get_auth
 
   return;
 
@@ -167,7 +278,7 @@ int vde2_listen(vde_component *component)
     goto error_unlink;
   }
 
-  // XXX: add event on listen_fd for vde2_accept
+  // XXX: add event read on listen_fd for vde2_accept
 
   return 0;
 
