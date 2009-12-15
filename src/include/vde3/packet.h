@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef __VDE3_PRIV_PACKET_H__
-#define __VDE3_PRIV_PACKET_H__
+#ifndef __VDE3_PACKET_H__
+#define __VDE3_PACKET_H__
 
 // A packet exchanged by vde engines
 // (it should be used more or less like Linux socket buffers).
@@ -83,4 +83,4 @@ if(conn->head_sz == 4 && conn->tail_sz == 0) {
 }
 
 
-#endif /* __VDE3_PRIV_PACKET_H__ */
+#endif /* __VDE3_PACKET_H__ */

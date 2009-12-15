@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef __VDE3_PRIV_CONNECTION_H__
-#define __VDE3_PRIV_CONNECTION_H__
+#ifndef __VDE3_CONNECTION_H__
+#define __VDE3_CONNECTION_H__
 
 struct vde_connection;
 
@@ -115,4 +115,4 @@ int vde_conn_read(vde_connection *conn, ...) {
 //   peer = get_peer()
 //   peer.error_cb(error_close, peer.cb_priv)
 
-#endif /* __VDE3_PRIV_CONNECTION_H__ */
+#endif /* __VDE3_CONNECTION_H__ */

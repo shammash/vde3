@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef __VDE3_PRIV_COMMON_H__
-#define __VDE3_PRIV_COMMON_H__
+#ifndef __VDE3_COMMON_H__
+#define __VDE3_COMMON_H__
 
 #include <glib.h>
 
@@ -63,4 +63,4 @@ enum vde_component_kind {
   VDE_CONNECTION_MANAGER
 };
 
-#endif /* __VDE3_PRIV_COMMON_H__ */
+#endif /* __VDE3_COMMON_H__ */

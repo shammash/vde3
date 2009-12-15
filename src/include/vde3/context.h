@@ -15,18 +15,19 @@
  *
  */
 
-#ifndef __VDE3_PRIV_ENGINE_H__
-#define __VDE3_PRIV_ENGINE_H__
-
-struct engine_ops {
-  int (*new_conn)(vde_connection *, vde_request *),
-};
-
-typedef struct engine_ops engine_ops;
-
-// needed callbacks:
-read_cb(vde_connection *conn, vde_pkt *pkt, void *cb_priv);
-error_cb(vde_connection *conn, error_type, vde_pkt *pkt, void *cb_priv);
+#ifndef __VDE3_CONTEXT_H__
+#define __VDE3_CONTEXT_H__
 
 
-#endif /* __VDE3_PRIV_ENGINE_H__ */
+/**
+ * @brief Register a vde_module inside the context
+ *
+ * @param ctx The context to register the module into
+ * @param module The module to register
+ *
+ * @return zero on success, otherwise an error code
+ */
+int vde_context_register_module(vde_context *ctx, vde_module *module);
+
+
+#endif /* __VDE3_CONTEXT_H__ */

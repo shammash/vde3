@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef __VDE3_PRIV_MODULE_H__
-#define __VDE3_PRIV_MODULE_H__
+#ifndef __VDE3_MODULE_H__
+#define __VDE3_MODULE_H__
 
 // XXX as of now modules can't be unloaded because components are using its
 // functions once they are in use.
@@ -47,4 +47,4 @@ const char *vde_module_get_family(vde_module *module);
  */
 int vde_module_init(vde_context *ctx);
 
-#endif /* __VDE3_PRIV_MODULE_H__ */
+#endif /* __VDE3_MODULE_H__ */
