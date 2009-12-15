@@ -19,11 +19,12 @@
 #define __VDE3_SIGNAL_H__
 
 struct vde_signal {
-  char *name,
-  char *description,
-  vde_argument **args,
-  vde_list *callbacks,
+  char *name;
+  char *description;
+  vde_argument **args;
+  vde_list *callbacks;
 };
 
+typedef struct vde_signal vde_signal;
 
 #endif /* __VDE3_SIGNAL_H__ */

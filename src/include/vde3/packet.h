@@ -18,6 +18,10 @@
 #ifndef __VDE3_PACKET_H__
 #define __VDE3_PACKET_H__
 
+#include <stdint.h>
+
+#include <vde3/connection.h>
+
 // A packet exchanged by vde engines
 // (it should be used more or less like Linux socket buffers).
 //
@@ -27,20 +31,20 @@
 
 // XXX(shammash): check alignment
 struct vde_hdr {
-  uint8_t version, // Header version
-  uint8_t type, // Type of payload
-  uint16_t pkt_len, // Payload length
+  uint8_t version; // Header version
+  uint8_t type; // Type of payload
+  uint16_t pkt_len; // Payload length
 };
 
 typedef struct vde_hdr vde_hdr;
 
 struct vde_pkt {
-  vde_hdr *hdr, // Pointer to vde_header inside data
-  void *head, // Pointer to an empty head space inside data
-  void *payload, // Pointer to payload inside data
-  void *tail // Pointer to an empty tail space inside data
-  unsigned int data_size, // The total size of memory allocated in data
-  char data[0], // Allocated memory
+  vde_hdr *hdr; // Pointer to vde_header inside data
+  void *head; // Pointer to an empty head space inside data
+  void *payload; // Pointer to payload inside data
+  void *tail;// Pointer to an empty tail space inside data
+  unsigned int data_size; // The total size of memory allocated in data
+  char data[0]; // Allocated memory
 };
 
 typedef struct vde_pkt vde_pkt;
@@ -53,34 +57,36 @@ typedef struct vde_pkt vde_pkt;
 
 // An engine/connection_manager can instruct the connection to pre-allocate
 // additional memory around the payload for further elaboration:
-vde_connection_set_pkt_properties(vde_connection *conn,
-                                  unsigned int head_sz, unsigned int tail_sz);
+//void vde_connection_set_pkt_properties(vde_connection *conn,
+//                                       unsigned int head_sz,
+//                                       unsigned int tail_sz);
 
 // For further speedup certain implementations might want to define their own
 // data structure to be used when specific properties are set by the engine.
 struct vde2_transport_pkt {
-  vde_hdr *hdr, //  = &data
-  void *head, //    = &data + sizeof(vde_hdr)
-  void *payload, // = &data + sizeof(vde_hdr) + 4
-  void *tail //     = NULL (??)
-  char data[1540], // sizeof(vde_hdr) + 4 (head reserved for vlan tags) + 1504 (frame eth+trailing)
+  vde_hdr *hdr; //  = &data
+  void *head; //    = &data + sizeof(vde_hdr)
+  void *payload; // = &data + sizeof(vde_hdr) + 4
+  void *tail;//     = NULL (??)
+  char data[1540]; // sizeof(vde_hdr) + 4 (head reserved for vlan tags) + 1504 (frame eth+trailing)
 };
 
-int optimized_read_4_0(vde_pkt **pkt) {
-  struct vde2_transport_pkt stack_pkt;
-  // set fields as explained above
-  rv = read(stack_pkt.payload, MAX_ETH_FRAME_SIZE);
-  *pkt = stack_pkt;
-  return rv;
-}
 
-// ... inside a connection handling read event ...
-vde_pkt *pkt;
-if(conn->head_sz == 4 && conn->tail_sz == 0) {
-  rv = optimized_read_4_0(&pkt);
-} else {
-  // alloc memory and read
-}
+// int optimized_read_4_0(vde_pkt **pkt) {
+//   struct vde2_transport_pkt stack_pkt;
+//   // set fields as explained above
+//   rv = read(stack_pkt.payload, MAX_ETH_FRAME_SIZE);
+//   *pkt = stack_pkt;
+//   return rv;
+// }
+//
+// // ... inside a connection handling read event ...
+// vde_pkt *pkt;
+// if(conn->head_sz == 4 && conn->tail_sz == 0) {
+//   rv = optimized_read_4_0(&pkt);
+// } else {
+//   // alloc memory and read
+// }
 
 
 #endif /* __VDE3_PACKET_H__ */

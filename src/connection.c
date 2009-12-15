@@ -20,8 +20,8 @@
 #include <vde3/connection.h>
 
 struct vde_connection {
-  int (*read)(vde_connection *, vde_packet *), // probably not needed
-  int (*write)(vde_connection *, vde_packet *),
+  int (*read)(vde_connection *, vde_pkt *), // probably not needed
+  int (*write)(vde_connection *, vde_pkt *),
   void (*close)(vde_connection *), // probably called in fini()
   vde_attributes *attributes,
   vde_context *context,

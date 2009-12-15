@@ -20,8 +20,6 @@
 #include <vde3/module.h>
 #include <vde3/component.h>
 
-#include <vde3/conn_manager.h>
-
 enum vde_conn_state {
   CONNECT_WAIT,
   AUTHORIZATION_REQ_SENT,
@@ -33,21 +31,21 @@ enum vde_conn_state {
 };
 
 struct pending_conn {
-  vde_connection *conn,
-  vde_request *lreq,
-  vde_request *rreq,
-  vde_conn_state state,
-  vde_connect_success_cb success_cb,
-  vde_connect_error_cb error_cb,
-  void *connect_cb_arg
+  vde_connection *conn;
+  vde_request *lreq;
+  vde_request *rreq;
+  enum vde_conn_state state;
+  vde_connect_success_cb success_cb;
+  vde_connect_error_cb error_cb;
+  void *connect_cb_arg;
 };
 
 struct conn_manager {
-  vde_component *transport,
-  vde_component *engine,
-  vde_list *pending_conns,
-  bool do_remote_authorization
-}
+  vde_component *transport;
+  vde_component *engine;
+  vde_list *pending_conns;
+  bool do_remote_authorization;
+};
 
 typedef struct conn_manager conn_manager;
 
@@ -67,59 +65,6 @@ static struct pending_conn *cm_lookup_pending_conn(conn_manager *cm,
   return NULL;
 }
 
-// XXX: is it better to pass transport/engine as a quark/string?
-int conn_manager_init(vde_component *component, vde_component *transport,
-                      vde_component *engine, bool do_remote_authorization)
-{
-  conn_manager *cm;
-
-  if (component == NULL || transport == NULL || engine == NULL) {
-    vde_error("%s: either component, transport or engine is NULL",
-              __PRETTY_FUNCTION__);
-    return -1;
-  }
-  if (vde_component_get_kind(transport) != VDE_TRANSPORT) {
-    vde_error("%s: component transport is not a transport",
-              __PRETTY_FUNCTION__);
-    return -2;
-  }
-  if (vde_component_get_kind(engine) != VDE_ENGINE) {
-    vde_error("%s: component engine is not a engine",
-              __PRETTY_FUNCTION__);
-    return -2;
-  }
-  cm = (conn_manager *)vde_calloc(sizeof(conn_manager));
-  if (cm == NULL) {
-    vde_error("%s: could not allocate private data", __PRETTY_FUNCTION__);
-    return -4;
-  }
-
-  cm->transport = transport;
-  cm->engine = engine;
-  cm->do_remote_authorization = do_remote_authorization
-  cm->pending_conns = NULL;
-
-  /* Increase reference counter of tracked components */
-  vde_component_get(transport, NULL);
-  vde_component_get(engine, NULL);
-
-  vde_component_set_transport_cm_callbacks(transport, &cm_connect_cb,
-                                           &cm_accept_cb, &cm_error_cb,
-                                           (void *)component);
-
-  // XXX(shammash): this will be probably done by vde_component_init()
-  vde_component_set_conn_manager_ops(component, &conn_manager_listen,
-                                     &conn_manager_connect);
-
-  vde_component_set_priv(component, cm);
-  return 0;
-}
-
-int conn_manager_va_init(vde_component *component, va_list args)
-{
-  return conn_manager_init(component, va_arg(args, vde_component *),
-                           va_arg(args, vde_component *), va_arg(args, bool));
-}
 
 // XXX: consider having an application callback here, to be called for each new
 //      connection
@@ -166,10 +111,10 @@ int conn_manager_connect(vde_component *component,
   cm = vde_component_get_priv(component);
   cm->pending_conns = vde_list_prepend(cm->pending_conns, pc);
 
-  vde_transport_connect(cm->priv->transport, conn);
+  vde_transport_connect(cm->transport, conn);
 }
 
-void cm_connect_cb(vde_connection *conn, void *arg)
+void conn_manager_connect_cb(vde_connection *conn, void *arg)
 {
   struct pending_conn *pc;
   vde_component *component = (vde_component *)arg;
@@ -183,7 +128,7 @@ void cm_connect_cb(vde_connection *conn, void *arg)
     return;
   }
   if (cm->do_remote_authorization) {
-    vde_connection_set_callbacks(conn, cm_read_cb, cm_error_cb, component);
+    //vde_connection_set_callbacks(conn, connection_read_cb, connection_error_cb, component);
     // - fill defaults for remote_request?
     // - search remote_request in cm->priv->pending_conns
     // - begin authorization process
@@ -194,7 +139,7 @@ void cm_connect_cb(vde_connection *conn, void *arg)
   }
 }
 
-void cm_accept_cb(vde_connection *conn, void *arg)
+void conn_manager_accept_cb(vde_connection *conn, void *arg)
 {
   struct pending_conn *pc;
   vde_component *component = (vde_component *)arg;
@@ -215,7 +160,7 @@ void cm_accept_cb(vde_connection *conn, void *arg)
   cm->pending_conns = vde_list_prepend(cm->pending_conns, pc);
 
   if (cm->do_remote_authorization) {
-    vde_conn_set_callbacks(conn, cm_read_cb, cm_error_cb, component);
+    //vde_conn_set_callbacks(conn, connection_read_cb, connection_error_cb, component);
     // exchange authorization, eventually call post_authorization if
     // successful
     // pc->state = AUTHORIZATION_REQ_WAIT
@@ -226,7 +171,8 @@ void cm_accept_cb(vde_connection *conn, void *arg)
   }
 }
 
-void cm_error_cb(vde_connection *conn, vde_transport_error err, void *arg)
+void conn_manager_error_cb(vde_connection *conn, vde_transport_error err,
+                           void *arg)
 {
   // if conn in pending_conn and there's an application callback call it,
   // delete pending_conn and delete conn
@@ -234,7 +180,7 @@ void cm_error_cb(vde_connection *conn, vde_transport_error err, void *arg)
 
 int post_authorization(conn_manager *cm, struct pending_conn *pc)
 {
-  vde_engine_new_connection(cm->engine, conn, local_request);
+  vde_engine_new_connection(cm->engine, pc->conn, pc->lreq);
   // if there's an application callback call it
   cm->pending_conns = vde_list_remove(cm->pending_conns, pc);
   vde_free(pc); // free requests here ?
@@ -245,20 +191,79 @@ int post_authorization(conn_manager *cm, struct pending_conn *pc)
 // TODO cm_read_cb / cm_error_cb, they need to be different for accept/connect
 // callbacks?
 
-struct component_ops {
+// XXX: is it better to pass transport/engine as a quark/string?
+int conn_manager_init(vde_component *component, vde_component *transport,
+                      vde_component *engine, bool do_remote_authorization)
+{
+  conn_manager *cm;
+
+  if (component == NULL || transport == NULL || engine == NULL) {
+    vde_error("%s: either component, transport or engine is NULL",
+              __PRETTY_FUNCTION__);
+    return -1;
+  }
+  if (vde_component_get_kind(transport) != VDE_TRANSPORT) {
+    vde_error("%s: component transport is not a transport",
+              __PRETTY_FUNCTION__);
+    return -2;
+  }
+  if (vde_component_get_kind(engine) != VDE_ENGINE) {
+    vde_error("%s: component engine is not a engine",
+              __PRETTY_FUNCTION__);
+    return -2;
+  }
+  cm = (conn_manager *)vde_calloc(sizeof(conn_manager));
+  if (cm == NULL) {
+    vde_error("%s: could not allocate private data", __PRETTY_FUNCTION__);
+    return -4;
+  }
+
+  cm->transport = transport;
+  cm->engine = engine;
+  cm->do_remote_authorization = do_remote_authorization;
+  cm->pending_conns = NULL;
+
+  /* Increase reference counter of tracked components */
+  vde_component_get(transport, NULL);
+  vde_component_get(engine, NULL);
+
+  vde_component_set_transport_cm_callbacks(transport, &conn_manager_connect_cb,
+                                           &conn_manager_accept_cb,
+                                           &conn_manager_error_cb,
+                                           (void *)component);
+
+  // XXX(shammash): this will be probably done by vde_component_init()
+  vde_component_set_conn_manager_ops(component, &conn_manager_listen,
+                                     &conn_manager_connect);
+
+  vde_component_set_priv(component, cm);
+  return 0;
+}
+
+int conn_manager_va_init(vde_component *component, va_list args)
+{
+  return conn_manager_init(component, va_arg(args, vde_component *),
+                           va_arg(args, vde_component *), va_arg(args, bool));
+}
+
+// XXX to be defined
+void conn_manager_fini(vde_component *component) {
+}
+
+struct component_ops conn_manager_component_ops = {
   .init = conn_manager_va_init,
   .fini = conn_manager_fini,
-  .get_configuration = transport_vde2_get_configuration,
-  .set_configuration = transport_vde2_set_configuration,
-  .get_policy = transport_vde2_get_policy,
-  .set_policy = transport_vde2_set_policy,
-} conn_manager_component_ops;
+  .get_configuration = NULL,
+  .set_configuration = NULL,
+  .get_policy = NULL,
+  .set_policy = NULL,
+};
 
-struct vde_module {
-  kind = VDE_CONNECTION_MANAGER,
-  family = "default",
-  cops = conn_manager_component_ops,
-} conn_manager_module;
+struct vde_module conn_manager_module = {
+  .kind = VDE_CONNECTION_MANAGER,
+  .family = "default",
+  .cops = &conn_manager_component_ops,
+};
 
 int conn_manager_module_init(vde_context *ctx)
 {

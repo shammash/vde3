@@ -19,7 +19,70 @@
 #ifndef __VDE3_H__
 #define __VDE3_H__
 
+#include <stdarg.h>
 #include <syslog.h>
+#include <sys/types.h>
+
+/*
+ * event handler
+ *
+ */
+
+// XXX to be defined
+struct event_handler {
+};
+
+typedef struct event_handler event_handler;
+
+
+/*
+ * vde request
+ *
+ */
+
+// XXX to be defined
+struct vde_request {
+};
+
+typedef struct vde_request vde_request;
+
+
+/*
+ * component kind
+ *
+ */
+
+enum vde_component_kind {
+  VDE_ENGINE,
+  VDE_TRANSPORT,
+  VDE_CONNECTION_MANAGER
+};
+typedef enum vde_component_kind vde_component_kind;
+
+
+/*
+ * component
+ *
+ */
+
+struct vde_component;
+
+/**
+* @brief VDE 3 Component
+*/
+typedef struct vde_component vde_component;
+
+
+// Callbacks set by application to receive results of after a connect is called
+// on the connection manager
+typedef void (*vde_connect_success_cb)(vde_component *cm, void *arg);
+typedef void (*vde_connect_error_cb)(vde_component *cm, void *arg);
+
+
+/*
+ * context
+ *
+ */
 
 struct vde_context;
 
@@ -69,12 +132,13 @@ void vde_context_delete(vde_context *ctx);
 * @param family The component family (unix, data, ...)
 * @param name The component unique name (NULL for auto generation)
 * @param component reference to new component pointer
+* @param args The arguments component-specific
 *
 * @return zero on success, otherwise an error code
 */
-int vde_context_new_component(vde_context *ctx, const char *kind,
-                               const char *family, const char *name,
-                               vde_component **component);
+int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
+                              const char *family, const char *name,
+                              vde_component **component, ...);
 
 /**
 * @brief Component lookup
@@ -86,19 +150,6 @@ int vde_context_new_component(vde_context *ctx, const char *kind,
 * @return the component, NULL if not found
 */
 vde_component* vde_context_get_component(vde_context *ctx, const char *name);
-
-/**
-* @brief Get all the components of a context
-*
-* @param ctx The context holding the components
-*
-* @return a list of all the components, NULL if there are no components
-*/
-/* XXX(shammash):
- *  - change list with something which doesn't need to be generated
- *  - maybe just names are needed..
- */
-vde_list *vde_context_list_components(vde_context *ctx);
 
 /**
 * @brief Remove a component from a given context
@@ -135,24 +186,6 @@ int vde_context_config_save(vde_context *ctx, const char* file);
 int vde_context_config_load(vde_context *ctx, const char* file);
 
 
-/*
- * component
- *
- */
-
-struct vde_component;
-
-/**
-* @brief VDE 3 Component
-*/
-typedef struct vde_component vde_component;
-
-// XXX: vde_request
-
-// Callbacks set by application to receive results of after a connect is called
-// on the connection manager
-typedef void (*vde_connect_success_cb)(vde_component *cm, void *arg);
-typedef void (*vde_connect_error_cb)(vde_component *cm, void *arg);
 
 
 /*

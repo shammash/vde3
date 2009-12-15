@@ -22,28 +22,29 @@
 #include <vde3/component.h>
 
 struct vde_component {
-  vde_context *ctx,
-  struct component_ops *cops,
-  vde_quark qname,
-  vde_component_kind kind,
-  vde_char *family,
-  int refcnt,
-  struct vde_command commands[],
-  struct vde_signal signals[],
-  void *priv,
-  bool initialized,
+  vde_context *ctx;
+  struct component_ops *cops;
+  vde_quark qname;
+  vde_component_kind kind;
+  vde_char *family;
+  int refcount;
+  // XXX these two lists are right?
+  vde_list *commands;
+  vde_list *signals;
+  void *priv;
+  bool initialized;
   // Ops connection_manager specific:
-  cm_listen cm_listen,
-  cm_connect cm_connect,
+  cm_listen cm_listen;
+  cm_connect cm_connect;
   // Ops transport specific:
-  tr_listen tr_listen,
-  tr_connect tr_connect,
+  tr_listen tr_listen;
+  tr_connect tr_connect;
   // Ops engine specific:
   // transport - connection manager specific callbacks:
-  cm_connect_cb cm_connect_cb,
-  cm_accept_cb cm_accept_cb,
-  cm_error_cb cm_error_cb,
-  void *cm_cb_arg,
+  cm_connect_cb cm_connect_cb;
+  cm_accept_cb cm_accept_cb;
+  cm_error_cb cm_error_cb;
+  void *cm_cb_arg;
 };
 
 int vde_component_new(vde_component **component)
@@ -75,7 +76,8 @@ int vde_component_init(vde_component *component, vde_quark qname,
 
   component->qname = qname;
   component->kind = vde_module_get_kind(module);
-  component->family = vde_module_get_family(module);
+  // XXX using the family string directly from module
+  component->family = (char *)vde_module_get_family(module);
   component->cops = vde_module_get_component_ops(module);
 
   // XXX(godog): init can be NULL here? needs checking
@@ -284,7 +286,7 @@ vde_signal *vde_component_signal_get(vde_component *component,
 *
 * @return A null terminated array of signals
 */
-vde_signals **vde_component_signals_list(vde_component *component);
+vde_signal **vde_component_signals_list(vde_component *component);
 
 /**
 * @brief Signature of a signal callback
@@ -296,7 +298,7 @@ vde_signals **vde_component_signals_list(vde_component *component);
 * @param data Callback private data
 */
 void vde_component_signal_callback(vde_component *component,
-                                    const char *signal, json_object *infos,
+                                    const char *signal, vde_serial_obj *infos,
                                     void *data);
 
 /**
@@ -309,9 +311,10 @@ void vde_component_signal_callback(vde_component *component,
 *
 * @return zero on success, otherwise an error code
 */
-int vde_component_signal_attach(vde_component *component, const char *signal,
-                                  vde_component_signal_callback (*callback),
-                                  void *data);
+
+//int vde_component_signal_attach(vde_component *component, const char *signal,
+//                                  vde_component_signal_callback (*callback),
+//                                  void *data);
 
 /**
 * @brief Detach a callback from a signal
@@ -322,8 +325,8 @@ int vde_component_signal_attach(vde_component *component, const char *signal,
 *
 * @return zero on success, otherwise an error code
 */
-int vde_component_signal_detach(vde_component *component, const char *signal,
-                                 vde_component_signal_callback (*callback));
+//int vde_component_signal_detach(vde_component *component, const char *signal,
+//                                 vde_component_signal_callback (*callback));
 
 void vde_component_set_conn_manager_ops(vde_component *cm, cm_listen listen,
                                         cm_connect connect)
@@ -346,7 +349,7 @@ int vde_component_conn_manager_listen(vde_component *cm)
     vde_error("%s: NULL component", __PRETTY_FUNCTION__);
     return -1;
   }
-  if (cm.type != VDE_CONNECTION_MANAGER) {
+  if (cm->kind != VDE_CONNECTION_MANAGER) {
     vde_error("%s: component is not a conn. manager", __PRETTY_FUNCTION__);
     return -2;
   }
@@ -366,7 +369,7 @@ int vde_component_conn_manager_connect(vde_component *cm,
     vde_error("%s: NULL component", __PRETTY_FUNCTION__);
     return -1;
   }
-  if (cm.type != VDE_CONNECTION_MANAGER) {
+  if (cm->kind != VDE_CONNECTION_MANAGER) {
     vde_error("%s: component is not a conn. manager", __PRETTY_FUNCTION__);
     return -2;
   }

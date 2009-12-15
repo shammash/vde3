@@ -18,22 +18,31 @@
 #ifndef __VDE3_CONNECTION_H__
 #define __VDE3_CONNECTION_H__
 
+#include <vde3/packet.h>
+
+// XXX to be defined
+enum vde_conn_error {
+  GENERIC_ERROR,
+};
+
+typedef enum vde_conn_error vde_conn_error;
+
 struct vde_connection;
 
 typedef struct vde_connection vde_connection;
 
-// Called when connection has a packet ready, after this callback returns the
-// packet will be free()d
-typedef int (*conn_read_cb)(vde_connection *conn, vde_packet *pkt, void *arg);
-// (can be NULL) Called when a connection has sent the packet, after this
-// callback returns the packet will be free()d
-typedef int (*conn_write_cb)(vde_connection *conn, vde_packet *pkt, void *arg);
-// Called when an error occurs. pkt, if present, is the packet not successfully
+// Called when connection has a pkt ready, after this callback returns the
+// pkt will be free()d
+typedef int (*conn_read_cb)(vde_connection *conn, vde_pkt *pkt, void *arg);
+// (can be NULL) Called when a connection has sent the pkt, after this
+// callback returns the pkt will be free()d
+typedef int (*conn_write_cb)(vde_connection *conn, vde_pkt *pkt, void *arg);
+// Called when an error occurs. pkt, if present, is the pkt not successfully
 // transmitted.
-typedef int (*conn_error_cb)(vde_connection *conn, vde_packet *pkt,
+typedef int (*conn_error_cb)(vde_connection *conn, vde_pkt *pkt,
                              vde_conn_error err, void *arg);
 // XXX(godog): consider introducing the following semantic for conn_error_cb
-// return value: if it's non-zero and the error is non-fatal then the packet is
+// return value: if it's non-zero and the error is non-fatal then the pkt is
 // re-queued for transmission
 
 int vde_connection_new(vde_connection **conn);
@@ -78,9 +87,9 @@ void vde_connection_set_callbacks(vde_connection *conn,
 
 // Connection manager and rpcengine must deal with fragmentation.
 
-int vde_conn_read(vde_connection *conn, ...) {
-  return conn->read(conn, ...);
-}
+//int vde_conn_read(vde_connection *conn, ...) {
+//  return conn->read(conn, ...);
+//}
 
 // LocalConnection
 //

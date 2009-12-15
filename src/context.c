@@ -25,15 +25,15 @@
 #include <vde3/context.h>
 
 struct vde_context {
-  bool initialized,
-  event_handler *event_handler, /* XXX(shammash): consider embedding the
+  bool initialized;
+  event_handler *event_handler; /* XXX(shammash): consider embedding the
                                    structure in the context to save 1 pointer
                                    jump for each event add */
   // hash table vde_quark component_name: vde_component *component
-  vde_hash *components, /* XXX(shammash): couple this hash with a list to keep
+  vde_hash *components; /* XXX(shammash): couple this hash with a list to keep
                            an order, needed in save configuration */
   // list of vde_module*
-  vde_list *modules,
+  vde_list *modules;
   // configuration path
   // list of startup commands (from configuration)
 };
@@ -52,7 +52,7 @@ static vde_module *vde_context_lookup_module(vde_context *ctx,
                                              const char *family)
 {
   vde_component_kind module_kind;
-  char *module_family;
+  const char *module_family;
   vde_quark comp_family, comp_module_family;
   vde_list *iter;
   vde_module *module = NULL;
@@ -60,7 +60,7 @@ static vde_module *vde_context_lookup_module(vde_context *ctx,
   if (ctx == NULL || ctx->initialized != true) {
     vde_error("%s: cannot lookup module, context not initialized",
               __PRETTY_FUNCTION__);
-    return -1;
+    return NULL;
   }
   comp_family = vde_quark_from_string(family);
   iter = vde_list_first(ctx->modules);
@@ -204,6 +204,7 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name)
  *  - maybe just names are needed..
  */
 /* XXX(godog): this is supposed to be a command for the rpcengine */
+/* XXX(godog): this function is not in vde3.h */
 vde_list *vde_context_list_components(vde_context *ctx);
 
 int vde_context_component_del(vde_context *ctx, vde_component *component)
@@ -282,7 +283,7 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
   family = vde_module_get_family(module);
   if(vde_context_lookup_module(ctx, kind, family)) {
     vde_error("%s: module for kind %d family %s already registered",
-              __PRETTY_FUNCTION__, kind, comp_family);
+              __PRETTY_FUNCTION__, kind, family);
     return -2;
   } else {
     // XXX(shammash): check ops/cops structs don't contain NULL pointers

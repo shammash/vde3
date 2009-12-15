@@ -18,6 +18,7 @@
 #ifndef __VDE3_COMMON_H__
 #define __VDE3_COMMON_H__
 
+#include <json.h>
 #include <glib.h>
 
 #define vde_cached_alloc(s) g_slice_alloc(s)
@@ -57,10 +58,7 @@ typedef gchar vde_char;
 #define vde_strdup(s) g_strdup(s)
 #define vde_strndup(s, n) g_strndup(s, n)
 
-enum vde_component_kind {
-  VDE_ENGINE,
-  VDE_TRANSPORT,
-  VDE_CONNECTION_MANAGER
-};
+// XXX to be defined
+typedef struct json_object vde_serial_obj;
 
 #endif /* __VDE3_COMMON_H__ */

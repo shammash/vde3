@@ -17,14 +17,24 @@
 
 #include <vde3.h>
 
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
 #include <vde3/module.h>
 #include <vde3/component.h>
 
 #define LISTEN_QUEUE 15
 
+// size of sockaddr_un.sun_path
+#define UNIX_PATH_MAX 108
+
 // taken from vde2 datasock.c
 #define REQBUFLEN 256
 #define SWITCH_MAGIC 0xfeedface
+enum request_type { REQ_NEW_CONTROL, REQ_NEW_PORT0 };
 
 struct request_v3 {
   uint32_t magic;
@@ -35,24 +45,27 @@ struct request_v3 {
 } __attribute__((packed));
 
 typedef struct request_v3 request;
+// end of vde2 datasock.c
 
 struct vde2_pending_conn {
-  int fd,
-  void *event,
-  char *local_path,
-  request *remote_request,
-  vde_connection *conn,
-  vde_component *transport
+  int fd;
+  void *event;
+  char *local_path;
+  request *remote_request;
+  vde_connection *conn;
+  vde_component *transport;
 };
+typedef struct vde2_pending_conn vde2_pending_conn;
 
 struct transport_vde2 {
-  char *vdesock_dir,
-  char *vdesock_ctl,
-  int listen_fd,
-  void *listen_event,
+  char *vdesock_dir;
+  char *vdesock_ctl;
+  int listen_fd;
+  void *listen_event;
   unsigned int connections;
-  vde_list *pending_conns
+  vde_list *pending_conns;
 };
+typedef struct transport_vde2 transport_vde2;
 
 pending_conn_delete(struct vde2_pending_conn *pc) {
   // XXX pc->event is not removed
@@ -67,8 +80,6 @@ pending_conn_delete(struct vde2_pending_conn *pc) {
   vde_free(pc);
 }
 
-typedef struct transport_vde2 transport_vde2;
-
 static int vde2_remove_sock_if_unused(struct sockaddr_un *sa_unix)
 {
   int test_fd, ret = 1;
@@ -81,7 +92,7 @@ static int vde2_remove_sock_if_unused(struct sockaddr_un *sa_unix)
     if (errno == ECONNREFUSED) {
       if (unlink(sa_unix->sun_path) < 0) {
         vde_error("%s: failed to removed unused socket '%s': %s",
-            _PRETTY_FUNCTION__, sa_unix->sun_path,strerror(errno));
+            __PRETTY_FUNCTION__, sa_unix->sun_path,strerror(errno));
       }
       ret = 0;
     } else {
@@ -94,9 +105,10 @@ static int vde2_remove_sock_if_unused(struct sockaddr_un *sa_unix)
 
 void vde2_srv_send_request(int fd, short event_type, void *arg)
 {
+  int len;
   struct sockaddr_un sun;
   vde2_pending_conn *pc = (vde2_pending_conn *)arg;
-  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(pc->component);
+  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(pc->transport);
 
   pc->local_path = (char *)vde_calloc(sizeof(sun.sun_path));
   if (!pc->local_path) {
@@ -106,7 +118,7 @@ void vde2_srv_send_request(int fd, short event_type, void *arg)
   }
 
   snprintf(pc->local_path, sizeof(sun.sun_path), "%s/%04d",
-           tr->vdesock_dir, connections);
+           tr->vdesock_dir, tr->connections);
 
   snprintf(sun.sun_path, sizeof(sun.sun_path), "%s", pc->local_path);
 
@@ -123,7 +135,7 @@ void vde2_srv_send_request(int fd, short event_type, void *arg)
   // call connection manager accept_cb with the conn
 
 error:
-  tr->pending_conns = vde_list_delete(tr->pending_conns, pc);
+  tr->pending_conns = vde_list_remove(tr->pending_conns, pc);
   pending_conn_delete(pc);
 }
 
@@ -133,7 +145,7 @@ void vde2_srv_get_request(int fd, short event_type, void *arg)
   char reqbuf[REQBUFLEN+1];
   request *req=(request *)reqbuf;
   vde2_pending_conn *pc = (vde2_pending_conn *)arg;
-  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(pc->component);
+  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(pc->transport);
 
   len = read(pc->fd, reqbuf, REQBUFLEN);
   if (len < 0) {
@@ -175,7 +187,7 @@ void vde2_srv_get_request(int fd, short event_type, void *arg)
   return;
 
 error:
-  tr->pending_conns = vde_list_delete(tr->pending_conns, pc);
+  tr->pending_conns = vde_list_remove(tr->pending_conns, pc);
   pending_conn_delete(pc);
 }
 
@@ -231,7 +243,7 @@ int vde2_listen(vde_component *component)
 {
   struct sockaddr_un sa_unix;
   int one = 1;
-  vde2_transport *tr = vde_component_get_priv(component);
+  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(component);
 
   tr->listen_fd = socket(PF_UNIX, SOCK_STREAM, 0);
   if (tr->listen_fd < 0) {
@@ -283,7 +295,7 @@ int vde2_listen(vde_component *component)
   return 0;
 
 error_unlink:
-  unlink(sa_unix->sun_path);
+  unlink(sa_unix.sun_path);
   rmdir(tr->vdesock_dir);
 error_close:
   close(tr->listen_fd);
@@ -317,7 +329,7 @@ static int transport_vde2_init(vde_component *component, const char *dir)
 
   // XXX: path needs to be normalized/checked somewhere
   tr->vdesock_dir = strdup(dir);
-  if (tr->vdesock_path == NULL) {
+  if (tr->vdesock_dir == NULL) {
     vde_free(tr);
     vde_error("%s: could not allocate private path", __PRETTY_FUNCTION__);
     return -4;
@@ -333,20 +345,24 @@ int transport_vde2_va_init(vde_component *component, va_list args)
   return transport_vde2_init(component, va_arg(args, const char*));
 }
 
-struct component_ops {
+// XXX to be defined
+void transport_vde2_fini(vde_component *component) {
+}
+
+struct component_ops transport_vde2_component_ops = {
   .init = transport_vde2_va_init,
   .fini = transport_vde2_fini,
-  .get_configuration = transport_vde2_get_configuration,
-  .set_configuration = transport_vde2_set_configuration,
-  .get_policy = transport_vde2_get_policy,
-  .set_policy = transport_vde2_set_policy,
-} transport_vde2_component_ops;
+  .get_configuration = NULL,
+  .set_configuration = NULL,
+  .get_policy = NULL,
+  .set_policy = NULL,
+};
 
-struct vde_module {
-  kind = VDE_TRANSPORT,
-  family = "vde2",
-  cops = transport_vde2_component_ops,
-} transport_vde2_module;
+struct vde_module transport_vde2_module = {
+  .kind = VDE_TRANSPORT,
+  .family = "vde2",
+  .cops = &transport_vde2_component_ops,
+};
 
 int transport_vde2_module_init(vde_context *ctx)
 {

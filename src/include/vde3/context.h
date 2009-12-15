@@ -18,6 +18,7 @@
 #ifndef __VDE3_CONTEXT_H__
 #define __VDE3_CONTEXT_H__
 
+#include <vde3/module.h>
 
 /**
  * @brief Register a vde_module inside the context

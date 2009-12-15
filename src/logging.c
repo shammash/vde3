@@ -17,11 +17,11 @@
 
 #include <vde3.h>
 
-#include <vde3/logging.h>
+#include <stdio.h>
 
 static vde_log_handler global_log_handler = NULL;
 
-int vde_log_set_handler(vde_log_handler handler)
+void vde_log_set_handler(vde_log_handler handler)
 {
   global_log_handler = handler;
 }

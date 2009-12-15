@@ -18,22 +18,26 @@
 #ifndef __VDE3_COMPONENT_H__
 #define __VDE3_COMPONENT_H__
 
-// le operazioni che il contesto invoca sul componente
-struct component_ops {
-  // called when a context init a new component
-  int (*init)(vde_component*, va_list),
-  // called when a context closes a component
-  void (*fini)(vde_component*),
-  char* get_configuration, // called to get a serializable config
-  char* set_configuration, // called to set a serializable config
-  char* get_policy, // called to get a serializable policy
-  char* set_policy, // called to set a serializable policy
+#include <vde3/command.h>
+#include <vde3/common.h>
+#include <vde3/connection.h>
+#include <vde3/module.h>
+#include <vde3/signal.h>
+
+// XXX to be defined, maybe unify with vde_connection_error?
+enum vde_transport_error {
+  TRANSPORT_GENERIC_ERROR,
 };
+
+typedef enum vde_transport_error vde_transport_error;
 
 // Connection manager ops
 typedef int (*cm_listen)(vde_component *cm);
 typedef int (*cm_connect)(vde_component *cm, vde_request *local,
-                          vde_request *remote);
+                          vde_request *remote,
+                          vde_connect_success_cb *success_cb,
+                          vde_connect_error_cb *error_cb,
+                          void *arg);
 // Transport ops
 typedef int (*tr_listen)(vde_component *transport);
 typedef int (*tr_connect)(vde_component *transport, vde_connection *conn);
@@ -67,6 +71,22 @@ int vde_component_init(vde_component *component, vde_quark qname,
                        vde_module *module, va_list args);
 
 /**
+ * @brief Init a VDE 3 component
+ *
+ * @param ctx The context to use
+ * @param kind The component kind
+ * @param family The component family
+ * @param name The component name
+ * @param component The component to init
+ * @param args Parameters for initialization of module properties
+ *
+ * @return zero on success, otherwise an error code
+ */
+int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
+                               const char *family, const char *name,
+                               vde_component **component, ...);
+
+/**
  * @brief Stop and reset a VDE 3 component
  *
  * @param component The component to fini
@@ -86,8 +106,10 @@ void vde_component_delete(vde_component *component);
 * @param component The component
 * @param count The pointer where to store reference counter value (might be
 * NULL)
+*
+* @return zero on success, otherwise an error
 */
-void vde_component_get(vde_component *component, int *count);
+int vde_component_get(vde_component *component, int *count);
 
 /**
 * @brief Decrease reference counter
@@ -95,8 +117,10 @@ void vde_component_get(vde_component *component, int *count);
 * @param component The component
 * @param count The pointer where to store reference counter value (might be
 * NULL)
+*
+* @return zero on success, otherwise an error
 */
-void vde_component_put(vde_component *component, int *count);
+int vde_component_put(vde_component *component, int *count);
 
 /**
  * @brief Decrease reference counter if there's only one reference
@@ -127,7 +151,7 @@ vde_quark vde_component_get_qname(vde_component *component);
 * @return zero on success, otherwise an error code
 */
 int vde_component_command_add(vde_component *component,
-                               vde_command *command);
+                              vde_command *command);
 
 /**
 * @brief vde_component utility to remove a command
@@ -138,7 +162,7 @@ int vde_component_command_add(vde_component *component,
 * @return zero on success, otherwise an error code
 */
 int vde_component_command_del(vde_component *component,
-                               vde_command *command);
+                              vde_command *command);
 
 /**
 * @brief Lookup for a command in a component
@@ -200,7 +224,7 @@ vde_signal *vde_component_signal_get(vde_component *component,
 *
 * @return A null terminated array of signals
 */
-vde_signals **vde_component_signals_list(vde_component *component);
+vde_signal **vde_component_signals_list(vde_component *component);
 
 /**
 * @brief Signature of a signal callback
@@ -212,7 +236,7 @@ vde_signals **vde_component_signals_list(vde_component *component);
 * @param data Callback private data
 */
 void vde_component_signal_callback(vde_component *component,
-                                    const char *signal, json_object *infos,
+                                    const char *signal, vde_serial_obj *infos,
                                     void *data);
 
 /**
@@ -225,9 +249,11 @@ void vde_component_signal_callback(vde_component *component,
 *
 * @return zero on success, otherwise an error code
 */
-int vde_component_signal_attach(vde_component *component, const char *signal,
-                                  vde_component_signal_callback (*callback),
-                                  void *data);
+
+// XXX to be defined
+//int vde_component_signal_attach(vde_component *component, const char *signal,
+//                                  vde_component_signal_callback (*callback),
+//                                  void *data);
 
 /**
 * @brief Detach a callback from a signal
@@ -238,8 +264,10 @@ int vde_component_signal_attach(vde_component *component, const char *signal,
 *
 * @return zero on success, otherwise an error code
 */
-int vde_component_signal_detach(vde_component *component, const char *signal,
-                                 vde_component_signal_callback (*callback));
+
+// XXX to be defined
+// int vde_component_signal_detach(vde_component *component, const char *signal,
+//                                  vde_component_signal_callback (*callback));
 
 /**
  * @brief Put the underlying transport in listen mode
@@ -261,6 +289,9 @@ int vde_component_conn_manager_listen(vde_component *cm);
  */
 int vde_component_conn_manager_connect(vde_component *cm,
                                        vde_request *local_request,
-                                       vde_request *remote_request);
+                                       vde_request *remote_request,
+                                       vde_connect_success_cb success_cb,
+                                       vde_connect_error_cb error_cb,
+                                       void *arg);
 
 #endif /* __VDE3_COMPONENT_H__ */

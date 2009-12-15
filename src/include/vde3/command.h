@@ -18,6 +18,10 @@
 #ifndef __VDE3_COMMAND_H__
 #define __VDE3_COMMAND_H__
 
+#include <stdbool.h>
+
+#include <vde3/common.h>
+
 // TODO: funzioni per allocare/inizializzare comando e parametro
 
 // TODO(shammash):
@@ -40,7 +44,7 @@ typedef struct {
 typedef struct {
   char const * const name;
   // TODO definire qualcosa al posto di struct json_object
-  bool const (*func)(struct json_object *in, struct json_object **out);
+  bool const (*func)(vde_serial_obj *in, vde_serial_obj **out);
   char const * const description;
   vde_argument const * const args;
 } vde_command;

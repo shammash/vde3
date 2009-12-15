@@ -18,6 +18,21 @@
 #ifndef __VDE3_MODULE_H__
 #define __VDE3_MODULE_H__
 
+#include <vde3.h>
+
+// le operazioni che il contesto invoca sul componente
+struct component_ops {
+  // called when a context init a new component
+  int (*init)(vde_component*, va_list);
+  // called when a context closes a component
+  void (*fini)(vde_component*);
+  char* get_configuration; // called to get a serializable config
+  char* set_configuration; // called to set a serializable config
+  char* get_policy; // called to get a serializable policy
+  char* set_policy; // called to set a serializable policy
+};
+
+
 // XXX as of now modules can't be unloaded because components are using its
 // functions once they are in use.
 // supporting module removal will probably need a refcount in the module
@@ -26,9 +41,9 @@
 // XXX(shammash): consider adding here a union with struct ops which are
 //                kind-related, it should make new components creation easier
 struct vde_module {
-  vde_component_kind kind,
-  char* family,
-  struct component_ops *cops,
+  vde_component_kind kind;
+  char* family;
+  struct component_ops *cops;
 };
 
 typedef struct vde_module vde_module;

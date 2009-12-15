@@ -17,6 +17,8 @@
 
 #include <vde3.h>
 
+#include <vde3/module.h>
+
 vde_component_kind vde_module_get_kind(vde_module *module)
 {
   return module->kind;
