@@ -23,6 +23,8 @@
 // supporting module removal will probably need a refcount in the module
 // tracking how many components are using it
 
+// XXX(shammash): consider adding here a union with struct ops which are
+//                kind-related, it should make new components creation easier
 struct vde_module {
   vde_component_kind kind,
   char* family,

@@ -79,6 +79,7 @@ int conn_manager_init(vde_component *component, vde_component *transport,
   vde_transport_set_callbacks(transport,
                               cm_connect_cb, cm_accept_cb, cm_error_cb, cm);
 
+  // XXX(shammash): this will be probably done by vde_component_init()
   vde_component_set_conn_manager_ops(component, &conn_manager_listen,
                                      &conn_manager_connect);
 

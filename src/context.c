@@ -285,6 +285,7 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
               __PRETTY_FUNCTION__, kind, comp_family);
     return -2;
   } else {
+    // XXX(shammash): check ops/cops structs don't contain NULL pointers
     ctx->modules = vde_list_prepend(ctx->modules, module);
     return 0;
   }
