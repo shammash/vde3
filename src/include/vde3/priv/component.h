@@ -36,7 +36,7 @@ typedef int (*cm_connect)(vde_component *cm, vde_request *local,
                           vde_request *remote);
 // Transport ops
 typedef int (*tr_listen)(vde_component *transport);
-typedef int (*tr_connect)(vde_component *transport, vde_component *conn);
+typedef int (*tr_connect)(vde_component *transport, vde_connection *conn);
 
 // Transport connection manager callbacks
 typedef void (*cm_connect_cb)(vde_connection *conn, void *arg);

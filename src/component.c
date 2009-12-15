@@ -21,9 +21,6 @@
 
 #include <vde3/priv/component.h>
 
-// per adesso usiamo le union, poi vediamo come mettere qualcosa che permetta
-// di avere sotto-sottoclassi in un modo piu` pulito (adesso non si riesce a
-// fare una sottoclasse di transport.. ma nemmeno ci serve per ora)
 struct vde_component {
   vde_context *ctx,
   struct component_ops *cops,
@@ -39,6 +36,8 @@ struct vde_component {
   cm_listen cm_listen,
   cm_connect cm_connect,
   // Ops transport specific:
+  tr_listen tr_listen,
+  tr_connect tr_connect,
   // Ops engine specific:
   // transport - connection manager specific callbacks:
   cm_connect_cb cm_connect_cb,
@@ -331,6 +330,14 @@ void vde_component_set_conn_manager_ops(vde_component *cm, cm_listen listen,
 {
   cm->cm_connect = connect;
   cm->cm_listen = listen;
+}
+
+void vde_component_set_transport_ops(vde_component *transport,
+                                     tr_listen listen,
+                                     tr_connect connect)
+{
+  transport->tr_connect = connect;
+  transport->tr_listen = listen;
 }
 
 int vde_component_conn_manager_listen(vde_component *cm)

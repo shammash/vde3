@@ -20,12 +20,210 @@
 #include <vde3/priv/module.h>
 #include <vde3/priv/component.h>
 
-struct transport_ops {
+#define LISTEN_QUEUE 15
 
-} transport_vde2_ops;
+struct vde2_pending_conn {
+  int fd,
+  void *event,
+  char *local_path,
+  char *remote_path,
+  vde_connection *conn,
+  vde_component *transport
+};
+
+struct transport_vde2 {
+  char *vdesock_dir,
+  char *vdesock_ctl,
+  int listen_fd,
+  void *listen_event,
+  vde_list *pending_conns
+};
+
+typedef struct transport_vde2 transport_vde2;
+
+static int vde2_remove_sock_if_unused(struct sockaddr_un *sa_unix)
+{
+  int test_fd, ret = 1;
+
+  if ((test_fd = socket(PF_UNIX, SOCK_STREAM, 0)) < 0) {
+    vde_error("%s: socket %s", __PRETTY_FUNCTION__, strerror(errno));
+    return 1;
+  }
+  if (connect(test_fd, (struct sockaddr *) sa_unix, sizeof(*sa_unix)) < 0) {
+    if (errno == ECONNREFUSED) {
+      if (unlink(sa_unix->sun_path) < 0) {
+        vde_error("%s: failed to removed unused socket '%s': %s",
+            _PRETTY_FUNCTION__, sa_unix->sun_path,strerror(errno));
+      }
+      ret = 0;
+    } else {
+      vde_error("%s: connect %s", __PRETTY_FUNCTION__, strerror(errno));
+    }
+  }
+  close(test_fd);
+  return ret;
+}
+
+void vde2_srv_get_auth(int fd, short event_type, void *arg)
+{
+}
+
+void vde2_accept(int listen_fd, short event_type, void *arg)
+{
+  struct sockaddr sa;
+  socklen_t sa_len;
+  int new;
+  vde_connection *conn;
+  struct vde2_pending_conn *pc;
+  vde_component *component = (vde_component *)arg;
+  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(component);
+
+  // XXX: consistency check: is listen_fd the right one?
+  new = accept(listen_fd, &sa, &sa_len);
+  if (new < 0) {
+    vde_warning("%s: accept %s", __PRETTY_FUNCTION__, strerror(errno));
+    return;
+  }
+  if (fcntl(new, F_SETFL, O_NONBLOCK) < 0) {
+    vde_warning("%s: cannot set O_NONBLOCK for new connection %s",
+                __PRETTY_FUNCTION__, strerror(errno));
+    goto error_close;
+  }
+  if (vde_connection_new(&conn)) {
+    vde_error("%s: cannot create connection", __PRETTY_FUNCTION__);
+    goto error_close;
+  }
+  // XXX: connection init, set connection backend to vde2
+  pc = (struct vde2_pending_conn *)
+        vde_calloc(sizeof(struct vde2_pending_conn));
+  if (!pc) {
+    vde_error("%s: cannot create pending connection", __PRETTY_FUNCTION__);
+    goto error_conn_del;
+  }
+
+  pc->fd = new;
+  pc->conn = conn;
+  pc->transport = component;
+  tr->pending_conns = vde_list_prepend(tr->pending_conns, pc);
+
+  // XXX: add event on pc->fd for vde2_srv_get_auth
+
+  return;
+
+error_conn_del:
+  vde_connection_delete(conn);
+error_close:
+  close(new);
+}
+
+int vde2_listen(vde_component *component)
+{
+  struct sockaddr_un sa_unix;
+  int one = 1;
+  vde2_transport *tr = vde_component_get_priv(component);
+
+  tr->listen_fd = socket(PF_UNIX, SOCK_STREAM, 0);
+  if (tr->listen_fd < 0) {
+    vde_error("%s: Could not obtain a BSD socket: %s", __PRETTY_FUNCTION__,
+              strerror(errno));
+    return -1;
+  }
+  if (setsockopt(tr->listen_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&one,
+                 sizeof(one)) < 0) {
+    vde_error("%s: Could not set socket options: %s", __PRETTY_FUNCTION__,
+              strerror(errno));
+    goto error_close;
+  }
+  if (fcntl(tr->listen_fd, F_SETFL, O_NONBLOCK) < 0) {
+    vde_error("%s: Could not set O_NONBLOCK: %s", __PRETTY_FUNCTION__,
+              strerror(errno));
+    goto error_close;
+  }
+  if (((mkdir(tr->vdesock_dir, 0777) < 0) && (errno != EEXIST))) {
+    vde_error("%s: Could not create vdesock directory %s: %s",
+              __PRETTY_FUNCTION__, tr->vdesock_dir, strerror(errno));
+    goto error_close;
+  }
+  sa_unix.sun_family = AF_UNIX;
+  snprintf(sa_unix.sun_path, sizeof(sa_unix.sun_path), "%s/ctl",
+           tr->vdesock_dir);
+  if (bind(tr->listen_fd, (struct sockaddr *)&sa_unix, sizeof(sa_unix)) < 0) {
+    if ((errno == EADDRINUSE) && vde2_remove_sock_if_unused(&sa_unix)) {
+      vde_error("%s: Could not bind to %s/ctl: socket in use",
+                __PRETTY_FUNCTION__, tr->vdesock_dir);
+      goto error_close;
+    } else {
+      if (bind(tr->listen_fd, (struct sockaddr *)&sa_unix,
+               sizeof(sa_unix)) < 0) {
+        vde_error("%s: Could not bind to %s/ctl: %s", __PRETTY_FUNCTION__,
+                  tr->vdesock_dir, strerror(errno));
+        goto error_close;
+      }
+    }
+  }
+  if (listen(tr->listen_fd, LISTEN_QUEUE) < 0) {
+    vde_error("%s: Could not listen: %s", __PRETTY_FUNCTION__,
+              strerror(errno));
+    goto error_unlink;
+  }
+
+  // XXX: add event on listen_fd for vde2_accept
+
+  return 0;
+
+error_unlink:
+  unlink(sa_unix->sun_path);
+  rmdir(tr->vdesock_dir);
+error_close:
+  close(tr->listen_fd);
+  tr->listen_fd = -1;
+  return -2;
+}
+
+int vde2_connect(vde_component *component, vde_connection *conn)
+{
+}
+
+static int transport_vde2_init(vde_component *component, const char *dir)
+{
+
+  transport_vde2 *tr;
+
+  if (component == NULL) {
+    vde_error("%s: component is NULL", __PRETTY_FUNCTION__);
+    return -1;
+  }
+
+  if (strlen(dir) > UNIX_PATH_MAX - 4) { // we will add '/ctl' later
+    vde_error("%s: directory name is too long", __PRETTY_FUNCTION__);
+    return -2;
+  }
+  tr = (transport_vde2 *)vde_calloc(sizeof(transport_vde2));
+  if (tr == NULL) {
+    vde_error("%s: could not allocate private data", __PRETTY_FUNCTION__);
+    return -3;
+  }
+
+  // XXX: path needs to be normalized/checked somewhere
+  tr->vdesock_dir = strdup(dir);
+  if (tr->vdesock_path == NULL) {
+    vde_free(tr);
+    vde_error("%s: could not allocate private path", __PRETTY_FUNCTION__);
+    return -4;
+  }
+
+  vde_component_set_transport_ops(component, &vde2_listen, &vde2_connect);
+  vde_component_set_priv(component, (void *)tr);
+  return 0;
+}
+
+int transport_vde2_va_init(vde_component *component, va_list args)
+{
+  return transport_vde2_init(component, va_arg(args, const char*));
+}
 
 struct component_ops {
-  .init = transport_vde2_init,
+  .init = transport_vde2_va_init,
   .fini = transport_vde2_fini,
   .get_configuration = transport_vde2_get_configuration,
   .set_configuration = transport_vde2_set_configuration,
