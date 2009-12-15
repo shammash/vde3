@@ -22,13 +22,24 @@
 
 #include <vde3/priv/conn_manager.h>
 
-enum vde_conn_state {};
+enum vde_conn_state {
+  CONNECT_WAIT,
+  AUTHORIZATION_REQ_SENT,
+  AUTHORIZATION_REQ_WAIT,
+  AUTHORIZATION_REPLY_SENT,
+  AUTHORIZATION_REPLY_WAIT,
+  NOT_AUTHORIZED,
+  AUTHORIZED
+};
 
 struct pending_conn {
-  vde_connection *connection,
+  vde_connection *conn,
   vde_request *lreq,
   vde_request *rreq,
-  vde_conn_state state
+  vde_conn_state state,
+  vde_connect_success_cb success_cb,
+  vde_connect_error_cb error_cb,
+  void *connect_cb_arg
 };
 
 struct conn_manager {
@@ -39,6 +50,22 @@ struct conn_manager {
 }
 
 typedef struct conn_manager conn_manager;
+
+static struct pending_conn *cm_lookup_pending_conn(conn_manager *cm,
+                                                   vde_connection *conn)
+{
+  struct pending_conn *pc = NULL;
+
+  vde_list *iter = vde_list_first(cm->pending_conns);
+  while (iter != NULL) {
+    pc = vde_list_get_data(iter);
+    if (pc->conn == conn) {
+      return pc;
+    }
+    iter = vde_list_next(iter);
+  }
+  return NULL;
+}
 
 // XXX: is it better to pass transport/engine as a quark/string?
 int conn_manager_init(vde_component *component, vde_component *transport,
@@ -76,8 +103,9 @@ int conn_manager_init(vde_component *component, vde_component *transport,
   vde_component_get(transport, NULL);
   vde_component_get(engine, NULL);
 
-  vde_transport_set_callbacks(transport,
-                              cm_connect_cb, cm_accept_cb, cm_error_cb, cm);
+  vde_component_set_transport_cm_callbacks(transport, &cm_connect_cb,
+                                           &cm_accept_cb, &cm_error_cb,
+                                           (void *)component);
 
   // XXX(shammash): this will be probably done by vde_component_init()
   vde_component_set_conn_manager_ops(component, &conn_manager_listen,
@@ -93,59 +121,123 @@ int conn_manager_va_init(vde_component *component, va_list args)
                            va_arg(args, vde_component *), va_arg(args, bool));
 }
 
-int conn_manager_connect(vde_component *cm, vde_request *local_request,
-                             vde_request *remote_request)
+// XXX: consider having an application callback here, to be called for each new
+//      connection
+int conn_manager_listen(vde_component *component)
 {
-  vde_connection *conn;
+  conn_manager *cm = (conn_manager *)vde_component_get_priv(component);
 
-  conn = vde_connection_new();
-  vde_transport_connect(cm->priv->transport, conn);
-
-  pending_conn = vde_alloc(sizeof(struct pending_conn));
-  pending_conn->conn = conn;
-  pending_conn->lreq = local_request;
-  pending_conn->rreq = remote_request;
-  cm->priv->pending_conns = vde_list_prepend(cm->priv->pending_conns,
-                                             pending_conn);
+  return vde_transport_listen(cm->transport);
 }
 
-static int cm_connect_cb(vde_connection *conn, void *arg)
+int conn_manager_connect(vde_component *component,
+                         vde_request *local_request,
+                         vde_request *remote_request,
+                         vde_connect_success_cb success_cb,
+                         vde_connect_error_cb error_cb, void *arg)
 {
-  vde_component *cm = (vde_component *)cm;
+  conn_manager *cm;
+  vde_connection *conn;
+  struct pending_conn *pc;
 
-  vde_connection_set_callbacks(conn, cm_read_cb, cm_error_cb, cm);
+  if (vde_connection_new(&conn)) {
+    vde_error("%s: cannot create connection", __PRETTY_FUNCTION__);
+    return -1;
+  }
 
-  if( cm->priv->do_remote_authorization ){
+  pc = (struct pending_conn *)vde_calloc(sizeof(struct pending_conn));
+  if (!pc) {
+    vde_connection_delete(conn);
+    vde_error("%s: cannot create pending connection", __PRETTY_FUNCTION__);
+    return -2;
+  }
+
+  // XXX: check requests with do_remote_authorization,
+  //      what about normalization?
+  //      memdup requests here?
+  pc->conn = conn;
+  pc->lreq = local_request;
+  pc->rreq = remote_request;
+  pc->state = CONNECT_WAIT;
+  pc->success_cb = success_cb;
+  pc->error_cb = error_cb;
+  pc->connect_cb_arg = arg;
+
+  cm = vde_component_get_priv(component);
+  cm->pending_conns = vde_list_prepend(cm->pending_conns, pc);
+
+  vde_transport_connect(cm->priv->transport, conn);
+}
+
+void cm_connect_cb(vde_connection *conn, void *arg)
+{
+  struct pending_conn *pc;
+  vde_component *component = (vde_component *)arg;
+  conn_manager *cm = (conn_manager *)vde_component_get_priv(component);
+
+  pc = cm_lookup_pending_conn(cm, conn);
+  if (!pc) {
+    vde_connection_fini(conn);
+    vde_connection_delete(conn);
+    vde_error("%s: cannot lookup pending connection", __PRETTY_FUNCTION__);
+    return;
+  }
+  if (cm->do_remote_authorization) {
+    vde_connection_set_callbacks(conn, cm_read_cb, cm_error_cb, component);
+    // - fill defaults for remote_request?
     // - search remote_request in cm->priv->pending_conns
     // - begin authorization process
+    // pc->state = AUTHORIZATION_REQ_SENT
   } else {
-    post_authorization(cm, conne);
+    pc->state = AUTHORIZED;
+    post_authorization(cm, pc);
   }
 }
 
-int post_authorization(vde_component *cm, vde_connection *conn)
+void cm_accept_cb(vde_connection *conn, void *arg)
 {
-  // TODO: search local_request in cm->priv->pending_conns
-  vde_engine_new_connnection(cm->engine, conn, local_request);
-  // TODO: remove conn from cm->priv->pending_conns (and free requests memory?)
-}
+  struct pending_conn *pc;
+  vde_component *component = (vde_component *)arg;
+  conn_manager *cm = (conn_manager *)vde_component_get_priv(component);
 
-int conn_manager_listen(vde_component *cm)
-{
-  return vde_transport_listen(cm->priv->transport);
-}
+  // XXX: safety check: conn not already added to pending_conns
 
-static int accept_cb(vde_conn *conn, void *cm)
-{
-  vde_component *cm = (vde_component *)cm;
+  pc = (struct pending_conn *)vde_calloc(sizeof(struct pending_conn));
+  if (!pc) {
+    vde_connection_fini(conn);
+    vde_connection_delete(conn);
+    vde_error("%s: cannot create pending connection", __PRETTY_FUNCTION__);
+    return;
+  }
 
-  vde_conn_set_callbacks(conn, cm_read_cb, cm_error_cb, cm);
-  if( cm->priv->do_remote_authorization ){
+  pc->conn = conn;
+
+  cm->pending_conns = vde_list_prepend(cm->pending_conns, pc);
+
+  if (cm->do_remote_authorization) {
+    vde_conn_set_callbacks(conn, cm_read_cb, cm_error_cb, component);
     // exchange authorization, eventually call post_authorization if
     // successful
+    // pc->state = AUTHORIZATION_REQ_WAIT
   } else {
-    post_authorization(cm, conn);
+    // fill local_request with defaults
+    pc->state = AUTHORIZED;
+    post_authorization(cm, pc);
   }
+}
+
+void cm_error_cb(vde_connection *conn, vde_transport_error err, void *arg)
+{
+  // if conn in pending_conn and there's an application callback call it,
+  // delete pending_conn and delete conn
+}
+
+int post_authorization(conn_manager *cm, struct pending_conn *pc)
+{
+  vde_engine_new_connection(cm->engine, conn, local_request);
+  // if there's an application callback call it
+  cm->pending_conns = vde_list_remove(cm->pending_conns, pc);
+  vde_free(pc); // free requests here ?
 }
 
 // in engine.new_conn: vde_conn_set_callbacks(conn, engine_callbacks..)

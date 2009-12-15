@@ -29,15 +29,6 @@ vde_conn_manager_accept_cb(cm, conn)
 vde_conn_manager_connect_cb(cm, conn)
 vde_conn_manager_error_cb(cm, error_type, conn||NULL)
 
-// XXX(shammash): where should we add conn_manager reference?
-// - transport priv:
-// d = (struct transport_vde2_data *)vde_component_get_priv(component);
-// d->conn_manager = cm;
-// - component kind union for data:
-// component->kind_data->conn_manager = cm;
-// - directly in the component:
-// component->conn_manager = cm;
-
 typedef struct transport_ops transport_ops;
 
 #endif /* __VDE3_PRIV_TRANSPORT_H__ */

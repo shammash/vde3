@@ -40,6 +40,11 @@ struct vde_component {
   cm_connect cm_connect,
   // Ops transport specific:
   // Ops engine specific:
+  // transport - connection manager specific callbacks:
+  cm_connect_cb cm_connect_cb,
+  cm_accept_cb cm_accept_cb,
+  cm_error_cb cm_error_cb,
+  void *cm_cb_arg,
 };
 
 int vde_component_new(vde_component **component)
@@ -345,7 +350,10 @@ int vde_component_conn_manager_listen(vde_component *cm)
  * the caller hand them over? */
 int vde_component_conn_manager_connect(vde_component *cm,
                                        vde_request *local,
-                                       vde_request *remote)
+                                       vde_request *remote,
+                                       vde_connect_success_cb success_cb,
+                                       vde_connect_error_cb error_cb,
+                                       void *arg)
 {
   if (cm == NULL) {
     vde_error("%s: NULL component", __PRETTY_FUNCTION__);
@@ -355,6 +363,17 @@ int vde_component_conn_manager_connect(vde_component *cm,
     vde_error("%s: component is not a conn. manager", __PRETTY_FUNCTION__);
     return -2;
   }
-  return cm->cm_connect(cm, local, remote);
+  return cm->cm_connect(cm, local, remote, success_cb, error_cb, arg);
+}
+
+void vde_component_set_transport_cm_callbacks(vde_component *transport,
+                                              cm_connect_cb connect_cb,
+                                              cm_accept_cb accept_cb,
+                                              cm_error_cb error_cb, void *arg)
+{
+  transport->cm_connect_cb = connect_cb;
+  transport->cm_accept_cb = accept_cb;
+  transport->cm_error_cb = error_cb;
+  transport->cm_cb_arg = arg;
 }
 

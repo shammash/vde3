@@ -18,18 +18,31 @@
 #ifndef __VDE3_PRIV_CONNECTION_H__
 #define __VDE3_PRIV_CONNECTION_H__
 
-struct vde_connection {
-  int (*read)(vde_connection *, vde_packet *), // probably not needed
-  int (*write)(vde_connection *, vde_packet *),
-  int (*read_cb)(vde_connection *, vde_packet *, void *),
-  int (*write_cb)(vde_connection *, vde_packet *, void *),
-  void (*close)(vde_connection *), // probably called in fini()
-  int (*error_cb)(vde_connection *, error_type, void *);
-  vde_attributes *attributes,
-  vde_context *context,
-  void *priv,
-  void *cb_priv // Callbacks private data (probably component ptr)
-};
+struct vde_connection;
+
+typedef struct vde_connection vde_connection;
+
+// Called when connection has a packet ready, after this callback returns the
+// packet will be free()d
+typedef int (*conn_read_cb)(vde_connection *conn, vde_packet *pkt, void *arg);
+// (can be NULL) Called when a connection has sent the packet, after this
+// callback returns the packet will be free()d
+typedef int (*conn_write_cb)(vde_connection *conn, vde_packet *pkt, void *arg);
+// Called when an error occurs. pkt, if present, is the packet not successfully
+// transmitted.
+typedef int (*conn_error_cb)(vde_connection *conn, vde_packet *pkt,
+                             vde_conn_error err, void *arg);
+// XXX(godog): consider introducing the following semantic for conn_error_cb
+// return value: if it's non-zero and the error is non-fatal then the packet is
+// re-queued for transmission
+
+int vde_connection_new(vde_connection **conn);
+
+void vde_connection_set_callbacks(vde_connection *conn,
+                                  conn_read_cb read_cb,
+                                  conn_write_cb write_cb,
+                                  conn_error_cb error_cb,
+                                  void *cb_priv);
 
 // A local connection is a coupled data structure: when write is called on a
 // local connection a read_cb is triggered on its peer. Each peer is registered
@@ -65,14 +78,9 @@ struct vde_connection {
 
 // Connection manager and rpcengine must deal with fragmentation.
 
-typedef struct vde_connection vde_connection;
-
 int vde_conn_read(vde_connection *conn, ...) {
   return conn->read(conn, ...);
 }
-
-void vde_conn_set_callbacks(vde_connection *conn, read_cb, write_cb, error_cb,
-                            void *cb_priv);
 
 // LocalConnection
 //

@@ -20,11 +20,16 @@
 
 struct vde_component;
 
-/** 
+/**
 * @brief VDE 3 Component
 */
 typedef struct vde_component vde_component;
 
+// XXX: vde_request
 
+// Callbacks set by application to receive results of after a connect is called
+// on the connection manager
+typedef void (*vde_connect_success_cb)(vde_component *cm, void *arg);
+typedef void (*vde_connect_error_cb)(vde_component *cm, void *arg);
 
 #endif /* __VDE3_COMPONENT_H__ */

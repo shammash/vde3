@@ -34,6 +34,15 @@ struct component_ops {
 typedef int (*cm_listen)(vde_component *cm);
 typedef int (*cm_connect)(vde_component *cm, vde_request *local,
                           vde_request *remote);
+// Transport ops
+typedef int (*tr_listen)(vde_component *transport);
+typedef int (*tr_connect)(vde_component *transport, vde_component *conn);
+
+// Transport connection manager callbacks
+typedef void (*cm_connect_cb)(vde_connection *conn, void *arg);
+typedef void (*cm_accept_cb)(vde_connection *conn, void *arg);
+typedef void (*cm_error_cb)(vde_connection *conn, vde_transport_error err,
+                            void *arg);
 
 /**
  * @brief Alloc a new VDE 3 component
