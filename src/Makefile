@@ -2,8 +2,21 @@ VDE_SRC = context.c component.c conn_manager.c logging.c module.c transport_vde2
 
 VDE_OBJ = context.o component.o conn_manager.o logging.o module.o transport_vde2.o
 
+WARNINGS=-Wall -Winline -Wformat=2 -Wswitch-default -Wswitch-enum \
+-Wunused-parameter -Wfloat-equal -Wundef -Wshadow -Wunsafe-loop-optimizations \
+-Wtype-limits -Wcast-qual -Wcast-align -Wconversion -Wno-sign-conversion \
+-Wempty-body -Wsign-compare -Wlogical-op -Waggregate-return -Wstrict-prototypes \
+-Wold-style-declaration -Wold-style-definition -Wmissing-parameter-type \
+-Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn \
+-Wmissing-format-attribute -Wpacked -Wunreachable-code -Wnested-externs \
+-Wdisabled-optimization -Wunused -Wunused-parameter
+
+ANNOYING_WARNINGS=-Wpadded # warn when adding pad to structs
+
+EXT_CFLAGS=$(shell pkg-config --cflags json glib-2.0)
+
 %.o: %.c
-	gcc-4.3 `pkg-config --cflags json glib-2.0` $(VDE_DEF) -c -Iinclude -o $@ $<
+	$(CC) $(EXT_CFLAGS) $(WARNINGS) $(VDE_DEF) -c -Iinclude -o $@ $<
 
 
 all: $(VDE_OBJ)
