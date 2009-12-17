@@ -27,4 +27,9 @@ struct vde_signal {
 
 typedef struct vde_signal vde_signal;
 
+// XXX(shammash): Think if it's possible to register signals to be logged on vde
+// log system. Probably this can be done with a component which registers itself
+// for the signals and then writes the received signals using vde-logging
+// system.
+
 #endif /* __VDE3_SIGNAL_H__ */
