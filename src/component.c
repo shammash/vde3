@@ -388,3 +388,16 @@ void vde_component_set_transport_cm_callbacks(vde_component *transport,
   transport->cm_cb_arg = arg;
 }
 
+int vde_component_transport_listen(vde_component *transport)
+{
+  // XXX check kind/NULL?
+  return transport->tr_listen(transport);
+}
+
+int vde_component_transport_connect(vde_component *transport,
+                                    vde_connection *conn)
+{
+  // XXX check kind/NULL?
+  return transport->tr_connect(transport, conn);
+}
+

@@ -72,7 +72,10 @@ int conn_manager_listen(vde_component *component)
 {
   conn_manager *cm = (conn_manager *)vde_component_get_priv(component);
 
-  return vde_transport_listen(cm->transport);
+  // XXX check return of this
+  vde_component_transport_listen(cm->transport);
+
+  return 0;
 }
 
 int conn_manager_connect(vde_component *component,
@@ -111,7 +114,18 @@ int conn_manager_connect(vde_component *component,
   cm = vde_component_get_priv(component);
   cm->pending_conns = vde_list_prepend(cm->pending_conns, pc);
 
-  vde_transport_connect(cm->transport, conn);
+  // XXX check return of this
+  vde_component_transport_connect(cm->transport, conn);
+
+  return 0;
+}
+
+int post_authorization(conn_manager *cm, struct pending_conn *pc)
+{
+  vde_engine_new_connection(cm->engine, pc->conn, pc->lreq);
+  // if there's an application callback call it
+  cm->pending_conns = vde_list_remove(cm->pending_conns, pc);
+  vde_free(pc); // free requests here ?
 }
 
 void conn_manager_connect_cb(vde_connection *conn, void *arg)
@@ -176,14 +190,6 @@ void conn_manager_error_cb(vde_connection *conn, vde_transport_error err,
 {
   // if conn in pending_conn and there's an application callback call it,
   // delete pending_conn and delete conn
-}
-
-int post_authorization(conn_manager *cm, struct pending_conn *pc)
-{
-  vde_engine_new_connection(cm->engine, pc->conn, pc->lreq);
-  // if there's an application callback call it
-  cm->pending_conns = vde_list_remove(cm->pending_conns, pc);
-  vde_free(pc); // free requests here ?
 }
 
 // in engine.new_conn: vde_conn_set_callbacks(conn, engine_callbacks..)

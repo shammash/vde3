@@ -334,6 +334,28 @@ int vde_component_conn_manager_connect(vde_component *cm,
                                        vde_connect_error_cb error_cb,
                                        void *arg);
 
+
+/**
+ * @brief Put the transport in listen state
+ *
+ * @param transport The transport
+ *
+ * @return 0 on success, otherwise an error code
+ */
+int vde_component_transport_listen(vde_component *transport);
+
+/**
+ * @brief Connect using the given transport
+ *
+ * @param transport The transport
+ * @param conn The connection to use
+ *
+ * @return 0 on success, otherwise an error code
+ */
+int vde_component_transport_connect(vde_component *transport,
+                                    vde_connection *conn);
+
+
 /**
  * @brief Fill the connection manager callbacks of a transport
  *
