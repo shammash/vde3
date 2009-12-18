@@ -118,6 +118,41 @@ int vde_component_put(vde_component *component, int *count);
 int vde_component_put_if_last(vde_component *component, int *count);
 
 /**
+ * @brief Get component private data
+ *
+ * @param component The component to get private data from
+ *
+ * @return The private data
+ */
+void *vde_component_get_priv(vde_component *component);
+
+/**
+ * @brief Set component private data
+ *
+ * @param component The component to set private data to
+ * @param priv The private data
+ */
+void vde_component_set_priv(vde_component *component, void *priv);
+
+/**
+ * @brief Retrieve the context of a component
+ *
+ * @param component The component to get context from
+ *
+ * @return The context
+ */
+vde_context *vde_component_get_context(vde_component *component);
+
+/**
+ * @brief Retrieve the context kind
+ *
+ * @param component The component to get the kind from
+ *
+ * @return The component kind
+ */
+vde_component_kind vde_component_get_kind(vde_component *component);
+
+/**
  * @brief Return component name
  *
  * @param component The component
@@ -254,6 +289,27 @@ void vde_component_signal_callback(vde_component *component,
 //                                  vde_component_signal_callback (*callback));
 
 /**
+ * @brief Fill the connection manager ops in a component
+ *
+ * @param cm The connection manager
+ * @param listen Listen op
+ * @param connect Connect op
+ */
+void vde_component_set_conn_manager_ops(vde_component *cm, cm_listen listen,
+                                        cm_connect connect);
+
+/**
+ * @brief Fill the transport ops in a component
+ *
+ * @param transport The transport
+ * @param listen Listen op
+ * @param connect Connect op
+ */
+void vde_component_set_transport_ops(vde_component *transport,
+                                     tr_listen listen,
+                                     tr_connect connect);
+
+/**
  * @brief Put the underlying transport in listen mode
  *
  * @param cm The connection manager to use
@@ -277,5 +333,19 @@ int vde_component_conn_manager_connect(vde_component *cm,
                                        vde_connect_success_cb success_cb,
                                        vde_connect_error_cb error_cb,
                                        void *arg);
+
+/**
+ * @brief Fill the connection manager callbacks of a transport
+ *
+ * @param transport The transport to set callbacks to
+ * @param connect_cb Connect callback
+ * @param accept_cb Accept callback
+ * @param error_cb Error callback
+ * @param arg Callbacks private data
+ */
+void vde_component_set_transport_cm_callbacks(vde_component *transport,
+                                              cm_connect_cb connect_cb,
+                                              cm_accept_cb accept_cb,
+                                              cm_error_cb error_cb, void *arg);
 
 #endif /* __VDE3_COMPONENT_H__ */
