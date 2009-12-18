@@ -71,22 +71,6 @@ int vde_component_init(vde_component *component, vde_quark qname,
                        vde_module *module, va_list args);
 
 /**
- * @brief Init a VDE 3 component
- *
- * @param ctx The context to use
- * @param kind The component kind
- * @param family The component family
- * @param name The component name
- * @param component The component to init
- * @param args Parameters for initialization of module properties
- *
- * @return zero on success, otherwise an error code
- */
-int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
-                               const char *family, const char *name,
-                               vde_component **component, ...);
-
-/**
  * @brief Stop and reset a VDE 3 component
  *
  * @param component The component to fini
