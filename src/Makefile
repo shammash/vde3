@@ -1,6 +1,6 @@
-VDE_SRC = context.c component.c conn_manager.c logging.c module.c transport_vde2.c
+VDE_SRC = context.c component.c conn_manager.c logging.c module.c transport_vde2.c connection.c
 
-VDE_OBJ = context.o component.o conn_manager.o logging.o module.o transport_vde2.o
+VDE_OBJ = context.o component.o conn_manager.o logging.o module.o transport_vde2.o connection.o
 
 WARNINGS=-Wall -Winline -Wformat=2 -Wswitch-default -Wswitch-enum \
 -Wunused-parameter -Wfloat-equal -Wundef -Wshadow -Wunsafe-loop-optimizations \
