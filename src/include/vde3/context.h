@@ -30,5 +30,7 @@
  */
 int vde_context_register_module(vde_context *ctx, vde_module *module);
 
+inline vde_component* vde_context_get_component_by_qname(vde_context *ctx,
+                                                         vde_quark qname);
 
 #endif /* __VDE3_CONTEXT_H__ */

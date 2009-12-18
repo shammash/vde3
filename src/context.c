@@ -189,6 +189,12 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name)
     return -1;
   }
   qname = vde_quark_try_string(name);
+  return vde_context_get_component_by_qname(ctx, qname);
+}
+
+inline vde_component* vde_context_get_component_by_qname(vde_context *ctx,
+                                                         vde_quark qname)
+{
   return vde_hash_lookup(ctx->components, qname);
 }
 
@@ -223,7 +229,7 @@ int vde_context_component_del(vde_context *ctx, vde_component *component)
     return -2;
   }
   qname = vde_component_get_qname(component);
-  if (vde_context_get_component(ctx, qname) == NULL) {
+  if (vde_context_get_component_by_qname(ctx, qname) == NULL) {
     vde_error("%s: cannot delete component, component not found",
               __PRETTY_FUNCTION__);
     return -3;
