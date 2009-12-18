@@ -51,6 +51,8 @@ void rtimeout_cb(int fd, short events, void *arg)
 
   // call user callback and reschedule the timeout
   rt->cb(fd, events, rt->arg);
+
+  // XXX(godog): this breaks if timeout_del is called inside the cb
   timeout_add(rt->ev, rt->timeout);
 }
 
@@ -114,7 +116,7 @@ void *libevent_timeout_add(const struct timeval *timeout, short events,
     timeout_set(ev, cb, arg);
     timeout_add(ev, timeout);
   }
-  // XXX check calls to timeout_set / timeout_add
+  // XXX check calls to timeout_set / timeout_add for failure
   return rt;
 }
 
