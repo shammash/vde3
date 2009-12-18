@@ -15,8 +15,6 @@
  *
  */
 
-#include <vde3.h>
-
 #include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -25,6 +23,8 @@
 #include <sys/un.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#include <vde3.h>
 
 #include <vde3/module.h>
 #include <vde3/component.h>
@@ -51,7 +51,7 @@ struct request_v3 {
 typedef struct request_v3 request;
 // end of vde2 datasock.c
 
-struct vde2_pending_conn {
+struct vde2_conn {
   int fd;
   void *event;
   char *local_path;
@@ -59,9 +59,9 @@ struct vde2_pending_conn {
   vde_connection *conn;
   vde_component *transport;
 };
-typedef struct vde2_pending_conn vde2_pending_conn;
+typedef struct vde2_conn vde2_conn;
 
-struct transport_vde2 {
+struct vde2_tr {
   char *vdesock_dir;
   char *vdesock_ctl;
   int listen_fd;
@@ -69,19 +69,28 @@ struct transport_vde2 {
   unsigned int connections;
   vde_list *pending_conns;
 };
-typedef struct transport_vde2 transport_vde2;
+typedef struct vde2_tr vde2_tr;
 
-void pending_conn_delete(struct vde2_pending_conn *pc) {
-  // XXX pc->event is not removed
-  if (pc->local_path) {
-    vde_free(pc->local_path);
+int vde2_conn_write(vde_connection *conn, vde_pkt *pkt)
+{
+  return 0;
+}
+
+void vde2_conn_close(vde_connection *conn)
+{
+  vde2_conn *v2_conn = vde_connection_get_priv(conn);
+  if (v2_conn->fd >= 0){
+    close(v2_conn->fd);
+  }
+  // destroy event if present
+  if (v2_conn->local_path) {
+    vde_free(v2_conn->local_path);
+  }
+  if (v2_conn->remote_request) {
+    vde_free(v2_conn->remote_request);
   }
 
-  if (pc->remote_request) {
-    vde_free(pc->remote_request);
-  }
-
-  vde_free(pc);
+  vde_free(v2_conn);
 }
 
 static int vde2_remove_sock_if_unused(struct sockaddr_un *sa_unix)
@@ -111,20 +120,24 @@ void vde2_srv_send_request(int fd, short event_type, void *arg)
 {
   int len;
   struct sockaddr_un sun;
-  vde2_pending_conn *pc = (vde2_pending_conn *)arg;
-  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(pc->transport);
+  vde2_conn *v2_conn = (vde2_conn *)arg;
+  vde_connection *conn = v2_conn->conn;
+  vde2_tr *tr = (vde2_tr *)vde_component_get_priv(v2_conn->transport);
 
-  pc->local_path = (char *)vde_calloc(sizeof(sun.sun_path));
-  if (!pc->local_path) {
+  // XXX: free v2_conn->event from previous event_add()
+
+  // XXX: define a behaviour when called if event timeout expired
+  v2_conn->local_path = (char *)vde_calloc(sizeof(sun.sun_path));
+  if (!v2_conn->local_path) {
     vde_error("%s: cannot allocate memory for local path",
               __PRETTY_FUNCTION__);
     goto error;
   }
 
-  snprintf(pc->local_path, sizeof(sun.sun_path), "%s/%04d",
+  snprintf(v2_conn->local_path, sizeof(sun.sun_path), "%s/%04d",
            tr->vdesock_dir, tr->connections);
 
-  snprintf(sun.sun_path, sizeof(sun.sun_path), "%s", pc->local_path);
+  snprintf(sun.sun_path, sizeof(sun.sun_path), "%s", v2_conn->local_path);
 
   len = write(fd, &sun, sizeof(sun));
   if (len != sizeof(sun)) {
@@ -139,8 +152,9 @@ void vde2_srv_send_request(int fd, short event_type, void *arg)
   // call connection manager accept_cb with the conn
 
 error:
-  tr->pending_conns = vde_list_remove(tr->pending_conns, pc);
-  pending_conn_delete(pc);
+  tr->pending_conns = vde_list_remove(tr->pending_conns, v2_conn);
+  vde_connection_fini(conn);
+  vde_connection_delete(conn);
 }
 
 void vde2_srv_get_request(int fd, short event_type, void *arg)
@@ -148,10 +162,15 @@ void vde2_srv_get_request(int fd, short event_type, void *arg)
   int len;
   char reqbuf[REQBUFLEN+1];
   request *req=(request *)reqbuf;
-  vde2_pending_conn *pc = (vde2_pending_conn *)arg;
-  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(pc->transport);
+  vde2_conn *v2_conn = (vde2_conn *)arg;
+  vde_connection *conn = v2_conn->conn;
+  vde2_tr *tr = (vde2_tr *)vde_component_get_priv(v2_conn->transport);
+  vde_context *ctx = vde_component_get_context(v2_conn->transport);
 
-  len = read(pc->fd, reqbuf, REQBUFLEN);
+  // XXX: free v2_conn->event from previous event_add()
+
+  // XXX: define a behaviour when called if event timeout expired
+  len = read(v2_conn->fd, reqbuf, REQBUFLEN);
   if (len < 0) {
     if (errno != EAGAIN) {
       goto error;
@@ -177,22 +196,26 @@ void vde2_srv_get_request(int fd, short event_type, void *arg)
       goto error;
     }
 
-    pc->remote_request = (request *)vde_alloc(len);
-    if (!pc->remote_request) {
+    v2_conn->remote_request = (request *)vde_alloc(len);
+    if (!v2_conn->remote_request) {
       vde_error("%s: cannot allocate memory for remote request",
                 __PRETTY_FUNCTION__);
       goto error;
     }
-    memcpy(pc->remote_request, reqbuf, len);
+    memcpy(v2_conn->remote_request, reqbuf, len);
 
-    // XXX: add event write on pc->fd for vde2_srv_send_request
+    // XXX: check event NULL and define a timeout
+    v2_conn->event = vde_context_event_add(ctx, v2_conn->fd, VDE_EV_WRITE,
+                                           NULL, &vde2_srv_send_request,
+                                           (void *)v2_conn);
   }
 
   return;
 
 error:
-  tr->pending_conns = vde_list_remove(tr->pending_conns, pc);
-  pending_conn_delete(pc);
+  tr->pending_conns = vde_list_remove(tr->pending_conns, v2_conn);
+  vde_connection_fini(conn);
+  vde_connection_delete(conn);
 }
 
 void vde2_accept(int listen_fd, short event_type, void *arg)
@@ -201,9 +224,10 @@ void vde2_accept(int listen_fd, short event_type, void *arg)
   socklen_t sa_len;
   int new;
   vde_connection *conn;
-  struct vde2_pending_conn *pc;
+  struct vde2_conn *v2_conn;
   vde_component *component = (vde_component *)arg;
-  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(component);
+  vde_context *ctx = vde_component_get_context(component);
+  vde2_tr *tr = (vde2_tr *)vde_component_get_priv(component);
 
   // XXX: consistency check: is listen_fd the right one?
   new = accept(listen_fd, &sa, &sa_len);
@@ -220,20 +244,26 @@ void vde2_accept(int listen_fd, short event_type, void *arg)
     vde_error("%s: cannot create connection", __PRETTY_FUNCTION__);
     goto error_close;
   }
-  // XXX: connection init, set connection backend to vde2
-  pc = (struct vde2_pending_conn *)
-        vde_calloc(sizeof(struct vde2_pending_conn));
-  if (!pc) {
-    vde_error("%s: cannot create pending connection", __PRETTY_FUNCTION__);
+  v2_conn = (struct vde2_conn *)vde_calloc(sizeof(struct vde2_conn));
+  if (!v2_conn) {
+    vde_error("%s: cannot create connection backend", __PRETTY_FUNCTION__);
     goto error_conn_del;
   }
 
-  pc->fd = new;
-  pc->conn = conn;
-  pc->transport = component;
-  tr->pending_conns = vde_list_prepend(tr->pending_conns, pc);
+  v2_conn->fd = new;
+  v2_conn->conn = conn;
+  v2_conn->transport = component;
 
-  // XXX: add event read on pc->fd for vde2_srv_get_auth
+  // XXX: check error on list
+  tr->pending_conns = vde_list_prepend(tr->pending_conns, v2_conn);
+
+  vde_connection_init(conn, ctx, &vde2_conn_write, &vde2_conn_close,
+                      (void *)v2_conn);
+
+  // XXX: check event NULL and define a timeout
+  v2_conn->event = vde_context_event_add(ctx, v2_conn->fd, VDE_EV_READ, NULL,
+                                         &vde2_srv_get_request,
+                                         (void *)v2_conn);
 
   return;
 
@@ -247,7 +277,8 @@ int vde2_listen(vde_component *component)
 {
   struct sockaddr_un sa_unix;
   int one = 1;
-  transport_vde2 *tr = (transport_vde2 *)vde_component_get_priv(component);
+  vde_context *ctx = vde_component_get_context(component);
+  vde2_tr *tr = (vde2_tr *)vde_component_get_priv(component);
 
   tr->listen_fd = socket(PF_UNIX, SOCK_STREAM, 0);
   if (tr->listen_fd < 0) {
@@ -294,7 +325,10 @@ int vde2_listen(vde_component *component)
     goto error_unlink;
   }
 
-  // XXX: add event read on listen_fd for vde2_accept
+  // XXX: check event not NULL, define a timeout?
+  tr->listen_event = vde_context_event_add(ctx, tr->listen_fd,
+                                           VDE_EV_READ | VDE_EV_PERSIST, NULL,
+                                           &vde2_accept, (void *)component);
 
   return 0;
 
@@ -309,12 +343,13 @@ error_close:
 
 int vde2_connect(vde_component *component, vde_connection *conn)
 {
+  return -1;
 }
 
 static int transport_vde2_init(vde_component *component, const char *dir)
 {
 
-  transport_vde2 *tr;
+  vde2_tr *tr;
 
   if (component == NULL) {
     vde_error("%s: component is NULL", __PRETTY_FUNCTION__);
@@ -325,7 +360,7 @@ static int transport_vde2_init(vde_component *component, const char *dir)
     vde_error("%s: directory name is too long", __PRETTY_FUNCTION__);
     return -2;
   }
-  tr = (transport_vde2 *)vde_calloc(sizeof(transport_vde2));
+  tr = (vde2_tr *)vde_calloc(sizeof(vde2_tr));
   if (tr == NULL) {
     vde_error("%s: could not allocate private data", __PRETTY_FUNCTION__);
     return -3;
