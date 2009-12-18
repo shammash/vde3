@@ -45,9 +45,9 @@ typedef GList vde_list;
 
 typedef GHashTable vde_hash;
 #define vde_hash_init() g_hash_table_new(NULL, NULL)
-#define vde_hash_insert(h, k, v) g_hash_table_insert(h, k, v)
-#define vde_hash_remove(h, k) g_hash_table_remove(h, k)
-#define vde_hash_lookup(h, k) g_hash_table_lookup(h, k)
+#define vde_hash_insert(h, k, v) g_hash_table_insert(h, (gpointer)k, v)
+#define vde_hash_remove(h, k) g_hash_table_remove(h, (gconstpointer)k)
+#define vde_hash_lookup(h, k) g_hash_table_lookup(h, (gconstpointer)k)
 #define vde_hash_delete(h) g_hash_table_destroy(h)
 
 typedef GQuark vde_quark;
