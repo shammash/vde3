@@ -18,8 +18,9 @@
 #ifndef __VDE3_CONNECTION_H__
 #define __VDE3_CONNECTION_H__
 
-#include <vde3/attributes.h>
+#include <sys/time.h>
 
+#include <vde3/attributes.h>
 #include <vde3/packet.h>
 
 // XXX to be defined, it should be able to distinguish between fatal/non-fatal
@@ -247,6 +248,39 @@ unsigned int vde_connection_get_pkt_headsize(vde_connection *conn);
  * @return The amount of space
  */
 unsigned int vde_connection_get_pkt_tailsize(vde_connection *conn);
+
+/**
+ * @brief Called by the component using the connection to set some packet
+ * sending options. The connection will try to write the packet for AT MOST
+ * max_timeout x max_tries time; after that if the send is failed conn_error_cb
+ * is called to inform a packet has been dropped.
+ *
+ * @param conn The connection to set packet sending options to
+ * @param max_tries The maximum number of attempts for sending a packet
+ * @param max_timeout The maximum amount of time between two packet send
+ * attempts
+ */
+void vde_connection_set_send_properties(vde_connection *conn,
+                                        unsigned int max_tries,
+                                        struct timeval *max_timeout);
+
+/**
+ * @brief Get the maximum number of tries a send should be performed
+ *
+ * @param conn The connection to get the maximum number of tries from
+ *
+ * @return The maximum number of tries
+ */
+unsigned int vde_connection_get_send_maxtries(vde_connection *conn);
+
+/**
+ * @brief Get the maximum timeout between two send attempts
+ *
+ * @param conn The connection to get the maximum timeout from
+ *
+ * @return A reference to maximum timeout
+ */
+struct timeval *vde_connection_get_send_maxtimeout(vde_connection *conn);
 
 /**
  * @brief Set connection attributes, data will be duplicated

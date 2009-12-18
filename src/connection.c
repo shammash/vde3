@@ -25,6 +25,8 @@ struct vde_connection {
   vde_context *context;
   unsigned int pkt_head_sz;
   unsigned int pkt_tail_sz;
+  unsigned int send_maxtries;
+  struct timeval send_maxtimeout;
   conn_be_write be_write;
   conn_be_close be_close;
   void *be_priv;
@@ -131,33 +133,56 @@ void vde_connection_set_pkt_properties(vde_connection *conn,
                                        unsigned int head_sz,
                                        unsigned int tail_sz)
 {
-  // XXX(shammash): check error: conn cant' be NULL
+  // XXX(shammash): check error: conn can't be NULL
   conn->pkt_head_sz = head_sz;
   conn->pkt_tail_sz = tail_sz;
 }
 
 unsigned int vde_connection_get_pkt_headsize(vde_connection *conn)
 {
-  // XXX(shammash): check error: conn cant' be NULL
+  // XXX(shammash): check error: conn can't be NULL
   return conn->pkt_head_sz;
 }
 
 unsigned int vde_connection_get_pkt_tailsize(vde_connection *conn)
 {
-  // XXX(shammash): check error: conn cant' be NULL
+  // XXX(shammash): check error: conn can't be NULL
   return conn->pkt_tail_sz;
 }
+
+void vde_connection_set_send_properties(vde_connection *conn,
+                                        unsigned int max_tries,
+                                        struct timeval *max_timeout)
+{
+  // XXX(shammash): check error: conn and max_timeout can't be NULL
+  conn->send_maxtries = max_tries;
+  timerclear(&conn->send_maxtimeout);
+  timeradd(&conn->send_maxtimeout, max_timeout, &conn->send_maxtimeout);
+}
+
+unsigned int vde_connection_get_send_maxtries(vde_connection *conn)
+{
+  // XXX(shammash): check error: conn can't be NULL
+  return conn->send_maxtries;
+}
+
+struct timeval *vde_connection_get_send_maxtimeout(vde_connection *conn)
+{
+  // XXX(shammash): check error: conn can't be NULL
+  return &conn->send_maxtimeout;
+}
+
 
 void vde_connection_set_attributes(vde_connection *conn,
                                    vde_attributes *attributes)
 {
-  // XXX(shammash): check error: conn cant' be NULL
+  // XXX(shammash): check error: conn can't be NULL
   conn->attributes = attributes;
 }
 
 vde_attributes *vde_connection_get_attributes(vde_connection *conn)
 {
-  // XXX(shammash): check error: conn cant' be NULL
+  // XXX(shammash): check error: conn can't be NULL
   return conn->attributes;
 }
 
