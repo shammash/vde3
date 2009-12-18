@@ -20,6 +20,7 @@
 #include <vde3.h>
 
 #include <vde3/component.h>
+#include <vde3/module.h>
 
 struct vde_component {
   vde_context *ctx;
@@ -163,7 +164,7 @@ void *vde_component_get_priv(vde_component *component)
 {
   if (component == NULL) {
     vde_error("%s: NULL component", __PRETTY_FUNCTION__);
-    return -1;
+    return NULL;
   }
   return component->priv;
 }
@@ -172,7 +173,7 @@ void vde_component_set_priv(vde_component *component, void *priv)
 {
   if (component == NULL) {
     vde_error("%s: NULL component", __PRETTY_FUNCTION__);
-    return -1;
+    return;
   }
   component->priv = priv;
 }
@@ -181,7 +182,7 @@ vde_context *vde_component_get_context(vde_component *component)
 {
   if (component == NULL) {
     vde_error("%s: NULL component", __PRETTY_FUNCTION__);
-    return -1;
+    return NULL;
   }
   return component->ctx;
 }

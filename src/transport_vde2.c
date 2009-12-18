@@ -67,7 +67,7 @@ struct transport_vde2 {
 };
 typedef struct transport_vde2 transport_vde2;
 
-pending_conn_delete(struct vde2_pending_conn *pc) {
+void pending_conn_delete(struct vde2_pending_conn *pc) {
   // XXX pc->event is not removed
   if (pc->local_path) {
     vde_free(pc->local_path);

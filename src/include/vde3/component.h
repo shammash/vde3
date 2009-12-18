@@ -35,8 +35,8 @@ typedef enum vde_transport_error vde_transport_error;
 typedef int (*cm_listen)(vde_component *cm);
 typedef int (*cm_connect)(vde_component *cm, vde_request *local,
                           vde_request *remote,
-                          vde_connect_success_cb *success_cb,
-                          vde_connect_error_cb *error_cb,
+                          vde_connect_success_cb success_cb,
+                          vde_connect_error_cb error_cb,
                           void *arg);
 // Transport ops
 typedef int (*tr_listen)(vde_component *transport);

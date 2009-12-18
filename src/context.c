@@ -21,7 +21,7 @@
 #include <vde3.h>
 
 #include <vde3/common.h>
-
+#include <vde3/component.h>
 #include <vde3/context.h>
 
 struct vde_context {
@@ -186,7 +186,7 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name)
   if (ctx == NULL || ctx->initialized != true) {
     vde_error("%s: cannot get component, context not initialized",
               __PRETTY_FUNCTION__);
-    return -1;
+    return NULL;
   }
   qname = vde_quark_try_string(name);
   return vde_context_get_component_by_qname(ctx, qname);
@@ -278,7 +278,7 @@ int vde_context_config_load(vde_context *ctx, const char* file);
 int vde_context_register_module(vde_context *ctx, vde_module *module)
 {
   vde_component_kind kind;
-  char *family;
+  const char *family;
 
   if (ctx == NULL || ctx->initialized != true) {
     vde_error("%s: cannot add module, context not initialized",
