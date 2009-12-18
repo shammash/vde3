@@ -73,8 +73,8 @@ struct vde_event_handler {
    * the specified type occur on fd.
    *
    */
-  void (*event_add)(int fd, short events, const struct timeval *timeout,
-                    event_cb cb, void *arg);
+  void *(*event_add)(int fd, short events, const struct timeval *timeout,
+                     event_cb cb, void *arg);
 
   /**
    * @brief Function to delete an event
@@ -101,7 +101,7 @@ struct vde_event_handler {
    * callback is called repeatedly every timeout until timeout_del is called.
    *
    */
-  void (*timeout_add)(const struct timeval *timeout, short events, event_cb cb,
+  void *(*timeout_add)(const struct timeval *timeout, short events, event_cb cb,
                       void *arg);
 
   /**

@@ -16,6 +16,12 @@
  */
 
 #include <vde3.h>
+#include <vde3/common.h>
+
+#include <stdio.h>
+#include <string.h>
+
+#include <event.h>
 
 /*
  * vde_event_handler which uses libevent as a backend, handling of recurrent
@@ -114,7 +120,7 @@ void *libevent_timeout_add(const struct timeval *timeout, short events,
 
 void libevent_timeout_del(void *timeout)
 {
-  struct rtimeout *rt = (struct rtimeout *)tout;
+  struct rtimeout *rt = (struct rtimeout *)timeout;
 
   event_del(rt->ev);
   vde_free(rt->ev);
@@ -127,8 +133,8 @@ void libevent_timeout_del(void *timeout)
 }
 
 vde_event_handler libevent_eh = {
-  .event_add = libevent_event_add;
-  .event_del = libevent_event_del;
-  .timeout_add = libevent_timeout_add;
-  .timeout_del = libevent_timeout_del;
+  .event_add = libevent_event_add,
+  .event_del = libevent_event_del,
+  .timeout_add = libevent_timeout_add,
+  .timeout_del = libevent_timeout_del,
 };
