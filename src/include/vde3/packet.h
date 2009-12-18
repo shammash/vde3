@@ -63,30 +63,25 @@ typedef struct vde_pkt vde_pkt;
 
 // For further speedup certain implementations might want to define their own
 // data structure to be used when specific properties are set by the engine.
-struct vde2_transport_pkt {
-  vde_hdr *hdr; //  = &data
-  void *head; //    = &data + sizeof(vde_hdr)
-  void *payload; // = &data + sizeof(vde_hdr) + 4
-  void *tail;//     = NULL (??)
-  char data[1540]; // sizeof(vde_hdr) + 4 (head reserved for vlan tags) + 1504 (frame eth+trailing)
-};
-
-
-// int optimized_read_4_0(vde_pkt **pkt) {
-//   struct vde2_transport_pkt stack_pkt;
-//   // set fields as explained above
-//   rv = read(stack_pkt.payload, MAX_ETH_FRAME_SIZE);
-//   *pkt = stack_pkt;
-//   return rv;
-// }
+// struct vde2_transport_pkt {
+//   vde_pkt pkt;
+//   char data[1540]; // sizeof(vde_hdr) +
+//                    // 4 (head reserved for vlan tags) +
+//                    // 1504 (frame eth+trailing)
+// };
 //
-// // ... inside a connection handling read event ...
+// Inside a connection handling read event:
+// struct vde2_transport_pkt stack_pkt;
 // vde_pkt *pkt;
+// ...
 // if(conn->head_sz == 4 && conn->tail_sz == 0) {
-//   rv = optimized_read_4_0(&pkt);
+//   ... set fields as explained above ...
+//   read(stack_pkt.pkt.payload, MAX_ETH_FRAME_SIZE);
+//   *pkt = stack_pkt;
 // } else {
-//   // alloc memory and read
+//   ... alloc a new vde_pkt with the necessary data and read ...
 // }
+// ... set packet fields and pass it to the engine ...
 
 
 #endif /* __VDE3_PACKET_H__ */
