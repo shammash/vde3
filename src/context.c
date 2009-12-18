@@ -26,7 +26,7 @@
 
 struct vde_context {
   bool initialized;
-  event_handler *event_handler; /* XXX(shammash): consider embedding the
+  vde_event_handler *event_handler; /* XXX(shammash): consider embedding the
                                    structure in the context to save 1 pointer
                                    jump for each event add */
   // hash table vde_quark component_name: vde_component *component
@@ -91,7 +91,7 @@ int vde_context_new(vde_context **ctx)
   return 0;
 }
 
-int vde_context_init(vde_context *ctx, event_handler *handler)
+int vde_context_init(vde_context *ctx, vde_event_handler *handler)
 {
   if (ctx == NULL || handler == NULL) {
     vde_error("%s: cannot initialize context", __PRETTY_FUNCTION__);
@@ -297,3 +297,4 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
     return 0;
   }
 }
+

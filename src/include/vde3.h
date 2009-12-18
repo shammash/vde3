@@ -28,11 +28,93 @@
  *
  */
 
-// XXX to be defined
-struct event_handler {
+#define VDE_EV_READ     0x02
+#define VDE_EV_WRITE    0x04
+#define VDE_EV_PERSIST  0x10
+
+/**
+ * @brief The callback to be called on events, events must contain the event(s)
+ * which are available on fd.
+ */
+typedef void (*event_cb)(int fd, short events, void *arg);
+
+/**
+ * @brief This is the event handler the application must supply. It contains
+ * several functions pointers for handling events from file descriptors and
+ * timeouts.
+ * It is modeled after libevent and thus shares some API details.
+ *
+ */
+struct vde_event_handler {
+  /**
+   * @brief Function to add a new event
+   *
+   * This function is called by vde whenever there's interest on events for a
+   * file descriptor.
+   *
+   * @param fd The interested fd
+   * @param events The events to monitor for this event
+   * @param timeout The timeout, can be NULL
+   * @param cb The function to call as a callback for this event
+   * @param arg The argument to pass to the callback
+   *
+   * @return a token representing the event, can be anything
+   * application-specific, vde uses this to refer to the event e.g. in calls to
+   * event_del, NULL on error.
+   *
+   * Events is a mask combining one or more of
+   *   VDE_EV_READ to monitor read-availability
+   *   VDE_EV_READ to monitor write-availability
+   *   VDE_EV_PERSIST to keep calling the callback even after an event has
+   *                  occured
+   *
+   * If timeout is not NULL and no events occur within timeout then the callback
+   * is called, if timeout is NULL then the callback is called only if events of
+   * the specified type occur on fd.
+   *
+   */
+  void (*event_add)(int fd, short events, const struct timeval *timeout,
+                    event_cb cb, void *arg);
+
+  /**
+   * @brief Function to delete an event
+   *
+   * This function is called by vde to delete an event for which the callback
+   * has not been called yet and/or to explicitly delete events with the
+   * VDE_EV_PERSIST flag.
+   */
+  void (*event_del)(void *ev);
+
+  /**
+   * @brief Function to add a new timeout
+   *
+   * @param timeout The timeout, cannot be NULL
+   * @param events The events for this timeout
+   * @param cb The function to call as a callback when the timeout expires
+   * @param arg The argument to pass to the callback
+   *
+   * @return a token representing the timeout, likewise for event this is an
+   * opaque object and defined by the application. NULL on error.
+   *
+   * This function is called whenever the callback must be called after the time
+   * represented by timeout, if VDE_EV_PERSIST is present in events then the
+   * callback is called repeatedly every timeout until timeout_del is called.
+   *
+   */
+  void (*timeout_add)(const struct timeval *timeout, short events, event_cb cb,
+                      void *arg);
+
+  /**
+   * @brief Function to delete a timeout
+   *
+   * This function is called by vde to delete a timeout for which the callback
+   * has not been called yet and/or to explicitly delete timeouts with the
+   * VDE_EV_PERSIST flag.
+   */
+  void (*timeout_del)(void *tout);
 };
 
-typedef struct event_handler event_handler;
+typedef struct vde_event_handler vde_event_handler;
 
 
 /*
@@ -104,11 +186,11 @@ int vde_context_new(vde_context **ctx);
 * @brief Initialize VDE 3 context
 *
 * @param ctx The context to initialize
-* @param handler An implementation of event_handler to use
+* @param handler An implementation of vde_event_handler to use
 *
 * @return zero on success, otherwise an error code
 */
-int vde_context_init(vde_context *ctx, event_handler *handler);
+int vde_context_init(vde_context *ctx, vde_event_handler *handler);
 
 /**
 * @brief Stop and reset a VDE 3 context
@@ -184,8 +266,6 @@ int vde_context_config_save(vde_context *ctx, const char* file);
 * @return zero on success, otherwise an error code
 */
 int vde_context_config_load(vde_context *ctx, const char* file);
-
-
 
 
 /*
