@@ -18,13 +18,17 @@
 #include <vde3.h>
 
 #include <unistd.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <vde3/module.h>
 #include <vde3/component.h>
+#include <vde3/context.h>
 
 #define LISTEN_QUEUE 15
 

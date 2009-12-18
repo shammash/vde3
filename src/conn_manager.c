@@ -19,6 +19,7 @@
 
 #include <vde3/module.h>
 #include <vde3/component.h>
+#include <vde3/context.h>
 
 enum vde_conn_state {
   CONNECT_WAIT,
