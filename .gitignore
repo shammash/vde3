@@ -7,3 +7,5 @@
 *.lo
 .libs
 .deps
+
+cscope.out
