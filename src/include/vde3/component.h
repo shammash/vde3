@@ -48,6 +48,10 @@ typedef void (*cm_accept_cb)(vde_connection *conn, void *arg);
 typedef void (*cm_error_cb)(vde_connection *conn, vde_transport_error err,
                             void *arg);
 
+// Engine ops
+typedef int (*eng_new_conn)(vde_component *engine, vde_connection *conn,
+                            vde_request *req);
+
 /**
  * @brief Alloc a new VDE 3 component
  *
@@ -310,6 +314,14 @@ void vde_component_set_transport_ops(vde_component *transport,
                                      tr_connect connect);
 
 /**
+ * @brief Fill engine ops in a component
+ *
+ * @param engine The engine
+ * @param new_conn New Connection op
+ */
+void vde_component_set_engine_ops(vde_component *engine, eng_new_conn new_conn);
+
+/**
  * @brief Put the underlying transport in listen mode
  *
  * @param cm The connection manager to use
@@ -369,5 +381,16 @@ void vde_component_set_transport_cm_callbacks(vde_component *transport,
                                               cm_connect_cb connect_cb,
                                               cm_accept_cb accept_cb,
                                               cm_error_cb error_cb, void *arg);
+
+/**
+ * @brief Attach a connection to an engine
+ *
+ * @param engine The engine to attach the connection to
+ * @param conn The connection to attach
+ *
+ * @return zero on success, an error code otherwise
+ */
+int vde_component_engine_new_conn(vde_component *engine, vde_connection *conn,
+                                  vde_request *req);
 
 #endif /* __VDE3_COMPONENT_H__ */

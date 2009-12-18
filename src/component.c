@@ -41,6 +41,7 @@ struct vde_component {
   tr_listen tr_listen;
   tr_connect tr_connect;
   // Ops engine specific:
+  eng_new_conn eng_new_conn;
   // transport - connection manager specific callbacks:
   cm_connect_cb cm_connect_cb;
   cm_accept_cb cm_accept_cb;
@@ -344,6 +345,12 @@ void vde_component_set_transport_ops(vde_component *transport,
   transport->tr_listen = listen;
 }
 
+void vde_component_set_engine_ops(vde_component *engine, eng_new_conn new_conn)
+{
+  // XXX: check kind/NULL
+  engine->eng_new_conn = new_conn;
+}
+
 int vde_component_conn_manager_listen(vde_component *cm)
 {
   if (cm == NULL) {
@@ -399,5 +406,12 @@ int vde_component_transport_connect(vde_component *transport,
 {
   // XXX check kind/NULL?
   return transport->tr_connect(transport, conn);
+}
+
+int vde_component_engine_new_conn(vde_component *engine, vde_connection *conn,
+                                  vde_request *req)
+{
+  //XXX check kind/NULL
+  return engine->eng_new_conn(engine, conn, req);
 }
 
