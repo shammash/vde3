@@ -45,7 +45,7 @@ struct conn_manager {
   vde_component *transport;
   vde_component *engine;
   vde_list *pending_conns;
-  bool do_remote_authorization;
+  int do_remote_authorization;
 };
 
 typedef struct conn_manager conn_manager;
@@ -123,10 +123,13 @@ int conn_manager_connect(vde_component *component,
 
 int post_authorization(conn_manager *cm, struct pending_conn *pc)
 {
-  vde_engine_new_connection(cm->engine, pc->conn, pc->lreq);
+  // XXX: this can fail, e.g.: maximum number of ports on a switch already
+  // reached..
+  vde_component_engine_new_conn(cm->engine, pc->conn, pc->lreq);
   // if there's an application callback call it
   cm->pending_conns = vde_list_remove(cm->pending_conns, pc);
   vde_free(pc); // free requests here ?
+  return 0;
 }
 
 void conn_manager_connect_cb(vde_connection *conn, void *arg)
@@ -200,7 +203,7 @@ void conn_manager_error_cb(vde_connection *conn, vde_transport_error err,
 
 // XXX: is it better to pass transport/engine as a quark/string?
 int conn_manager_init(vde_component *component, vde_component *transport,
-                      vde_component *engine, bool do_remote_authorization)
+                      vde_component *engine, int do_remote_authorization)
 {
   conn_manager *cm;
 
@@ -250,7 +253,7 @@ int conn_manager_init(vde_component *component, vde_component *transport,
 int conn_manager_va_init(vde_component *component, va_list args)
 {
   return conn_manager_init(component, va_arg(args, vde_component *),
-                           va_arg(args, vde_component *), va_arg(args, bool));
+                           va_arg(args, vde_component *), va_arg(args, int));
 }
 
 // XXX to be defined
