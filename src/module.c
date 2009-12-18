@@ -28,3 +28,8 @@ const char *vde_module_get_family(vde_module *module)
 {
   return module->family;
 }
+
+component_ops *vde_module_get_component_ops(vde_module *module)
+{
+  return module->cops;
+}

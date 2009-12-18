@@ -32,6 +32,7 @@ struct component_ops {
   char* set_policy; // called to set a serializable policy
 };
 
+typedef struct component_ops component_ops;
 
 // XXX as of now modules can't be unloaded because components are using its
 // functions once they are in use.
@@ -43,7 +44,7 @@ struct component_ops {
 struct vde_module {
   vde_component_kind kind;
   char* family;
-  struct component_ops *cops;
+  component_ops *cops;
 };
 
 typedef struct vde_module vde_module;
@@ -51,6 +52,8 @@ typedef struct vde_module vde_module;
 vde_component_kind vde_module_get_kind(vde_module *module);
 
 const char *vde_module_get_family(vde_module *module);
+
+component_ops *vde_module_get_component_ops(vde_module *module);
 
 /**
  * @brief Function invoked when initializing a module, must be exported by

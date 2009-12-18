@@ -24,7 +24,7 @@
 
 struct vde_component {
   vde_context *ctx;
-  struct component_ops *cops;
+  component_ops *cops;
   vde_quark qname;
   vde_component_kind kind;
   vde_char *family;
