@@ -33,4 +33,16 @@ int vde_context_register_module(vde_context *ctx, vde_module *module);
 inline vde_component* vde_context_get_component_by_qname(vde_context *ctx,
                                                          vde_quark qname);
 
+void *vde_context_event_add(vde_context *ctx, int fd, short events,
+                            const struct timeval *timeout,
+                            event_cb cb, void *arg);
+
+void vde_context_event_del(vde_context *ctx, void *event);
+
+void *vde_context_timeout_add(vde_context *ctx, short events,
+                              const struct timeval *timeout,
+                              event_cb cb, void *arg);
+
+void vde_context_timeout_del(vde_context *ctx, void *timeout);
+
 #endif /* __VDE3_CONTEXT_H__ */

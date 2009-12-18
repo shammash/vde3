@@ -298,3 +298,27 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
   }
 }
 
+void *vde_context_event_add(vde_context *ctx, int fd, short events,
+                            const struct timeval *timeout,
+                            event_cb cb, void *arg)
+{
+  return ctx->event_handler->event_add(fd, events, timeout, cb, arg);
+}
+
+void vde_context_event_del(vde_context *ctx, void *event)
+{
+  ctx->event_handler->event_del(event);
+}
+
+void *vde_context_timeout_add(vde_context *ctx, short events,
+                              const struct timeval *timeout,
+                              event_cb cb, void *arg)
+{
+  return ctx->event_handler->timeout_add(timeout, events, cb, arg);
+}
+
+void vde_context_timeout_del(vde_context *ctx, void *timeout)
+{
+  ctx->event_handler->timeout_del(timeout);
+}
+
