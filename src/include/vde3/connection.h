@@ -211,6 +211,15 @@ void vde_connection_set_callbacks(vde_connection *conn,
                                   void *cb_priv);
 
 /**
+ * @brief Get connection context
+ *
+ * @param conn The connection
+ *
+ * @return The context in which the connection is running
+ */
+vde_context *vde_connection_get_context(vde_connection *conn);
+
+/**
  * @brief Get connection backend private data
  *
  * @param conn The connection to receive private data from

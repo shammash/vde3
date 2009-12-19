@@ -123,6 +123,12 @@ void vde_connection_set_callbacks(vde_connection *conn,
   conn->cb_priv = cb_priv;
 }
 
+vde_context *vde_connection_get_context(vde_connection *conn)
+{
+  // XXX: check conn is not NULL
+  return conn->context;
+}
+
 void *vde_connection_get_priv(vde_connection *conn)
 {
   // XXX(shammash): check conn is not NULL
