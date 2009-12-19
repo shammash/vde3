@@ -391,4 +391,37 @@ void vde_component_set_transport_cm_callbacks(vde_component *transport,
                                               cm_accept_cb accept_cb,
                                               cm_error_cb error_cb, void *arg);
 
+/**
+ * @brief Function called by transport implementation to tell the attached
+ * connection manager its previous connect() succeeded.
+ *
+ * @param transport The calling transport
+ * @param conn The new connection
+ */
+void vde_component_transport_call_cm_connect_cb(vde_component *transport,
+                                                vde_connection *conn);
+
+/**
+ * @brief Function called by transport implementation to tell the attached
+ * connection manager a new connection has been accepted.
+ *
+ * @param transport The calling transport
+ * @param conn The new connection
+ */
+void vde_component_transport_call_cm_accept_cb(vde_component *transport,
+                                               vde_connection *conn);
+
+/**
+ * @brief Function called by transport implementation to tell the attached
+ * connection manager an error occurred in the transport.
+ *
+ * @param transport The calling transport
+ * @param conn The connection which was being created when error occurred (can
+ * be NULL)
+ * @param err The error type
+ */
+void vde_component_transport_call_cm_error_cb(vde_component *transport,
+                                              vde_connection *conn,
+                                              vde_transport_error err);
+
 #endif /* __VDE3_COMPONENT_H__ */

@@ -415,3 +415,25 @@ void vde_component_set_transport_cm_callbacks(vde_component *transport,
   transport->cm_cb_arg = arg;
 }
 
+void vde_component_transport_call_cm_connect_cb(vde_component *transport,
+                                                vde_connection *conn)
+{
+  // XXX: check transport/conn are not NULL and transport kind
+  transport->cm_connect_cb(conn, transport->cm_cb_arg);
+}
+
+void vde_component_transport_call_cm_accept_cb(vde_component *transport,
+                                               vde_connection *conn)
+{
+  // XXX: check transport/conn are not NULL and transport kind
+  transport->cm_accept_cb(conn, transport->cm_cb_arg);
+}
+
+void vde_component_transport_call_cm_error_cb(vde_component *transport,
+                                              vde_connection *conn,
+                                              vde_transport_error err)
+{
+  // XXX: check transport is not NULL and transport kind
+  transport->cm_error_cb(conn, err, transport->cm_cb_arg);
+}
+
