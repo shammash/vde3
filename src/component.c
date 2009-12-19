@@ -384,17 +384,6 @@ int vde_component_conn_manager_connect(vde_component *cm,
   return cm->cm_connect(cm, local, remote, success_cb, error_cb, arg);
 }
 
-void vde_component_set_transport_cm_callbacks(vde_component *transport,
-                                              cm_connect_cb connect_cb,
-                                              cm_accept_cb accept_cb,
-                                              cm_error_cb error_cb, void *arg)
-{
-  transport->cm_connect_cb = connect_cb;
-  transport->cm_accept_cb = accept_cb;
-  transport->cm_error_cb = error_cb;
-  transport->cm_cb_arg = arg;
-}
-
 int vde_component_transport_listen(vde_component *transport)
 {
   // XXX check kind/NULL?
@@ -413,5 +402,16 @@ int vde_component_engine_new_conn(vde_component *engine, vde_connection *conn,
 {
   //XXX check kind/NULL
   return engine->eng_new_conn(engine, conn, req);
+}
+
+void vde_component_set_transport_cm_callbacks(vde_component *transport,
+                                              cm_connect_cb connect_cb,
+                                              cm_accept_cb accept_cb,
+                                              cm_error_cb error_cb, void *arg)
+{
+  transport->cm_connect_cb = connect_cb;
+  transport->cm_accept_cb = accept_cb;
+  transport->cm_error_cb = error_cb;
+  transport->cm_cb_arg = arg;
 }
 

@@ -346,7 +346,6 @@ int vde_component_conn_manager_connect(vde_component *cm,
                                        vde_connect_error_cb error_cb,
                                        void *arg);
 
-
 /**
  * @brief Put the transport in listen state
  *
@@ -367,6 +366,16 @@ int vde_component_transport_listen(vde_component *transport);
 int vde_component_transport_connect(vde_component *transport,
                                     vde_connection *conn);
 
+/**
+ * @brief Attach a connection to an engine
+ *
+ * @param engine The engine to attach the connection to
+ * @param conn The connection to attach
+ *
+ * @return zero on success, an error code otherwise
+ */
+int vde_component_engine_new_conn(vde_component *engine, vde_connection *conn,
+                                  vde_request *req);
 
 /**
  * @brief Fill the connection manager callbacks of a transport
@@ -381,16 +390,5 @@ void vde_component_set_transport_cm_callbacks(vde_component *transport,
                                               cm_connect_cb connect_cb,
                                               cm_accept_cb accept_cb,
                                               cm_error_cb error_cb, void *arg);
-
-/**
- * @brief Attach a connection to an engine
- *
- * @param engine The engine to attach the connection to
- * @param conn The connection to attach
- *
- * @return zero on success, an error code otherwise
- */
-int vde_component_engine_new_conn(vde_component *engine, vde_connection *conn,
-                                  vde_request *req);
 
 #endif /* __VDE3_COMPONENT_H__ */
