@@ -1,8 +1,10 @@
 VDE_SRC = context.c component.c conn_manager.c logging.c module.c \
-  transport_vde2.c connection.c libevent_handler.c engine_hub.c
+  transport_vde2.c connection.c libevent_handler.c engine_hub.c \
+  vde_hub.c
 
 VDE_OBJ = context.o component.o conn_manager.o logging.o module.o \
-  transport_vde2.o connection.o libevent_handler.o engine_hub.o
+  transport_vde2.o connection.o libevent_handler.o engine_hub.o \
+  vde_hub.o
 
 LOTSA_WARNINGS=-Winline -Wformat=2 -Wswitch-default -Wswitch-enum \
 -Wunused-parameter -Wfloat-equal -Wundef -Wshadow -Wunsafe-loop-optimizations \
@@ -16,15 +18,19 @@ LOTSA_WARNINGS=-Winline -Wformat=2 -Wswitch-default -Wswitch-enum \
 ANNOYING_WARNINGS=-Wpadded # warn when adding pad to structs
 
 EXT_CFLAGS=$(shell pkg-config --cflags json glib-2.0)
+EXT_LIBS=$(shell pkg-config --libs json glib-2.0) -levent
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(EXT_CFLAGS) $(VDE_DEF) -Wall -c -Iinclude/ -o $@ $<
 
+all: $(VDE_OBJ) vde_hub
 
-all: $(VDE_OBJ)
+vde_hub: $(VDE_OBJ)
+	$(CC) $(CFLAGS) $(EXT_LIBS) -o $@ $^
 
 clean:
 	-rm $(VDE_OBJ)
+	-rm vde_hub
 
 tags:
 	cscope -b -R -Iinclude/
