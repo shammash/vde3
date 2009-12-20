@@ -452,7 +452,9 @@ static int transport_vde2_init(vde_component *component, const char *dir)
 
 int transport_vde2_va_init(vde_component *component, va_list args)
 {
-  return transport_vde2_init(component, va_arg(args, const char*));
+  const char *path = va_arg(args, const char *);
+
+  return transport_vde2_init(component, path);
 }
 
 // XXX to be defined

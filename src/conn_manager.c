@@ -252,8 +252,11 @@ int conn_manager_init(vde_component *component, vde_component *transport,
 
 int conn_manager_va_init(vde_component *component, va_list args)
 {
-  return conn_manager_init(component, va_arg(args, vde_component *),
-                           va_arg(args, vde_component *), va_arg(args, int));
+  vde_component *transport = va_arg(args, vde_component *);
+  vde_component *engine = va_arg(args, vde_component *);
+  int remote_auth = va_arg(args, int);
+
+  return conn_manager_init(component, transport, engine, remote_auth);
 }
 
 // XXX to be defined
