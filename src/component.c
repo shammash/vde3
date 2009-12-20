@@ -68,6 +68,7 @@ int vde_component_init(vde_component *component, vde_quark qname,
   int retval;
 
   vde_return_val_if_fail(component != NULL, -1);
+  vde_return_val_if_fail(module != NULL, -1);
 
   component->qname = qname;
   component->kind = vde_module_get_kind(module);
@@ -75,7 +76,6 @@ int vde_component_init(vde_component *component, vde_quark qname,
   component->family = (char *)vde_module_get_family(module);
   component->cops = vde_module_get_component_ops(module);
 
-  // XXX(godog): init can be NULL here? needs checking
   retval = component->cops->init(component, args);
   if (retval) {
     vde_error("%s: cannot initialize component, init returned %d",
@@ -329,7 +329,7 @@ void vde_component_set_transport_ops(vde_component *transport,
 void vde_component_set_engine_ops(vde_component *engine, eng_new_conn new_conn)
 {
   vde_return_if_fail(engine != NULL);
-  vde_return_if_fail(engine->kind != VDE_TRANSPORT);
+  vde_return_if_fail(engine->kind == VDE_ENGINE);
   vde_return_if_fail(new_conn != NULL);
 
   engine->eng_new_conn = new_conn;
@@ -371,7 +371,7 @@ int vde_component_conn_manager_connect(vde_component *cm,
 int vde_component_transport_listen(vde_component *transport)
 {
   vde_return_val_if_fail(transport != NULL, -1);
-  vde_return_val_if_fail(transport->kind != VDE_TRANSPORT, -1);
+  vde_return_val_if_fail(transport->kind == VDE_TRANSPORT, -1);
 
   return transport->tr_listen(transport);
 }
@@ -380,7 +380,7 @@ int vde_component_transport_connect(vde_component *transport,
                                     vde_connection *conn)
 {
   vde_return_val_if_fail(transport != NULL, -1);
-  vde_return_val_if_fail(transport->kind != VDE_TRANSPORT, -1);
+  vde_return_val_if_fail(transport->kind == VDE_TRANSPORT, -1);
   vde_return_val_if_fail(conn != NULL, -1);
 
   return transport->tr_connect(transport, conn);
@@ -390,7 +390,7 @@ int vde_component_engine_new_conn(vde_component *engine, vde_connection *conn,
                                   vde_request *req)
 {
   vde_return_val_if_fail(engine != NULL, -1);
-  vde_return_val_if_fail(engine->kind != VDE_ENGINE, -1);
+  vde_return_val_if_fail(engine->kind == VDE_ENGINE, -1);
   vde_return_val_if_fail(conn != NULL, -1);
 
   return engine->eng_new_conn(engine, conn, req);
@@ -402,7 +402,7 @@ void vde_component_set_transport_cm_callbacks(vde_component *transport,
                                               cm_error_cb error_cb, void *arg)
 {
   vde_return_if_fail(transport != NULL);
-  vde_return_if_fail(transport->kind != VDE_TRANSPORT);
+  vde_return_if_fail(transport->kind == VDE_TRANSPORT);
   vde_return_if_fail(connect_cb != NULL &&
                      accept_cb != NULL &&
                      error_cb != NULL);
@@ -417,7 +417,7 @@ void vde_component_transport_call_cm_connect_cb(vde_component *transport,
                                                 vde_connection *conn)
 {
   vde_return_if_fail(transport != NULL);
-  vde_return_if_fail(transport->kind != VDE_TRANSPORT);
+  vde_return_if_fail(transport->kind == VDE_TRANSPORT);
   vde_return_if_fail(conn != NULL);
 
   transport->cm_connect_cb(conn, transport->cm_cb_arg);
@@ -427,7 +427,7 @@ void vde_component_transport_call_cm_accept_cb(vde_component *transport,
                                                vde_connection *conn)
 {
   vde_return_if_fail(transport != NULL);
-  vde_return_if_fail(transport->kind != VDE_TRANSPORT);
+  vde_return_if_fail(transport->kind == VDE_TRANSPORT);
   vde_return_if_fail(conn != NULL);
 
   transport->cm_accept_cb(conn, transport->cm_cb_arg);
@@ -438,7 +438,7 @@ void vde_component_transport_call_cm_error_cb(vde_component *transport,
                                               vde_transport_error err)
 {
   vde_return_if_fail(transport != NULL);
-  vde_return_if_fail(transport->kind != VDE_TRANSPORT);
+  vde_return_if_fail(transport->kind == VDE_TRANSPORT);
   vde_return_if_fail(conn != NULL);
 
   transport->cm_error_cb(conn, err, transport->cm_cb_arg);
