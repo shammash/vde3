@@ -63,13 +63,14 @@ int vde_component_new(vde_component **component)
  * va_list?
  */
 int vde_component_init(vde_component *component, vde_quark qname,
-                       vde_module *module, va_list args)
+                       vde_module *module, vde_context *ctx, va_list args)
 {
   int retval;
 
   vde_return_val_if_fail(component != NULL, -1);
   vde_return_val_if_fail(module != NULL, -1);
 
+  component->ctx = ctx;
   component->qname = qname;
   component->kind = vde_module_get_kind(module);
   // XXX using the family string directly from module

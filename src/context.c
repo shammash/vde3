@@ -173,7 +173,7 @@ int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
   }
   qname = vde_quark_from_string(name);
   va_start(arg, component);
-  if (vde_component_init(*component, qname, module, arg)) {
+  if (vde_component_init(*component, qname, module, ctx, arg)) {
     vde_component_delete(*component);
     vde_error("%s: cannot init new component", __PRETTY_FUNCTION__);
     return -5;
