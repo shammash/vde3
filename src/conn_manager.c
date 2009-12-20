@@ -50,8 +50,8 @@ struct conn_manager {
 
 typedef struct conn_manager conn_manager;
 
-static struct pending_conn *cm_lookup_pending_conn(conn_manager *cm,
-                                                   vde_connection *conn)
+static struct pending_conn *lookup_pending_conn(conn_manager *cm,
+                                                vde_connection *conn)
 {
   struct pending_conn *pc = NULL;
 
@@ -121,7 +121,7 @@ int conn_manager_connect(vde_component *component,
   return 0;
 }
 
-int post_authorization(conn_manager *cm, struct pending_conn *pc)
+static int post_authorization(conn_manager *cm, struct pending_conn *pc)
 {
   // XXX: this can fail, e.g.: maximum number of ports on a switch already
   // reached..
@@ -138,7 +138,7 @@ void conn_manager_connect_cb(vde_connection *conn, void *arg)
   vde_component *component = (vde_component *)arg;
   conn_manager *cm = (conn_manager *)vde_component_get_priv(component);
 
-  pc = cm_lookup_pending_conn(cm, conn);
+  pc = lookup_pending_conn(cm, conn);
   if (!pc) {
     vde_connection_fini(conn);
     vde_connection_delete(conn);
@@ -257,7 +257,9 @@ int conn_manager_va_init(vde_component *component, va_list args)
 }
 
 // XXX to be defined
-void conn_manager_fini(vde_component *component) {
+void conn_manager_fini(vde_component *component)
+{
+  vde_return_if_fail(component != NULL);
 }
 
 struct component_ops conn_manager_component_ops = {

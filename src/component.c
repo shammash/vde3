@@ -335,6 +335,7 @@ void vde_component_set_engine_ops(vde_component *engine, eng_new_conn new_conn)
   engine->eng_new_conn = new_conn;
 }
 
+// XXX add application callback on accept and/or on error?
 int vde_component_conn_manager_listen(vde_component *cm)
 {
   if (cm == NULL) {

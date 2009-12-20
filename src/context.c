@@ -304,11 +304,18 @@ void *vde_context_event_add(vde_context *ctx, int fd, short events,
                             const struct timeval *timeout,
                             event_cb cb, void *arg)
 {
+  vde_return_val_if_fail(ctx != NULL, NULL);
+  vde_return_val_if_fail(ctx->initialized == true, NULL);
+
   return ctx->event_handler->event_add(fd, events, timeout, cb, arg);
 }
 
 void vde_context_event_del(vde_context *ctx, void *event)
 {
+  vde_return_if_fail(ctx != NULL);
+  vde_return_if_fail(ctx->initialized == true);
+  vde_return_if_fail(event != NULL);
+
   ctx->event_handler->event_del(event);
 }
 
@@ -316,11 +323,18 @@ void *vde_context_timeout_add(vde_context *ctx, short events,
                               const struct timeval *timeout,
                               event_cb cb, void *arg)
 {
+  vde_return_val_if_fail(ctx != NULL, NULL);
+  vde_return_val_if_fail(ctx->initialized == true, NULL);
+
   return ctx->event_handler->timeout_add(timeout, events, cb, arg);
 }
 
 void vde_context_timeout_del(vde_context *ctx, void *timeout)
 {
+  vde_return_if_fail(ctx != NULL);
+  vde_return_if_fail(ctx->initialized == true);
+  vde_return_if_fail(timeout != NULL);
+
   ctx->event_handler->timeout_del(timeout);
 }
 

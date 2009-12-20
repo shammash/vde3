@@ -457,6 +457,7 @@ int transport_vde2_va_init(vde_component *component, va_list args)
 
 // XXX to be defined
 void transport_vde2_fini(vde_component *component) {
+  vde_return_if_fail(component != NULL);
 }
 
 struct component_ops transport_vde2_component_ops = {
