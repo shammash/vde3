@@ -27,6 +27,7 @@
 #include <vde3.h>
 
 #include <vde3/module.h>
+#include <vde3/connection.h>
 #include <vde3/component.h>
 #include <vde3/context.h>
 
@@ -36,8 +37,10 @@
 #define UNIX_PATH_MAX 108
 
 // taken from vde2 datasock.c
-#define REQBUFLEN 256
+#define DATA_BUF_SIZE 131072
 #define SWITCH_MAGIC 0xfeedface
+#define REQBUFLEN 256
+
 enum request_type { REQ_NEW_CONTROL, REQ_NEW_PORT0 };
 
 struct request_v3 {
@@ -52,9 +55,12 @@ typedef struct request_v3 request;
 // end of vde2 datasock.c
 
 struct vde2_conn {
-  int fd;
-  void *event;
-  char *local_path;
+  int data_fd;
+  void *data_event;
+  int ctl_fd;
+  void *ctl_event;
+  struct sockaddr_un local_sa;
+  struct sockaddr_un remote_sa;
   request *remote_request;
   vde_connection *conn;
   vde_component *transport;
@@ -71,20 +77,35 @@ struct vde2_tr {
 };
 typedef struct vde2_tr vde2_tr;
 
+void vde2_conn_read_event(int fd, short event_type, void *arg)
+{
+}
+
+void vde2_conn_write_event(int fd, short event_type, void *arg)
+{
+}
+
 int vde2_conn_write(vde_connection *conn, vde_pkt *pkt)
 {
+  // enqueue packets and add write_event if not present
   return 0;
 }
 
 void vde2_conn_close(vde_connection *conn)
 {
   vde2_conn *v2_conn = vde_connection_get_priv(conn);
-  if (v2_conn->fd >= 0){
-    close(v2_conn->fd);
+  vde_context *ctx = vde_connection_get_context(conn);
+  if (v2_conn->data_fd >= 0){
+    close(v2_conn->data_fd);
   }
-  // destroy event if present
-  if (v2_conn->local_path) {
-    vde_free(v2_conn->local_path);
+  if (v2_conn->data_event != NULL) {
+    vde_context_event_del(ctx, v2_conn->data_event);
+  }
+  if (v2_conn->ctl_fd >= 0){
+    close(v2_conn->ctl_fd);
+  }
+  if (v2_conn->ctl_event != NULL) {
+    vde_context_event_del(ctx, v2_conn->ctl_event);
   }
   if (v2_conn->remote_request) {
     vde_free(v2_conn->remote_request);
@@ -116,48 +137,92 @@ static int vde2_remove_sock_if_unused(struct sockaddr_un *sa_unix)
   return ret;
 }
 
-void vde2_srv_send_request(int fd, short event_type, void *arg)
+// XXX: check VDE_DARWIN defines here!!!
+void vde2_srv_send_request(int ctl_fd, short event_type, void *arg)
 {
   int len;
-  struct sockaddr_un sun;
+#ifdef VDE_DARWIN
+  int sockbufsize = DATA_BUF_SIZE;
+  int optsize = sizeof(sockbufsize);
+#endif
   vde2_conn *v2_conn = (vde2_conn *)arg;
   vde_connection *conn = v2_conn->conn;
   vde2_tr *tr = (vde2_tr *)vde_component_get_priv(v2_conn->transport);
+  vde_context *ctx = vde_component_get_context(v2_conn->transport);
 
-  // XXX: free v2_conn->event from previous event_add()
+  vde_context_event_del(ctx, v2_conn->ctl_event);
+  v2_conn->ctl_event = NULL;
 
   // XXX: define a behaviour when called if event timeout expired
-  v2_conn->local_path = (char *)vde_calloc(sizeof(sun.sun_path));
-  if (!v2_conn->local_path) {
-    vde_error("%s: cannot allocate memory for local path",
-              __PRETTY_FUNCTION__);
+
+  if ((v2_conn->data_fd = socket(PF_UNIX, SOCK_DGRAM, 0)) < 0) {
+    vde_error("%s: cannot create datagram socket: %s", __PRETTY_FUNCTION__,
+              strerror(errno));
+    goto error;
+  }
+  if (fcntl(v2_conn->data_fd, F_SETFL, O_NONBLOCK) < 0) {
+    vde_error("%s: cannot set O_NONBLOCK for datagram socket: %s",
+              __PRETTY_FUNCTION__, strerror(errno));
+    goto error;
+  }
+#ifdef VDE_DARWIN
+  if (setsockopt(v2_conn->data_fd, SOL_SOCKET, SO_SNDBUF, &sockbufsize,
+      optsize) < 0) {
+      vde_warning("%s: cannot set datagram send bufsize to %s on fd %d: %s",
+                  __PRETTY_FUNCTION__, sockbufsize, v2_conn->data_fd,
+                  strerror(errno));
+  }
+  if (setsockopt(v2_conn->data_fd, SOL_SOCKET, SO_RCVBUF, &sockbufsize,
+      optsize) < 0) {
+      vde_warning("%s: cannot set datagram send bufsize to %s on fd %d: %s",
+                  __PRETTY_FUNCTION__, sockbufsize, v2_conn->data_fd,
+                  strerror(errno));
+  }
+#endif
+
+  v2_conn->local_sa.sun_family = AF_UNIX;
+
+  snprintf(v2_conn->local_sa.sun_path, sizeof(v2_conn->local_sa.sun_path),
+           "%s/%04d", tr->vdesock_dir, tr->connections);
+
+  if (unlink(v2_conn->local_sa.sun_path) < 0 && errno != ENOENT) {
+    vde_error("%s: cannot remove old datagram socket %s: %s",
+              __PRETTY_FUNCTION__, v2_conn->local_sa.sun_path,
+              strerror(errno));
+    goto error;
+  }
+  if (bind(v2_conn->data_fd, (struct sockaddr *) &v2_conn->local_sa,
+           sizeof(struct sockaddr_un)) < 0) {
+    vde_error("%s: cannot bind datagram socket %s: %s", __PRETTY_FUNCTION__,
+              v2_conn->local_sa.sun_path, strerror(errno));
     goto error;
   }
 
-  snprintf(v2_conn->local_path, sizeof(sun.sun_path), "%s/%04d",
-           tr->vdesock_dir, tr->connections);
-
-  snprintf(sun.sun_path, sizeof(sun.sun_path), "%s", v2_conn->local_path);
-
-  len = write(fd, &sun, sizeof(sun));
-  if (len != sizeof(sun)) {
+  len = write(v2_conn->ctl_fd, &v2_conn->local_sa, sizeof(v2_conn->local_sa));
+  if (len != sizeof(v2_conn->local_sa)) {
     vde_error("%s: cannot reply to peer", __PRETTY_FUNCTION__);
     goto error;
   }
 
   tr->connections++;
+  tr->pending_conns = vde_list_remove(tr->pending_conns, v2_conn);
 
-  // popolate conn (add fd)
-  // add peer credentials to conn.attributes
-  // call connection manager accept_cb with the conn
+  // XXX: add an event on ctl_fd to handle close
+  // XXX: add an event on data_fd
+  // XXX: add peer credentials to conn.attributes
+
+  vde_component_transport_call_cm_accept_cb(v2_conn->transport, conn);
+
+  return;
 
 error:
+  // XXX: call connection manager error callback here?
   tr->pending_conns = vde_list_remove(tr->pending_conns, v2_conn);
   vde_connection_fini(conn);
   vde_connection_delete(conn);
 }
 
-void vde2_srv_get_request(int fd, short event_type, void *arg)
+void vde2_srv_get_request(int ctl_fd, short event_type, void *arg)
 {
   int len;
   char reqbuf[REQBUFLEN+1];
@@ -167,10 +232,11 @@ void vde2_srv_get_request(int fd, short event_type, void *arg)
   vde2_tr *tr = (vde2_tr *)vde_component_get_priv(v2_conn->transport);
   vde_context *ctx = vde_component_get_context(v2_conn->transport);
 
-  // XXX: free v2_conn->event from previous event_add()
+  vde_context_event_del(ctx, v2_conn->ctl_event);
+  v2_conn->ctl_event = NULL;
 
   // XXX: define a behaviour when called if event timeout expired
-  len = read(v2_conn->fd, reqbuf, REQBUFLEN);
+  len = read(v2_conn->ctl_fd, reqbuf, REQBUFLEN);
   if (len < 0) {
     if (errno != EAGAIN) {
       goto error;
@@ -196,6 +262,7 @@ void vde2_srv_get_request(int fd, short event_type, void *arg)
       goto error;
     }
 
+    // XXX: for the moment we save whole request..
     v2_conn->remote_request = (request *)vde_alloc(len);
     if (!v2_conn->remote_request) {
       vde_error("%s: cannot allocate memory for remote request",
@@ -204,15 +271,18 @@ void vde2_srv_get_request(int fd, short event_type, void *arg)
     }
     memcpy(v2_conn->remote_request, reqbuf, len);
 
+    memcpy(&v2_conn->remote_sa, &req->sock, sizeof(struct sockaddr_un));
     // XXX: check event NULL and define a timeout
-    v2_conn->event = vde_context_event_add(ctx, v2_conn->fd, VDE_EV_WRITE,
-                                           NULL, &vde2_srv_send_request,
-                                           (void *)v2_conn);
+    v2_conn->ctl_event = vde_context_event_add(ctx, v2_conn->ctl_fd,
+                                               VDE_EV_WRITE, NULL,
+                                               &vde2_srv_send_request,
+                                               (void *)v2_conn);
   }
 
   return;
 
 error:
+  // XXX: call connection manager error callback here?
   tr->pending_conns = vde_list_remove(tr->pending_conns, v2_conn);
   vde_connection_fini(conn);
   vde_connection_delete(conn);
@@ -250,7 +320,7 @@ void vde2_accept(int listen_fd, short event_type, void *arg)
     goto error_conn_del;
   }
 
-  v2_conn->fd = new;
+  v2_conn->ctl_fd = new;
   v2_conn->conn = conn;
   v2_conn->transport = component;
 
@@ -261,13 +331,14 @@ void vde2_accept(int listen_fd, short event_type, void *arg)
                       (void *)v2_conn);
 
   // XXX: check event NULL and define a timeout
-  v2_conn->event = vde_context_event_add(ctx, v2_conn->fd, VDE_EV_READ, NULL,
-                                         &vde2_srv_get_request,
-                                         (void *)v2_conn);
+  v2_conn->ctl_event = vde_context_event_add(ctx, v2_conn->ctl_fd, VDE_EV_READ,
+                                             NULL, &vde2_srv_get_request,
+                                             (void *)v2_conn);
 
   return;
 
 error_conn_del:
+  // XXX: call connection manager error callback here?
   vde_connection_delete(conn);
 error_close:
   close(new);
