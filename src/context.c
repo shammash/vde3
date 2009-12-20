@@ -99,6 +99,13 @@ int vde_context_init(vde_context *ctx, vde_event_handler *handler)
   ctx->modules = NULL;
   ctx->components = vde_hash_init();
   ctx->initialized = true;
+
+  // XXX temporary, should be done via a list of builtin modules vs dynamically
+  // loaded modules
+  conn_manager_module_init(ctx);
+  transport_vde2_module_init(ctx);
+  engine_hub_module_init(ctx);
+
   return 0;
 }
 
