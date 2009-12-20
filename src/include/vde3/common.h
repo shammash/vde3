@@ -31,6 +31,10 @@
 #define vde_cached_free_chunk(s, d) g_slice_free1(s, d)
  */
 
+/*
+ * NOTE: g_malloc _aborts_ if the underlying malloc fails and
+ * returns NULL only if s == 0
+ */
 #define vde_alloc(s) g_malloc(s)
 #define vde_calloc(s) g_malloc0(s)
 #define vde_free(s) g_free(s)
@@ -57,6 +61,9 @@ typedef GQuark vde_quark;
 typedef gchar vde_char;
 #define vde_strdup(s) g_strdup(s)
 #define vde_strndup(s, n) g_strndup(s, n)
+
+#define vde_return_if_fail(exp) g_return_if_fail(exp)
+#define vde_return_val_if_fail(exp, val) g_return_val_if_fail(exp, val)
 
 // XXX to be defined
 typedef struct json_object vde_serial_obj;

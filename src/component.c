@@ -51,15 +51,11 @@ struct vde_component {
 
 int vde_component_new(vde_component **component)
 {
-  if (!component) {
-    vde_error("%s: component pointer reference is NULL", __PRETTY_FUNCTION__);
-    return -1;
-  }
+  vde_return_val_if_fail(component != NULL, -1);
+
   *component = (vde_component *)vde_calloc(sizeof(vde_component));
-  if (*component == NULL) {
-    vde_error("%s: cannot create component", __PRETTY_FUNCTION__);
-    return -2;
-  }
+  vde_return_val_if_fail(*component != NULL, -2);
+
   return 0;
 }
 
@@ -71,10 +67,7 @@ int vde_component_init(vde_component *component, vde_quark qname,
 {
   int retval;
 
-  if (component == NULL) {
-    vde_error("%s: cannot initialize NULL component", __PRETTY_FUNCTION__);
-    return -1;
-  }
+  vde_return_val_if_fail(component != NULL, -1);
 
   component->qname = qname;
   component->kind = vde_module_get_kind(module);
@@ -95,10 +88,8 @@ int vde_component_init(vde_component *component, vde_quark qname,
 
 void vde_component_fini(vde_component *component)
 {
-  if (component == NULL || component->initialized != true) {
-    vde_error("%s: component not initialized or NULL", __PRETTY_FUNCTION__);
-    return;
-  }
+  vde_return_if_fail(component != NULL);
+  vde_return_if_fail(component->initialized == true);
 
   /* XXX(godog): switch this on only if debugging
   if (component->refcount) {
@@ -114,20 +105,16 @@ void vde_component_fini(vde_component *component)
 
 void vde_component_delete(vde_component *component)
 {
-  if (component == NULL || component->initialized != false) {
-    vde_error("%s: component initialized or NULL", __PRETTY_FUNCTION__);
-    return;
-  }
+  vde_return_if_fail(component != NULL);
+  vde_return_if_fail(component->initialized == false);
 
   vde_free(component);
 }
 
 int vde_component_get(vde_component *component, int *count)
 {
-  if (component == NULL) {
-    vde_error("%s: cannot get NULL component", __PRETTY_FUNCTION__);
-    return -1;
-  }
+  vde_return_val_if_fail(component != NULL, -1);
+
   component->refcount++;
   if(count) {
       *count = component->refcount;
@@ -137,10 +124,8 @@ int vde_component_get(vde_component *component, int *count)
 
 int vde_component_put(vde_component *component, int *count)
 {
-  if (component == NULL) {
-    vde_error("%s: cannot put NULL component", __PRETTY_FUNCTION__);
-    return -1;
-  }
+  vde_return_val_if_fail(component != NULL, -1);
+
   component->refcount--;
   if(count) {
       *count = component->refcount;
@@ -150,10 +135,8 @@ int vde_component_put(vde_component *component, int *count)
 
 int vde_component_put_if_last(vde_component *component, int *count)
 {
-  if (component == NULL) {
-    vde_error("%s: cannot put NULL component", __PRETTY_FUNCTION__);
-    return -1;
-  }
+  vde_return_val_if_fail(component != NULL, -1);
+
   if (component->refcount != 1) {
     return 1;
   } else {
@@ -163,46 +146,36 @@ int vde_component_put_if_last(vde_component *component, int *count)
 
 void *vde_component_get_priv(vde_component *component)
 {
-  if (component == NULL) {
-    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
-    return NULL;
-  }
+  vde_return_val_if_fail(component != NULL, NULL);
+
   return component->priv;
 }
 
 void vde_component_set_priv(vde_component *component, void *priv)
 {
-  if (component == NULL) {
-    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
-    return;
-  }
+  vde_return_if_fail(component != NULL);
+
   component->priv = priv;
 }
 
 vde_context *vde_component_get_context(vde_component *component)
 {
-  if (component == NULL) {
-    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
-    return NULL;
-  }
+  vde_return_val_if_fail(component != NULL, NULL);
+
   return component->ctx;
 }
 
 vde_component_kind vde_component_get_kind(vde_component *component)
 {
-  if (component == NULL) {
-    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
-    return -1;
-  }
+  vde_return_val_if_fail(component != NULL, -1);
+
   return component->kind;
 }
 
 vde_quark vde_component_get_qname(vde_component *component)
 {
-  if (component == NULL) {
-    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
-    return -1;
-  }
+  vde_return_val_if_fail(component != NULL, -1);
+
   return component->qname;
 }
 
@@ -333,6 +306,10 @@ void vde_component_signal_callback(vde_component *component,
 void vde_component_set_conn_manager_ops(vde_component *cm, cm_listen listen,
                                         cm_connect connect)
 {
+  vde_return_if_fail(cm != NULL);
+  vde_return_if_fail(listen != NULL);
+  vde_return_if_fail(connect != NULL);
+
   cm->cm_connect = connect;
   cm->cm_listen = listen;
 }
@@ -341,13 +318,20 @@ void vde_component_set_transport_ops(vde_component *transport,
                                      tr_listen listen,
                                      tr_connect connect)
 {
+  vde_return_if_fail(transport != NULL);
+  vde_return_if_fail(listen != NULL);
+  vde_return_if_fail(connect != NULL);
+
   transport->tr_connect = connect;
   transport->tr_listen = listen;
 }
 
 void vde_component_set_engine_ops(vde_component *engine, eng_new_conn new_conn)
 {
-  // XXX: check kind/NULL
+  vde_return_if_fail(engine != NULL);
+  vde_return_if_fail(engine->kind != VDE_TRANSPORT);
+  vde_return_if_fail(new_conn != NULL);
+
   engine->eng_new_conn = new_conn;
 }
 
@@ -386,21 +370,29 @@ int vde_component_conn_manager_connect(vde_component *cm,
 
 int vde_component_transport_listen(vde_component *transport)
 {
-  // XXX check kind/NULL?
+  vde_return_val_if_fail(transport != NULL, -1);
+  vde_return_val_if_fail(transport->kind != VDE_TRANSPORT, -1);
+
   return transport->tr_listen(transport);
 }
 
 int vde_component_transport_connect(vde_component *transport,
                                     vde_connection *conn)
 {
-  // XXX check kind/NULL?
+  vde_return_val_if_fail(transport != NULL, -1);
+  vde_return_val_if_fail(transport->kind != VDE_TRANSPORT, -1);
+  vde_return_val_if_fail(conn != NULL, -1);
+
   return transport->tr_connect(transport, conn);
 }
 
 int vde_component_engine_new_conn(vde_component *engine, vde_connection *conn,
                                   vde_request *req)
 {
-  //XXX check kind/NULL
+  vde_return_val_if_fail(engine != NULL, -1);
+  vde_return_val_if_fail(engine->kind != VDE_ENGINE, -1);
+  vde_return_val_if_fail(conn != NULL, -1);
+
   return engine->eng_new_conn(engine, conn, req);
 }
 
@@ -409,6 +401,12 @@ void vde_component_set_transport_cm_callbacks(vde_component *transport,
                                               cm_accept_cb accept_cb,
                                               cm_error_cb error_cb, void *arg)
 {
+  vde_return_if_fail(transport != NULL);
+  vde_return_if_fail(transport->kind != VDE_TRANSPORT);
+  vde_return_if_fail(connect_cb != NULL &&
+                     accept_cb != NULL &&
+                     error_cb != NULL);
+
   transport->cm_connect_cb = connect_cb;
   transport->cm_accept_cb = accept_cb;
   transport->cm_error_cb = error_cb;
@@ -418,14 +416,20 @@ void vde_component_set_transport_cm_callbacks(vde_component *transport,
 void vde_component_transport_call_cm_connect_cb(vde_component *transport,
                                                 vde_connection *conn)
 {
-  // XXX: check transport/conn are not NULL and transport kind
+  vde_return_if_fail(transport != NULL);
+  vde_return_if_fail(transport->kind != VDE_TRANSPORT);
+  vde_return_if_fail(conn != NULL);
+
   transport->cm_connect_cb(conn, transport->cm_cb_arg);
 }
 
 void vde_component_transport_call_cm_accept_cb(vde_component *transport,
                                                vde_connection *conn)
 {
-  // XXX: check transport/conn are not NULL and transport kind
+  vde_return_if_fail(transport != NULL);
+  vde_return_if_fail(transport->kind != VDE_TRANSPORT);
+  vde_return_if_fail(conn != NULL);
+
   transport->cm_accept_cb(conn, transport->cm_cb_arg);
 }
 
@@ -433,7 +437,10 @@ void vde_component_transport_call_cm_error_cb(vde_component *transport,
                                               vde_connection *conn,
                                               vde_transport_error err)
 {
-  // XXX: check transport is not NULL and transport kind
+  vde_return_if_fail(transport != NULL);
+  vde_return_if_fail(transport->kind != VDE_TRANSPORT);
+  vde_return_if_fail(conn != NULL);
+
   transport->cm_error_cb(conn, err, transport->cm_cb_arg);
 }
 

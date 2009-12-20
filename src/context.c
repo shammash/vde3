@@ -57,11 +57,9 @@ static vde_module *vde_context_lookup_module(vde_context *ctx,
   vde_list *iter;
   vde_module *module = NULL;
 
-  if (ctx == NULL || ctx->initialized != true) {
-    vde_error("%s: cannot lookup module, context not initialized",
-              __PRETTY_FUNCTION__);
-    return NULL;
-  }
+  vde_return_val_if_fail(ctx != NULL, NULL);
+  vde_return_val_if_fail(ctx->initialized == true , NULL);
+
   comp_family = vde_quark_from_string(family);
   iter = vde_list_first(ctx->modules);
   while(iter != NULL) {
@@ -279,23 +277,27 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
 {
   vde_component_kind kind;
   const char *family;
+  component_ops *module_cops;
 
-  if (ctx == NULL || ctx->initialized != true) {
-    vde_error("%s: cannot add module, context not initialized",
-              __PRETTY_FUNCTION__);
-    return -1;
-  }
+  vde_return_val_if_fail(ctx != NULL, -1);
+  vde_return_val_if_fail(ctx->initialized == true, -1);
+
   kind = vde_module_get_kind(module);
   family = vde_module_get_family(module);
   if(vde_context_lookup_module(ctx, kind, family)) {
     vde_error("%s: module for kind %d family %s already registered",
               __PRETTY_FUNCTION__, kind, family);
     return -2;
-  } else {
-    // XXX(shammash): check ops/cops structs don't contain NULL pointers
-    ctx->modules = vde_list_prepend(ctx->modules, module);
-    return 0;
   }
+
+  // module's component_ops sanity checks
+  module_cops = vde_module_get_component_ops(module);
+  vde_return_val_if_fail(module_cops != NULL, -3);
+  vde_return_val_if_fail(module_cops->init != NULL, -3);
+  vde_return_val_if_fail(module_cops->fini != NULL, -3);
+
+  ctx->modules = vde_list_prepend(ctx->modules, module);
+  return 0;
 }
 
 void *vde_context_event_add(vde_context *ctx, int fd, short events,
