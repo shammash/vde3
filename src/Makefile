@@ -18,10 +18,13 @@ ANNOYING_WARNINGS=-Wpadded # warn when adding pad to structs
 EXT_CFLAGS=$(shell pkg-config --cflags json glib-2.0)
 
 %.o: %.c
-	$(CC) $(EXT_CFLAGS) $(VDE_DEF) -Wall -c -Iinclude -o $@ $<
+	$(CC) $(CFLAGS) $(EXT_CFLAGS) $(VDE_DEF) -Wall -c -Iinclude/ -o $@ $<
 
 
 all: $(VDE_OBJ)
 
 clean:
 	-rm $(VDE_OBJ)
+
+tags:
+	cscope -b -R -Iinclude/
