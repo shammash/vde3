@@ -39,9 +39,9 @@ struct vde_connection;
 typedef struct vde_connection vde_connection;
 
 enum conn_cb_result {
-  CB_OK, // the callback was successful
-  CB_CLOSE_CONN, // the connection must be closed
-  CB_REQUEUE, // the packet should be requeued for transmission
+  CONN_CB_OK, // the callback was successful
+  CONN_CB_CLOSE, // the connection must be closed
+  CONN_CB_REQUEUE, // the packet should be requeued for transmission
 };
 
 typedef enum conn_cb_result conn_cb_result;
@@ -178,7 +178,7 @@ int vde_connection_write(vde_connection *conn, vde_pkt *pkt);
  *
  * @return TO BE DEFINED, probably void
  */
-int vde_connection_call_read(vde_connection *conn, vde_pkt *pkt);
+conn_cb_result vde_connection_call_read(vde_connection *conn, vde_pkt *pkt);
 
 /**
  * @brief Function called by connection backend to tell the connection user a
@@ -190,7 +190,7 @@ int vde_connection_call_read(vde_connection *conn, vde_pkt *pkt);
  *
  * @return TO BE DEFINED, probably void
  */
-int vde_connection_call_write(vde_connection *conn, vde_pkt *pkt);
+conn_cb_result vde_connection_call_write(vde_connection *conn, vde_pkt *pkt);
 
 /**
  * @brief Function called by connection backend to tell the connection user an
@@ -202,7 +202,7 @@ int vde_connection_call_write(vde_connection *conn, vde_pkt *pkt);
  *
  * @return TO BE DEFINED..
  */
-int vde_connection_call_error(vde_connection *conn, vde_pkt *pkt,
+conn_cb_result vde_connection_call_error(vde_connection *conn, vde_pkt *pkt,
                               vde_conn_error err);
 
 /**

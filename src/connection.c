@@ -100,7 +100,7 @@ conn_cb_result vde_connection_call_write(vde_connection *conn, vde_pkt *pkt)
   if (conn->write_cb != NULL) {
     return conn->write_cb(conn, pkt, conn->cb_priv);
   }
-  return CB_OK;
+  return CONN_CB_OK;
 }
 
 conn_cb_result vde_connection_call_error(vde_connection *conn, vde_pkt *pkt,
