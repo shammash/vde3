@@ -40,6 +40,7 @@ typedef struct vde_connection vde_connection;
 
 enum conn_cb_result {
   CONN_CB_OK, // the callback was successful
+  CONN_CB_ERROR, // error while invoking callback
   CONN_CB_CLOSE, // the connection must be closed
   CONN_CB_REQUEUE, // the packet should be requeued for transmission
 };
