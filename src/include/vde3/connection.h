@@ -23,10 +23,12 @@
 #include <vde3/attributes.h>
 #include <vde3/packet.h>
 
-// XXX to be defined, it should be able to distinguish between fatal/non-fatal
-// errors and if an error involves a packet or not
 enum vde_conn_error {
-  GENERIC_ERROR,
+  CONN_OK,
+  CONN_READ_CLOSED, // fatal error occurred during read
+  CONN_READ_DELAY, // non-fatal error occurred during read
+  CONN_WRITE_CLOSED,  // fatal error occurred during write
+  CONN_WRITE_DELAY, // non-fatal error occurred during write
 };
 
 typedef enum vde_conn_error vde_conn_error;
