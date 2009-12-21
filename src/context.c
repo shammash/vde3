@@ -179,7 +179,8 @@ int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
     return -5;
   }
   va_end(arg);
-  vde_hash_insert(ctx->components, qname, *component);
+  // cast to long because vde_hash_insert keys are pointers
+  vde_hash_insert(ctx->components, (long)qname, *component);
   vde_component_get(*component, &refcount);
   return 0;
 }
@@ -200,7 +201,7 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name)
 inline vde_component* vde_context_get_component_by_qname(vde_context *ctx,
                                                          vde_quark qname)
 {
-  return vde_hash_lookup(ctx->components, qname);
+  return vde_hash_lookup(ctx->components, (long)qname);
 }
 
 /**
@@ -245,7 +246,7 @@ int vde_context_component_del(vde_context *ctx, vde_component *component)
               __PRETTY_FUNCTION__);
     return -4;
   }
-  if (!vde_hash_remove(ctx->components, qname)) {
+  if (!vde_hash_remove(ctx->components, (long)qname)) {
     vde_component_get(component, NULL);
     vde_error("%s: cannot delete component, error removing from hash table",
               __PRETTY_FUNCTION__);
