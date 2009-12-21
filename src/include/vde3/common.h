@@ -54,6 +54,15 @@ typedef GHashTable vde_hash;
 #define vde_hash_lookup(h, k) g_hash_table_lookup(h, (gconstpointer)k)
 #define vde_hash_delete(h) g_hash_table_destroy(h)
 
+typedef GQueue vde_queue;
+#define vde_queue_init() g_queue_new()
+#define vde_queue_delete(q) g_queue_free(q)
+#define vde_queue_is_empty(q) g_queue_is_empty(q)
+#define vde_queue_pop_head(q) g_queue_pop_head(q)
+#define vde_queue_pop_tail(q) g_queue_pop_tail(q)
+#define vde_queue_push_head(q, data) g_queue_push_head(q, data)
+#define vde_queue_push_tail(q, data) g_queue_push_tail(q, data)
+
 typedef GQuark vde_quark;
 #define vde_quark_try_string(s) g_quark_try_string(s)
 #define vde_quark_from_string(s) g_quark_from_string(s)
