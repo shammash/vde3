@@ -33,7 +33,7 @@ struct hub_engine {
 };
 typedef struct hub_engine hub_engine;
 
-int hub_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
+conn_cb_result hub_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
 {
   vde_list *iter;
   vde_connection *port;
@@ -51,11 +51,11 @@ int hub_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
     iter = vde_list_next(iter);
   }
 
-  return 0;
+  return CONN_CB_OK;
 }
 
-int hub_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
-                       vde_conn_error err, void *arg)
+conn_cb_result hub_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
+                                  vde_conn_error err, void *arg)
 {
   hub_engine *hub = (hub_engine *)arg;
 
@@ -63,13 +63,7 @@ int hub_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
 
   hub->ports = vde_list_remove(hub->ports, conn);
 
-  // XXX(shammash): here we destroy the connection while its callback is being
-  // executed, this means we need to be careful about what happens in the
-  // connection after callback returns
-  vde_connection_fini(conn);
-  vde_connection_delete(conn);
-
-  return 0;
+  return CONN_CB_CLOSE;
 }
 
 int hub_engine_newconn(vde_component *component, vde_connection *conn,
@@ -89,6 +83,7 @@ int hub_engine_newconn(vde_component *component, vde_connection *conn,
   send_timeout.tv_sec = TIMEOUT;
   send_timeout.tv_usec = 0;
   vde_connection_set_send_properties(conn, TIMES, &send_timeout);
+  // XXX negotiate MTU with connection here?
 
   return 0;
 }
@@ -132,6 +127,7 @@ void engine_hub_fini(vde_component *component)
   iter = vde_list_first(hub->ports);
   while (iter != NULL) {
     port = vde_list_get_data(iter);
+    // XXX check if this is safe here
     vde_connection_fini(port);
     vde_connection_delete(port);
 
