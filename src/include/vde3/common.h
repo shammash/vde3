@@ -77,4 +77,21 @@ typedef gchar vde_char;
 // XXX to be defined
 typedef struct json_object vde_serial_obj;
 
+// from vde2 port.h
+#define ETH_ALEN 6
+#define ETH_DATA_LEN 1500
+#define ETH_TRAILER_LEN 4
+
+/* a full ethernet 802.3 frame */
+struct eth_hdr {
+  unsigned char dest[ETH_ALEN];
+  unsigned char src[ETH_ALEN];
+  unsigned char proto[2];
+};
+
+struct eth_frame {
+  struct eth_hdr header;
+  unsigned char data[ETH_DATA_LEN + ETH_TRAILER_LEN];
+};
+
 #endif /* __VDE3_COMMON_H__ */
