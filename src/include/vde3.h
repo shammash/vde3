@@ -31,10 +31,12 @@
 #define VDE_EV_READ     0x02
 #define VDE_EV_WRITE    0x04
 #define VDE_EV_PERSIST  0x10
+#define VDE_EV_TIMEOUT  0x01
 
 /**
  * @brief The callback to be called on events, events must contain the event(s)
- * which are available on fd.
+ * which are available on fd, plus VDE_EV_TIMEOUT if the callback is being
+ * called due to a timeout.
  */
 typedef void (*event_cb)(int fd, short events, void *arg);
 
@@ -64,7 +66,7 @@ struct vde_event_handler {
    *
    * Events is a mask combining one or more of
    *   VDE_EV_READ to monitor read-availability
-   *   VDE_EV_READ to monitor write-availability
+   *   VDE_EV_WRITE to monitor write-availability
    *   VDE_EV_PERSIST to keep calling the callback even after an event has
    *                  occured
    *
