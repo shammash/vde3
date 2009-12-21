@@ -38,6 +38,14 @@ struct vde_connection;
 
 typedef struct vde_connection vde_connection;
 
+enum conn_cb_result {
+  CB_OK, // the callback was successful
+  CB_CLOSE_CONN, // the connection must be closed
+  CB_REQUEUE, // the packet should be requeued for transmission
+};
+
+typedef enum conn_cb_result conn_cb_result;
+
 /*
  * Functions to be implemented by a connection backend/transport
  *
@@ -76,9 +84,10 @@ typedef void (*conn_be_close)(vde_connection *conn);
  * @param pkt The new packet
  * @param arg The argument which has previously been set by connection user
  *
- * @return TO BE DEFINED, probably void..
+ * @return The result of callback
  */
-typedef int (*conn_read_cb)(vde_connection *conn, vde_pkt *pkt, void *arg);
+typedef conn_cb_result (*conn_read_cb)(vde_connection *conn, vde_pkt *pkt,
+                                       void *arg);
 
 /**
  * @brief (Optional) Callback called when a packet has been sent by the
@@ -88,9 +97,10 @@ typedef int (*conn_read_cb)(vde_connection *conn, vde_pkt *pkt, void *arg);
  * @param pkt The sent packet
  * @param arg The argument which has previously been set by connection user
  *
- * @return TO BE DEFINED, probably void..
+ * @return The result of callback
  */
-typedef int (*conn_write_cb)(vde_connection *conn, vde_pkt *pkt, void *arg);
+typedef conn_cb_result (*conn_write_cb)(vde_connection *conn, vde_pkt *pkt,
+                                        void *arg);
 
 /**
  * @brief Callback called when an error occur.
@@ -101,14 +111,14 @@ typedef int (*conn_write_cb)(vde_connection *conn, vde_pkt *pkt, void *arg);
  * @param err The error type
  * @param arg The argument which has previously been set by connection user
  *
- * @return TO BE DEFINED..
+ * @return The result of callback
  */
 /* XXX(godog): consider introducing the following semantic for conn_error_cb
  * return value: if it's non-zero and the error is non-fatal then the pkt is
  * re-queued for transmission
  */
-typedef int (*conn_error_cb)(vde_connection *conn, vde_pkt *pkt,
-                             vde_conn_error err, void *arg);
+typedef conn_cb_result (*conn_error_cb)(vde_connection *conn, vde_pkt *pkt,
+                                        vde_conn_error err, void *arg);
 
 /**
 * @brief Alloc a new VDE 3 connection

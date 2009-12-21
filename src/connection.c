@@ -86,13 +86,13 @@ int vde_connection_write(vde_connection *conn, vde_pkt *pkt)
   return conn->be_write(conn, pkt);
 }
 
-int vde_connection_call_read(vde_connection *conn, vde_pkt *pkt)
+conn_cb_result vde_connection_call_read(vde_connection *conn, vde_pkt *pkt)
 {
   // XXX(shammash): check conn and read_cb are not NULL
   return conn->read_cb(conn, pkt, conn->cb_priv);
 }
 
-int vde_connection_call_write(vde_connection *conn, vde_pkt *pkt)
+conn_cb_result vde_connection_call_write(vde_connection *conn, vde_pkt *pkt)
 {
   // XXX(shammash):
   // - check conn is not NULL
@@ -100,10 +100,10 @@ int vde_connection_call_write(vde_connection *conn, vde_pkt *pkt)
   if (conn->write_cb != NULL) {
     return conn->write_cb(conn, pkt, conn->cb_priv);
   }
-  return 0;
+  return CB_OK;
 }
 
-int vde_connection_call_error(vde_connection *conn, vde_pkt *pkt,
+conn_cb_result vde_connection_call_error(vde_connection *conn, vde_pkt *pkt,
                               vde_conn_error err)
 {
   // XXX(shammash): check conn and error_cb are not NULL
