@@ -160,7 +160,7 @@ void vde2_conn_read_data_event(int data_fd, short event_type, void *arg)
         && (vde_connection_get_pkt_tailsize(conn) <= MAX_TAIL_SZ) ) {
     pkt = &stack_pkt.pkt;
     pkt->hdr = (vde_hdr *)pkt->data;
-    pkt->head = pkt->hdr + sizeof(vde_hdr);
+    pkt->head = pkt->data + sizeof(vde_hdr);
     pkt->payload = pkt->head + vde_connection_get_pkt_headsize(conn);
     pkt->tail = pkt->data + PKT_DATA_SZ -
                 vde_connection_get_pkt_tailsize(conn);
@@ -263,6 +263,7 @@ err_close:
 
 int vde2_conn_write(vde_connection *conn, vde_pkt *pkt)
 {
+  vde_pkt *pktcopy;
   vde2_pkt *v2_pkt;
   vde2_conn *v2_conn = vde_connection_get_priv(conn);
 
@@ -284,7 +285,14 @@ int vde2_conn_write(vde_connection *conn, vde_pkt *pkt)
   }
 
   v2_pkt->numtries = 0;
-  memcpy(&v2_pkt->pkt, pkt, (sizeof(vde_pkt) + pkt->data_size));
+
+  pktcopy = &v2_pkt->pkt;
+  memcpy(&pktcopy->data, &pkt->data, (sizeof(vde_hdr) + pkt->hdr->pkt_len));
+  pktcopy->hdr = (vde_hdr *)pktcopy->data;
+  pktcopy->head = pktcopy->data + sizeof(vde_hdr);
+  pktcopy->payload = pktcopy->head + vde_connection_get_pkt_headsize(conn);
+  pktcopy->tail = pktcopy->data + PKT_DATA_SZ -
+                  vde_connection_get_pkt_tailsize(conn);
 
   // XXX: check push ok
   vde_queue_push_head(v2_conn->pkt_queue, v2_pkt);
