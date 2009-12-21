@@ -57,6 +57,7 @@ typedef GHashTable vde_hash;
 typedef GQueue vde_queue;
 #define vde_queue_init() g_queue_new()
 #define vde_queue_delete(q) g_queue_free(q)
+#define vde_queue_get_length(q) g_queue_get_length(q)
 #define vde_queue_is_empty(q) g_queue_is_empty(q)
 #define vde_queue_pop_head(q) g_queue_pop_head(q)
 #define vde_queue_pop_tail(q) g_queue_pop_tail(q)
