@@ -26,15 +26,32 @@
 
 #include <vde3.h>
 
+#include <vde3/common.h>
 #include <vde3/module.h>
 #include <vde3/connection.h>
 #include <vde3/component.h>
 #include <vde3/context.h>
+#include <vde3/packet.h>
 
 #define LISTEN_QUEUE 15
+#define MAX_HEAD_SZ 4 /* size of prellocated space before payload */
+#define MAX_TAIL_SZ 0 /* size of prellocated space after payload */
+#define PKT_DATA_SZ (sizeof(vde_hdr) + MAX_HEAD_SZ + sizeof(struct eth_frame) \
+                     + MAX_TAIL_SZ)
+/*
+ * pkt_data_sz = vde 3 header (sizeof(vde_hdr))
+ *             + space reserved for vlan tags (4)
+ *             + frame (1500)
+ *             + trailing space (4)
+ *             + further tail space (0)
+ */
 
 // size of sockaddr_un.sun_path
 #define UNIX_PATH_MAX 108
+
+// taken from vde2 packetq.c
+#define MAXQLEN 4192
+// end of vde2 packetq.c
 
 // taken from vde2 datasock.c
 #define DATA_BUF_SIZE 131072
@@ -54,11 +71,20 @@ struct request_v3 {
 typedef struct request_v3 request;
 // end of vde2 datasock.c
 
+struct vde2_pkt {
+  unsigned int numtries;
+  vde_pkt pkt;
+  char data[PKT_DATA_SZ];
+};
+typedef struct vde2_pkt vde2_pkt;
+
 struct vde2_conn {
   int data_fd;
-  void *data_event;
+  void *data_ev_rd;
+  void *data_ev_wr;
   int ctl_fd;
-  void *ctl_event;
+  void *ctl_ev;
+  vde_queue *pkt_queue;
   struct sockaddr_un local_sa;
   struct sockaddr_un remote_sa;
   request *remote_request;
@@ -69,7 +95,6 @@ typedef struct vde2_conn vde2_conn;
 
 struct vde2_tr {
   char *vdesock_dir;
-  char *vdesock_ctl;
   int listen_fd;
   void *listen_event;
   unsigned int connections;
@@ -77,39 +102,236 @@ struct vde2_tr {
 };
 typedef struct vde2_tr vde2_tr;
 
-void vde2_conn_read_event(int fd, short event_type, void *arg)
+void vde2_conn_read_ctl_event(int ctl_fd, short event_type, void *arg)
 {
+  int len;
+  char reqbuf[REQBUFLEN+1];
+  conn_cb_result cb_rv;
+  vde2_conn *v2_conn = (vde2_conn *)arg;
+  vde_connection *conn = v2_conn->conn;
+  len = read(v2_conn->ctl_fd, reqbuf, REQBUFLEN);
+  if (len < 0) {
+    if (errno == EAGAIN) {
+      vde_warning("%s: got EAGAIN on ctl_fd %d", __PRETTY_FUNCTION__,
+                  v2_conn->ctl_fd);
+      return;
+    }
+    cb_rv = vde_connection_call_error(conn, NULL, CONN_READ_CLOSED);
+    if (cb_rv == CONN_CB_CLOSE) {
+      goto err_close;
+    }
+    vde_warning("%s: got fatal error on ctl_fd %d but connection not closed",
+                __PRETTY_FUNCTION__, v2_conn->ctl_fd);
+    return;
+  }
+  if (len > 0) {
+    vde_warning("%s: unexpected data exchange on ctl_fd", __PRETTY_FUNCTION__);
+    return;
+  }
+  if (len == 0) {
+    cb_rv = vde_connection_call_error(conn, NULL, CONN_READ_CLOSED);
+    if (cb_rv == CONN_CB_CLOSE) {
+      goto err_close;
+    }
+    vde_warning("%s: got fatal error on ctl_fd %d but connection not closed",
+                __PRETTY_FUNCTION__, v2_conn->ctl_fd);
+    return;
+  }
+
+  return;
+
+err_close:
+  vde_connection_fini(conn);
+  vde_connection_delete(conn);
 }
 
-void vde2_conn_write_event(int fd, short event_type, void *arg)
+void vde2_conn_read_data_event(int data_fd, short event_type, void *arg)
 {
+  vde2_pkt stack_pkt;
+  vde_pkt *pkt;
+  struct sockaddr sock;
+  int len;
+  conn_cb_result cb_rv = CONN_CB_OK;
+  socklen_t socklen = sizeof(sock);
+  vde2_conn *v2_conn = (vde2_conn *)arg;
+  vde_connection *conn = v2_conn->conn;
+
+  if ( (vde_connection_get_pkt_headsize(conn) <= MAX_HEAD_SZ)
+        && (vde_connection_get_pkt_tailsize(conn) <= MAX_TAIL_SZ) ) {
+    pkt = &stack_pkt.pkt;
+    pkt->hdr = (vde_hdr *)pkt->data;
+    pkt->head = pkt->hdr + sizeof(vde_hdr);
+    pkt->payload = pkt->head + vde_connection_get_pkt_headsize(conn);
+    pkt->tail = pkt->data + PKT_DATA_SZ -
+                vde_connection_get_pkt_tailsize(conn);
+    pkt->data_size = PKT_DATA_SZ; // XXX: correct? what does data_size mean?
+  } else {
+    // XXX: perform dynamic allocation
+    vde_warning("%s: requested head + tail size too large, skipping",
+                __PRETTY_FUNCTION__);
+    return;
+  }
+
+  len = recvfrom(v2_conn->data_fd, pkt->payload, sizeof(struct eth_frame), 0,
+                 &sock, &socklen);
+  // XXX: check received sock with remote path??
+  if (len < 0) {
+    if (errno == EAGAIN) {
+      vde_warning("%s: got EAGAIN on data_fd %d", __PRETTY_FUNCTION__,
+                  v2_conn->data_fd);
+    } else {
+    // XXX: handle this error situation, call error_cb?
+    vde_warning("%s: error reading from data_fd %d: %s", __PRETTY_FUNCTION__,
+                v2_conn->data_fd, strerror(errno));
+    }
+  } else if (len == 0) {
+    vde_warning("%s: EOF from data_fd %d: %s", __PRETTY_FUNCTION__,
+                v2_conn->data_fd, strerror(errno));
+  } else if (len >= sizeof(struct eth_hdr)) {
+    // XXX: set hdr version and type
+    pkt->hdr->pkt_len = len;
+    cb_rv = vde_connection_call_read(conn, pkt);
+  }
+
+  // XXX: free packet if previously allocated with dynamic allocation
+
+  if (cb_rv == CONN_CB_CLOSE) {
+    vde_connection_fini(conn);
+    vde_connection_delete(conn);
+  }
+}
+
+void vde2_conn_write_data_event(int data_fd, short event_type, void *arg)
+{
+  int len;
+  vde2_pkt *v2_pkt;
+  vde_pkt *pkt;
+  conn_cb_result cb_rv = CONN_CB_OK;
+  vde2_conn *v2_conn = (vde2_conn *)arg;
+  vde_connection *conn = v2_conn->conn;
+
+  v2_pkt = vde_queue_pop_tail(v2_conn->pkt_queue);
+  while (v2_pkt != NULL) {
+    pkt = &v2_pkt->pkt;
+    len = sendto(v2_conn->data_fd, pkt->payload, pkt->hdr->pkt_len, 0,
+                 (const struct sockaddr *)&v2_conn->remote_sa,
+                 sizeof(struct sockaddr_un));
+    if (len == pkt->hdr->pkt_len) {
+      cb_rv = vde_connection_call_write(conn, pkt);
+      vde_cached_free_type(vde2_pkt, v2_pkt);
+      if (cb_rv == CONN_CB_CLOSE) {
+        goto err_close;
+      }
+    } else if (len < 0) {
+      cb_rv = vde_connection_call_error(conn, pkt, CONN_WRITE_CLOSED);
+      vde_cached_free_type(vde2_pkt, v2_pkt);
+      if (cb_rv == CONN_CB_CLOSE) {
+        goto err_close;
+      } else {
+        vde_warning("%s: fatal error on data_fd %d but connection not closed",
+                    __PRETTY_FUNCTION__, v2_conn->data_fd);
+        break;
+      }
+    } else { /* len < pkt->hdr->pkt_len */
+      v2_pkt->numtries++;
+      if (v2_pkt->numtries > vde_connection_get_send_maxtries(conn)) {
+        cb_rv = vde_connection_call_error(conn, pkt, CONN_WRITE_DELAY);
+        vde_cached_free_type(vde2_pkt, v2_pkt);
+        if (cb_rv == CONN_CB_CLOSE) {
+          goto err_close;
+        }
+      } else {
+        vde_queue_push_tail(v2_conn->pkt_queue, v2_pkt);
+      }
+      break; // give up sending
+    }
+    v2_pkt = vde_queue_pop_tail(v2_conn->pkt_queue);
+  }
+
+  if (vde_queue_get_length(v2_conn->pkt_queue) == 0) {
+    vde_context_event_del(vde_connection_get_context(conn),
+                          v2_conn->data_ev_wr);
+    v2_conn->data_ev_wr = NULL;
+  }
+
+  return;
+
+err_close:
+  vde_connection_fini(conn);
+  vde_connection_delete(conn);
 }
 
 int vde2_conn_write(vde_connection *conn, vde_pkt *pkt)
 {
-  // enqueue packets and add write_event if not present
+  vde2_pkt *v2_pkt;
+  vde2_conn *v2_conn = vde_connection_get_priv(conn);
+
+  if (vde_queue_get_length(v2_conn->pkt_queue) >= MAXQLEN) {
+    vde_warning("%s: packet queue for %s is full, discarding",
+                __PRETTY_FUNCTION__, v2_conn->data_fd);
+    return -1; // discard pkt
+  }
+  if (pkt->data_size > PKT_DATA_SZ) {
+    // XXX: should alloc a struct greater than sizeof(vde2_pkt)
+    vde_warning("%s: packet size larger than vde2_pkt, discarding",
+                __PRETTY_FUNCTION__);
+    return -1;
+  }
+  v2_pkt = vde_cached_alloc(sizeof(vde2_pkt));
+  if (v2_pkt == NULL) {
+    vde_warning("%s: cannot alloc new pkt, discarding", __PRETTY_FUNCTION__);
+    return -1;
+  }
+
+  v2_pkt->numtries = 0;
+  memcpy(&v2_pkt->pkt, pkt, (sizeof(vde_pkt) + pkt->data_size));
+
+  // XXX: check push ok
+  vde_queue_push_head(v2_conn->pkt_queue, v2_pkt);
+
+  if (v2_conn->data_ev_wr == NULL) {
+    v2_conn->data_ev_wr = vde_context_event_add(
+                            vde_connection_get_context(conn),
+                            v2_conn->data_fd,
+                            VDE_EV_WRITE|VDE_EV_PERSIST,
+                            vde_connection_get_send_maxtimeout(conn),
+                            &vde2_conn_write_data_event,
+                            (void *)v2_conn);
+  }
   return 0;
 }
 
 void vde2_conn_close(vde_connection *conn)
 {
+  vde2_pkt *pkt;
   vde2_conn *v2_conn = vde_connection_get_priv(conn);
   vde_context *ctx = vde_connection_get_context(conn);
+
   if (v2_conn->data_fd >= 0){
     close(v2_conn->data_fd);
   }
-  if (v2_conn->data_event != NULL) {
-    vde_context_event_del(ctx, v2_conn->data_event);
+  if (v2_conn->data_ev_rd != NULL) {
+    vde_context_event_del(ctx, v2_conn->data_ev_rd);
+  }
+  if (v2_conn->data_ev_wr != NULL) {
+    vde_context_event_del(ctx, v2_conn->data_ev_wr);
   }
   if (v2_conn->ctl_fd >= 0){
     close(v2_conn->ctl_fd);
   }
-  if (v2_conn->ctl_event != NULL) {
-    vde_context_event_del(ctx, v2_conn->ctl_event);
+  if (v2_conn->ctl_ev != NULL) {
+    vde_context_event_del(ctx, v2_conn->ctl_ev);
   }
   if (v2_conn->remote_request) {
     vde_free(v2_conn->remote_request);
   }
+  pkt = vde_queue_pop_tail(v2_conn->pkt_queue);
+  while (pkt != NULL) {
+    // XXX: handle dynamic allocation case
+    vde_cached_free_type(vde2_pkt, pkt);
+    pkt = vde_queue_pop_tail(v2_conn->pkt_queue);
+  }
+  vde_queue_delete(v2_conn->pkt_queue);
 
   vde_free(v2_conn);
 }
@@ -150,8 +372,8 @@ void vde2_srv_send_request(int ctl_fd, short event_type, void *arg)
   vde2_tr *tr = (vde2_tr *)vde_component_get_priv(v2_conn->transport);
   vde_context *ctx = vde_component_get_context(v2_conn->transport);
 
-  vde_context_event_del(ctx, v2_conn->ctl_event);
-  v2_conn->ctl_event = NULL;
+  vde_context_event_del(ctx, v2_conn->ctl_ev);
+  v2_conn->ctl_ev = NULL;
 
   // XXX: define a behaviour when called if event timeout expired
 
@@ -207,9 +429,15 @@ void vde2_srv_send_request(int ctl_fd, short event_type, void *arg)
   tr->connections++;
   tr->pending_conns = vde_list_remove(tr->pending_conns, v2_conn);
 
-  // XXX: add an event on ctl_fd to handle close
-  // XXX: add an event on data_fd
-  // XXX: add peer credentials to conn.attributes
+  // XXX: check events not NULL
+  v2_conn->ctl_ev = vde_context_event_add(ctx, v2_conn->ctl_fd,
+                                          VDE_EV_READ|VDE_EV_PERSIST, NULL,
+                                          &vde2_conn_read_ctl_event,
+                                          (void *)v2_conn);
+  v2_conn->data_ev_rd = vde_context_event_add(ctx, v2_conn->data_fd,
+                                              VDE_EV_READ|VDE_EV_PERSIST,
+                                              NULL, &vde2_conn_read_data_event,
+                                              (void *)v2_conn);
 
   vde_component_transport_call_cm_accept_cb(v2_conn->transport, conn);
 
@@ -232,8 +460,8 @@ void vde2_srv_get_request(int ctl_fd, short event_type, void *arg)
   vde2_tr *tr = (vde2_tr *)vde_component_get_priv(v2_conn->transport);
   vde_context *ctx = vde_component_get_context(v2_conn->transport);
 
-  vde_context_event_del(ctx, v2_conn->ctl_event);
-  v2_conn->ctl_event = NULL;
+  vde_context_event_del(ctx, v2_conn->ctl_ev);
+  v2_conn->ctl_ev = NULL;
 
   // XXX: define a behaviour when called if event timeout expired
   len = read(v2_conn->ctl_fd, reqbuf, REQBUFLEN);
@@ -270,13 +498,14 @@ void vde2_srv_get_request(int ctl_fd, short event_type, void *arg)
       goto error;
     }
     memcpy(v2_conn->remote_request, reqbuf, len);
+    // XXX: add peer credentials to conn.attributes
 
     memcpy(&v2_conn->remote_sa, &req->sock, sizeof(struct sockaddr_un));
     // XXX: check event NULL and define a timeout
-    v2_conn->ctl_event = vde_context_event_add(ctx, v2_conn->ctl_fd,
-                                               VDE_EV_WRITE, NULL,
-                                               &vde2_srv_send_request,
-                                               (void *)v2_conn);
+    v2_conn->ctl_ev = vde_context_event_add(ctx, v2_conn->ctl_fd,
+                                            VDE_EV_WRITE, NULL,
+                                            &vde2_srv_send_request,
+                                            (void *)v2_conn);
   }
 
   return;
@@ -323,6 +552,8 @@ void vde2_accept(int listen_fd, short event_type, void *arg)
   v2_conn->ctl_fd = new;
   v2_conn->conn = conn;
   v2_conn->transport = component;
+  // XXX: check init result
+  v2_conn->pkt_queue = vde_queue_init();
 
   // XXX: check error on list
   tr->pending_conns = vde_list_prepend(tr->pending_conns, v2_conn);
@@ -331,9 +562,9 @@ void vde2_accept(int listen_fd, short event_type, void *arg)
                       (void *)v2_conn);
 
   // XXX: check event NULL and define a timeout
-  v2_conn->ctl_event = vde_context_event_add(ctx, v2_conn->ctl_fd, VDE_EV_READ,
-                                             NULL, &vde2_srv_get_request,
-                                             (void *)v2_conn);
+  v2_conn->ctl_ev = vde_context_event_add(ctx, v2_conn->ctl_fd, VDE_EV_READ,
+                                          NULL, &vde2_srv_get_request,
+                                          (void *)v2_conn);
 
   return;
 
@@ -481,65 +712,4 @@ int transport_vde2_module_init(vde_context *ctx)
 {
   return vde_context_register_module(ctx, &transport_vde2_module);
 }
-
-/*
- * the connection has several parameters to handle the queuing of packets:
- *  - if a transient error during write to fd is encountered, the write is tried
- * MAX_TRIES * MAX_TIMEOUT times and after that error_cb(CONN_PKT_DROP, pkt) is
- * called for the pkt we are currently trying to drop but before the pkt is
- * freed
- *  - if a permanent error during write to fd is encountered
- * error_cb(CONN_CLOSED) (or sth) is called
- *
- * conn.write() must return error on queue full
- *
- * the queue is sized by the connection
- *
- * write_cb(conn, pkt) if specified is called after each packet has been
- * successfully written to the operating system but before the packet is freed
- *
- * OPTIONAL: the return value of error_cb/write_cb can indicate what to do with
- * the packet
- *
- */
-
-/*
- * per-connection packet dequeue:
- * a callback which flushes the queue is linked to write event for the conn fd.
- * whenever a packet is added to the queue the event is enabled if not already.
- * whenever the queue is empty the event is disabled.
- *
- * struct event_queue {
- *   vde_event event; // the event related to this queue
- *   vde_dequeue *pktqueue; // the packet queue itself
- *   vde_conn *conn; // the connection owning this queue
- * }
- *
- * conn_init(...) {
- *   ...
- *   conn->priv->conn = conn;
- *   event_set(conn->priv->event, conn->fd, conn_write_internal_cb, conn->priv);
- * }
- *
- * conn_write(conn, pkt) {
- *   conn->priv->pktqueue.append(pkt)
- *   if (conn->priv->event is not active)
- *     event_add(conn->priv->event)
- *
- *   return success
- * }
- *
- * conn_write_internal_cb(fd, type, arg) {
- *   event_queue queue = arg;
- *   write(conn_fd, pop_packet, size);
- *   if success:
- *     remove packet from queue
- *
- * }
- *
- * //TODO for the STREAM case also available_data needs to be taken care of to
- * // know when a packet has been fully written to the network and thus can be
- * // removed from the queue
- *
- */
 
