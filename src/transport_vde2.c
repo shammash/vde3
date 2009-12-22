@@ -159,12 +159,8 @@ void vde2_conn_read_data_event(int data_fd, short event_type, void *arg)
   if ( (vde_connection_get_pkt_headsize(conn) <= MAX_HEAD_SZ)
         && (vde_connection_get_pkt_tailsize(conn) <= MAX_TAIL_SZ) ) {
     pkt = &stack_pkt.pkt;
-    pkt->hdr = (vde_hdr *)pkt->data;
-    pkt->head = pkt->data + sizeof(vde_hdr);
-    pkt->payload = pkt->head + vde_connection_get_pkt_headsize(conn);
-    pkt->tail = pkt->data + PKT_DATA_SZ -
-                vde_connection_get_pkt_tailsize(conn);
-    pkt->data_size = PKT_DATA_SZ; // XXX: correct? what does data_size mean?
+    vde_pkt_init(pkt, PKT_DATA_SZ, vde_connection_get_pkt_headsize(conn),
+                 vde_connection_get_pkt_tailsize(conn));
   } else {
     // XXX: perform dynamic allocation
     vde_warning("%s: requested head + tail size too large, skipping",
@@ -263,7 +259,6 @@ err_close:
 
 int vde2_conn_write(vde_connection *conn, vde_pkt *pkt)
 {
-  vde_pkt *pktcopy;
   vde2_pkt *v2_pkt;
   vde2_conn *v2_conn = vde_connection_get_priv(conn);
 
@@ -286,13 +281,7 @@ int vde2_conn_write(vde_connection *conn, vde_pkt *pkt)
 
   v2_pkt->numtries = 0;
 
-  pktcopy = &v2_pkt->pkt;
-  memcpy(&pktcopy->data, &pkt->data, (sizeof(vde_hdr) + pkt->hdr->pkt_len));
-  pktcopy->hdr = (vde_hdr *)pktcopy->data;
-  pktcopy->head = pktcopy->data + sizeof(vde_hdr);
-  pktcopy->payload = pktcopy->head + vde_connection_get_pkt_headsize(conn);
-  pktcopy->tail = pktcopy->data + PKT_DATA_SZ -
-                  vde_connection_get_pkt_tailsize(conn);
+  vde_pkt_compact_cpy(&v2_pkt->pkt, pkt);
 
   // XXX: check push ok
   vde_queue_push_head(v2_conn->pkt_queue, v2_pkt);
