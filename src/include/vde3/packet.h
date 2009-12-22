@@ -19,6 +19,7 @@
 #define __VDE3_PACKET_H__
 
 #include <stdint.h>
+#include <string.h>
 
 // A packet exchanged by vde engines
 // (it should be used more or less like Linux socket buffers).
@@ -55,8 +56,14 @@ typedef struct vde_pkt vde_pkt;
  * @param head The size of the space before payload
  * @param tail The size of the space after payload
  */
-void vde_pkt_init(vde_pkt *pkt, unsigned int data, unsigned int head,
-                  unsigned int tail);
+static inline void vde_pkt_init(vde_pkt *pkt, unsigned int data,
+                                unsigned int head, unsigned int tail) {
+  pkt->hdr = (vde_hdr *)pkt->data;
+  pkt->head = pkt->data + sizeof(vde_hdr);
+  pkt->payload = pkt->head + head;
+  pkt->tail = pkt->data + data - tail;
+  pkt->data_size = data;
+}
 
 /**
  * @brief Copy the content of a packet into another pre-allocated packet
@@ -65,7 +72,12 @@ void vde_pkt_init(vde_pkt *pkt, unsigned int data, unsigned int head,
  * in advance that the destination data_size can contain the copy.
  * @param src The source of the copy
  */
-void vde_pkt_cpy(vde_pkt *dst, vde_pkt *src);
+static inline void vde_pkt_cpy(vde_pkt *dst, vde_pkt *src) {
+  vde_pkt_init(dst, src->data_size,
+               src->payload - src->head,
+               src->data + src->data_size - src->tail);
+  memcpy(&dst->data, &src->data, src->data_size);
+}
 
 /**
  * @brief Copy the content of a packet into another pre-allocated packet. Does
@@ -75,7 +87,11 @@ void vde_pkt_cpy(vde_pkt *dst, vde_pkt *src);
  * in advance that the destination data_size can contain the copy.
  * @param src The source of the copy
  */
-void vde_pkt_compact_cpy(vde_pkt *dst, vde_pkt *src);
+static inline void vde_pkt_compact_cpy(vde_pkt *dst, vde_pkt *src) {
+  vde_pkt_init(dst, src->data_size, 0, 0);
+  memcpy(dst->hdr, src->hdr, sizeof(vde_hdr));
+  memcpy(dst->payload, src->payload, src->hdr->pkt_len);
+}
 
 // When a packet is read from the network by a connection the payload always
 // follows the header, so head size and tail size are zero.

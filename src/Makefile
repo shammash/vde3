@@ -1,10 +1,10 @@
 VDE_SRC = context.c component.c conn_manager.c logging.c module.c \
   transport_vde2.c connection.c libevent_handler.c engine_hub.c \
-  packet.c localconnection.c
+  localconnection.c
 
 VDE_OBJ = context.o component.o conn_manager.o logging.o module.o \
   transport_vde2.o connection.o libevent_handler.o engine_hub.o \
-  packet.o localconnection.o
+  localconnection.o
 
 LOTSA_WARNINGS=-Winline -Wformat=2 -Wswitch-default -Wswitch-enum \
 -Wunused-parameter -Wfloat-equal -Wundef -Wshadow -Wunsafe-loop-optimizations \
