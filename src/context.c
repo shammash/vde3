@@ -198,8 +198,8 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name)
   return vde_context_get_component_by_qname(ctx, qname);
 }
 
-inline vde_component* vde_context_get_component_by_qname(vde_context *ctx,
-                                                         vde_quark qname)
+vde_component* vde_context_get_component_by_qname(vde_context *ctx,
+                                                  vde_quark qname)
 {
   return vde_hash_lookup(ctx->components, (long)qname);
 }
