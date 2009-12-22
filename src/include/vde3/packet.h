@@ -20,8 +20,6 @@
 
 #include <stdint.h>
 
-#include <vde3/connection.h>
-
 // A packet exchanged by vde engines
 // (it should be used more or less like Linux socket buffers).
 //
@@ -40,14 +38,44 @@ typedef struct vde_hdr vde_hdr;
 
 struct vde_pkt {
   vde_hdr *hdr; // Pointer to vde_header inside data
-  void *head; // Pointer to an empty head space inside data
-  void *payload; // Pointer to payload inside data
-  void *tail;// Pointer to an empty tail space inside data
+  char *head; // Pointer to an empty head space inside data
+  char *payload; // Pointer to payload inside data
+  char *tail;// Pointer to an empty tail space inside data
   unsigned int data_size; // The total size of memory allocated in data
   char data[0]; // Allocated memory
 };
 
 typedef struct vde_pkt vde_pkt;
+
+/**
+ * @brief Initialize vde packet fields.
+ *
+ * @param pkt The packet to initialize
+ * @param data The size of preallocated memory
+ * @param head The size of the space before payload
+ * @param tail The size of the space after payload
+ */
+void vde_pkt_init(vde_pkt *pkt, unsigned int data, unsigned int head,
+                  unsigned int tail);
+
+/**
+ * @brief Copy the content of a packet into another pre-allocated packet
+ *
+ * @param dst The destination of the copy, the user of this function must check
+ * in advance that the destination data_size can contain the copy.
+ * @param src The source of the copy
+ */
+void vde_pkt_cpy(vde_pkt *dst, vde_pkt *src);
+
+/**
+ * @brief Copy the content of a packet into another pre-allocated packet. Does
+ * not keep head/tail space
+ *
+ * @param dst The destination of the copy, the user of this function must check
+ * in advance that the destination data_size can contain the copy.
+ * @param src The source of the copy
+ */
+void vde_pkt_compact_cpy(vde_pkt *dst, vde_pkt *src);
 
 // When a packet is read from the network by a connection the payload always
 // follows the header, so head size and tail size are zero.
