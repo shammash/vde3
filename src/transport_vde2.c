@@ -218,7 +218,7 @@ void vde2_conn_write_data_event(int data_fd, short event_type, void *arg)
       if (cb_rv == CONN_CB_CLOSE) {
         goto err_close;
       }
-    } else if (len < 0) {
+    } else if ((len < 0) && (errno != EAGAIN)) {
       cb_rv = vde_connection_call_error(conn, pkt, CONN_WRITE_CLOSED);
       vde_cached_free_type(vde2_pkt, v2_pkt);
       if (cb_rv == CONN_CB_CLOSE) {
@@ -228,7 +228,7 @@ void vde2_conn_write_data_event(int data_fd, short event_type, void *arg)
                     __PRETTY_FUNCTION__, v2_conn->data_fd);
         break;
       }
-    } else { /* len < pkt->hdr->pkt_len */
+    } else { /* (0 < len < pkt_len) || (len < 0 && errno == EAGAIN) */
       v2_pkt->numtries++;
       if (v2_pkt->numtries > vde_connection_get_send_maxtries(conn)) {
         cb_rv = vde_connection_call_error(conn, pkt, CONN_WRITE_DELAY);
