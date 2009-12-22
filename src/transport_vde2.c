@@ -555,8 +555,8 @@ void vde2_accept(int listen_fd, short event_type, void *arg)
   // XXX: check error on list
   tr->pending_conns = vde_list_prepend(tr->pending_conns, v2_conn);
 
-  vde_connection_init(conn, ctx, &vde2_conn_write, &vde2_conn_close,
-                      (void *)v2_conn);
+  vde_connection_init(conn, ctx, sizeof(struct eth_frame), &vde2_conn_write,
+                      &vde2_conn_close, (void *)v2_conn);
 
   // XXX: check event NULL and define a timeout
   v2_conn->ctl_ev = vde_context_event_add(ctx, v2_conn->ctl_fd, VDE_EV_READ,

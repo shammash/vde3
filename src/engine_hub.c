@@ -69,8 +69,15 @@ conn_cb_result hub_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
 int hub_engine_newconn(vde_component *component, vde_connection *conn,
                        vde_request *req)
 {
+  unsigned int max_payload;
   struct timeval send_timeout;
   hub_engine *hub = vde_component_get_priv(component);
+
+  max_payload = vde_connection_max_payload(conn);
+  if (max_payload != 0 && max_payload < sizeof(struct eth_frame)) {
+    vde_warning("%s: connection can't handle full eth frames, rejecting");
+    return -1;
+  }
 
   // XXX: check ports not NULL
   // XXX: here new port is added as the first one
@@ -83,7 +90,6 @@ int hub_engine_newconn(vde_component *component, vde_connection *conn,
   send_timeout.tv_sec = TIMEOUT;
   send_timeout.tv_usec = 0;
   vde_connection_set_send_properties(conn, TIMES, &send_timeout);
-  // XXX negotiate MTU with connection here?
 
   return 0;
 }
