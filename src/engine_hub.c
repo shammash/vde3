@@ -59,6 +59,11 @@ conn_cb_result hub_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
 {
   hub_engine *hub = (hub_engine *)arg;
 
+  if (err == CONN_WRITE_DELAY) {
+    vde_warning("%s: dropping packet", __PRETTY_FUNCTION__);
+    return CONN_CB_OK;
+  }
+
   // XXX: handle different errors, the following is just the fatal case
 
   hub->ports = vde_list_remove(hub->ports, conn);
