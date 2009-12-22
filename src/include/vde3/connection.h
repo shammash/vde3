@@ -37,7 +37,6 @@ typedef enum vde_conn_error vde_conn_error;
  * @brief A VDE 3 connection
  */
 struct vde_connection;
-
 typedef struct vde_connection vde_connection;
 
 enum conn_cb_result {
@@ -123,6 +122,28 @@ typedef conn_cb_result (*conn_write_cb)(vde_connection *conn, vde_pkt *pkt,
 typedef conn_cb_result (*conn_error_cb)(vde_connection *conn, vde_pkt *pkt,
                                         vde_conn_error err, void *arg);
 
+
+/*
+ * A vde connection
+ */
+struct vde_connection {
+  vde_attributes *attributes;
+  vde_context *context;
+  unsigned int max_pload;
+  unsigned int pkt_head_sz;
+  unsigned int pkt_tail_sz;
+  unsigned int send_maxtries;
+  struct timeval send_maxtimeout;
+  conn_be_write be_write;
+  conn_be_close be_close;
+  void *be_priv;
+  conn_read_cb read_cb;
+  conn_write_cb write_cb;
+  conn_error_cb error_cb;
+  void *cb_priv;
+};
+
+
 /**
 * @brief Alloc a new VDE 3 connection
 *
@@ -171,7 +192,12 @@ void vde_connection_delete(vde_connection *conn);
  *
  * @return zero on success, an error code otherwise
  */
-int vde_connection_write(vde_connection *conn, vde_pkt *pkt);
+static inline int vde_connection_write(vde_connection *conn, vde_pkt *pkt)
+{
+  vde_return_val_if_fail(conn != NULL, -1);
+
+  return conn->be_write(conn, pkt);
+}
 
 /**
  * @brief Function called by connection backend to tell the connection user a
@@ -181,9 +207,16 @@ int vde_connection_write(vde_connection *conn, vde_pkt *pkt);
  * @param pkt The new packet. Connection users will duplicate the pkt if they
  * need it after this callback will return, so it can be free()d afterwards
  *
- * @return TO BE DEFINED, probably void
+ * @return The callback result
  */
-conn_cb_result vde_connection_call_read(vde_connection *conn, vde_pkt *pkt);
+static inline conn_cb_result vde_connection_call_read(vde_connection *conn,
+                                                      vde_pkt *pkt)
+{
+  vde_return_val_if_fail(conn != NULL, CONN_CB_ERROR);
+  vde_return_val_if_fail(conn->read_cb != NULL, CONN_CB_ERROR);
+
+  return conn->read_cb(conn, pkt, conn->cb_priv);
+}
 
 /**
  * @brief Function called by connection backend to tell the connection user a
@@ -193,9 +226,18 @@ conn_cb_result vde_connection_call_read(vde_connection *conn, vde_pkt *pkt);
  * @param pkt The sent packet. Connection users will duplicate the pkt if they
  * need it after this callback will return, so it can be free()d afterwards
  *
- * @return TO BE DEFINED, probably void
+ * @return The callback result
  */
-conn_cb_result vde_connection_call_write(vde_connection *conn, vde_pkt *pkt);
+static inline conn_cb_result vde_connection_call_write(vde_connection *conn,
+                                                       vde_pkt *pkt)
+{
+  vde_return_val_if_fail(conn != NULL, CONN_CB_ERROR);
+
+  if (conn->write_cb != NULL) {
+    return conn->write_cb(conn, pkt, conn->cb_priv);
+  }
+  return CONN_CB_OK;
+}
 
 /**
  * @brief Function called by connection backend to tell the connection user an
@@ -205,10 +247,17 @@ conn_cb_result vde_connection_call_write(vde_connection *conn, vde_pkt *pkt);
  * @param pkt The packet which was being sent when the error occurred, can be
  * NULL
  *
- * @return TO BE DEFINED..
+ * @return The callback result
  */
-conn_cb_result vde_connection_call_error(vde_connection *conn, vde_pkt *pkt,
-                              vde_conn_error err);
+static inline conn_cb_result vde_connection_call_error(vde_connection *conn,
+                                                       vde_pkt *pkt,
+                                                       vde_conn_error err)
+{
+  vde_return_val_if_fail(conn != NULL, CONN_CB_ERROR);
+  vde_return_val_if_fail(conn->error_cb != NULL, CONN_CB_ERROR);
+
+  return conn->error_cb(conn, pkt, err, conn->cb_priv);
+}
 
 /**
  * @brief Set user's callbacks in a connection
@@ -232,7 +281,12 @@ void vde_connection_set_callbacks(vde_connection *conn,
  *
  * @return The context in which the connection is running
  */
-vde_context *vde_connection_get_context(vde_connection *conn);
+static inline vde_context *vde_connection_get_context(vde_connection *conn)
+{
+  vde_return_val_if_fail(conn != NULL, NULL);
+
+  return conn->context;
+}
 
 /**
  * @brief Get maximum payload size a connection can handle
@@ -250,7 +304,12 @@ unsigned int vde_connection_max_payload(vde_connection *conn);
  *
  * @return The private data
  */
-void *vde_connection_get_priv(vde_connection *conn);
+static inline void *vde_connection_get_priv(vde_connection *conn)
+{
+  vde_return_val_if_fail(conn != NULL, NULL);
+
+  return conn->be_priv;
+}
 
 /**
  * @brief Called by the component using the connection to set some properties
@@ -271,7 +330,12 @@ void vde_connection_set_pkt_properties(vde_connection *conn,
  *
  * @return The amount of space
  */
-unsigned int vde_connection_get_pkt_headsize(vde_connection *conn);
+static inline unsigned int vde_connection_get_pkt_headsize(vde_connection *conn)
+{
+  vde_return_val_if_fail(conn != NULL, UINT_MAX);
+
+  return conn->pkt_head_sz;
+}
 
 /**
  * @brief Get the amount of free space to be reserved after packet payload
@@ -280,7 +344,13 @@ unsigned int vde_connection_get_pkt_headsize(vde_connection *conn);
  *
  * @return The amount of space
  */
-unsigned int vde_connection_get_pkt_tailsize(vde_connection *conn);
+static inline
+unsigned int vde_connection_get_pkt_tailsize(vde_connection *conn)
+{
+  vde_return_val_if_fail(conn != NULL, UINT_MAX);
+
+  return conn->pkt_tail_sz;
+}
 
 /**
  * @brief Called by the component using the connection to set some packet
@@ -304,7 +374,13 @@ void vde_connection_set_send_properties(vde_connection *conn,
  *
  * @return The maximum number of tries
  */
-unsigned int vde_connection_get_send_maxtries(vde_connection *conn);
+static inline
+unsigned int vde_connection_get_send_maxtries(vde_connection *conn)
+{
+  vde_return_val_if_fail(conn != NULL, UINT_MAX);
+
+  return conn->send_maxtries;
+}
 
 /**
  * @brief Get the maximum timeout between two send attempts
@@ -313,7 +389,13 @@ unsigned int vde_connection_get_send_maxtries(vde_connection *conn);
  *
  * @return A reference to maximum timeout
  */
-struct timeval *vde_connection_get_send_maxtimeout(vde_connection *conn);
+static inline
+struct timeval *vde_connection_get_send_maxtimeout(vde_connection *conn)
+{
+  vde_return_val_if_fail(conn != NULL, NULL);
+
+  return &(conn->send_maxtimeout);
+}
 
 /**
  * @brief Set connection attributes, data will be duplicated
