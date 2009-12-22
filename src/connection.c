@@ -25,6 +25,7 @@
 struct vde_connection {
   vde_attributes *attributes;
   vde_context *context;
+  unsigned int max_pload;
   unsigned int pkt_head_sz;
   unsigned int pkt_tail_sz;
   unsigned int send_maxtries;
@@ -52,13 +53,14 @@ int vde_connection_new(vde_connection **conn) {
 }
 
 int vde_connection_init(vde_connection *conn, vde_context *ctx,
-                        conn_be_write be_write, conn_be_close be_close,
-                        void *be_priv)
+                        unsigned int payload_size, conn_be_write be_write,
+                        conn_be_close be_close, void *be_priv)
 {
   // XXX(shammash):
   // - check errors, only be_priv can prolly be NULL
   // - 'initialized' field needed
   conn->context = ctx;
+  conn->max_pload = payload_size;
   conn->be_write = be_write;
   conn->be_close = be_close;
   conn->be_priv = be_priv;
@@ -138,6 +140,13 @@ vde_context *vde_connection_get_context(vde_connection *conn)
   vde_return_val_if_fail(conn != NULL, NULL);
 
   return conn->context;
+}
+
+unsigned int vde_connection_max_payload(vde_connection *conn)
+{
+  vde_return_val_if_fail(conn != NULL, 1);
+
+  return conn->max_pload;
 }
 
 void *vde_connection_get_priv(vde_connection *conn)

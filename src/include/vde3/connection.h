@@ -137,6 +137,8 @@ int vde_connection_new(vde_connection **conn);
  *
  * @param conn The connection to initialize
  * @param ctx The context in which the connection will run
+ * @param payload_size The maximum payload size a connection implementation can
+ * handle, 0 for unlimited.
  * @param be_write The backend implementation for writing packets
  * @param be_close The backend implementation for closing a connection
  * @param be_priv Backend private data
@@ -144,8 +146,8 @@ int vde_connection_new(vde_connection **conn);
  * @return zero on success, an error code otherwise
  */
 int vde_connection_init(vde_connection *conn, vde_context *ctx,
-                        conn_be_write be_write, conn_be_close be_close,
-                        void *be_priv);
+                        unsigned int payload_size, conn_be_write be_write,
+                        conn_be_close be_close, void *be_priv);
 
 /**
  * @brief Finalize a VDE 3 connection
@@ -231,6 +233,15 @@ void vde_connection_set_callbacks(vde_connection *conn,
  * @return The context in which the connection is running
  */
 vde_context *vde_connection_get_context(vde_connection *conn);
+
+/**
+ * @brief Get maximum payload size a connection can handle
+ *
+ * @param conn The connection
+ *
+ * @return The maximum payload size, if 0 no limit is set.
+ */
+unsigned int vde_connection_max_payload(vde_connection *conn);
 
 /**
  * @brief Get connection backend private data
