@@ -80,6 +80,7 @@ int vde_connect_engines_unqueued(vde_context *ctx, vde_component *engine1,
                                  vde_request *req2)
 {
   // XXX: check ctx/engines not NULL
+  // XXX: request must be normalized here
 
   vde_connection *c1, *c2;
   vde_lc *lc1, *lc2;
