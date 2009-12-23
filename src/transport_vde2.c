@@ -171,7 +171,11 @@ void vde2_conn_read_data_event(int data_fd, short event_type, void *arg)
   len = recvfrom(v2_conn->data_fd, pkt->payload, sizeof(struct eth_frame), 0,
                  &sock, &socklen);
   // XXX: check received sock with remote path??
-  if (len < 0) {
+  if (len >= sizeof(struct eth_hdr)) {
+    // XXX: set hdr version and type
+    pkt->hdr->pkt_len = len;
+    cb_rv = vde_connection_call_read(conn, pkt);
+  } else if (len < 0) {
     if (errno == EAGAIN) {
       vde_warning("%s: got EAGAIN on data_fd %d", __PRETTY_FUNCTION__,
                   v2_conn->data_fd);
@@ -183,10 +187,6 @@ void vde2_conn_read_data_event(int data_fd, short event_type, void *arg)
   } else if (len == 0) {
     vde_warning("%s: EOF from data_fd %d: %s", __PRETTY_FUNCTION__,
                 v2_conn->data_fd, strerror(errno));
-  } else if (len >= sizeof(struct eth_hdr)) {
-    // XXX: set hdr version and type
-    pkt->hdr->pkt_len = len;
-    cb_rv = vde_connection_call_read(conn, pkt);
   }
 
   // XXX: free packet if previously allocated with dynamic allocation
@@ -244,7 +244,7 @@ void vde2_conn_write_data_event(int data_fd, short event_type, void *arg)
     v2_pkt = vde_queue_pop_tail(v2_conn->pkt_queue);
   }
 
-  if (vde_queue_get_length(v2_conn->pkt_queue) == 0) {
+  if (v2_pkt == NULL) {
     vde_context_event_del(vde_connection_get_context(conn),
                           v2_conn->data_ev_wr);
     v2_conn->data_ev_wr = NULL;
