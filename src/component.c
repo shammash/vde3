@@ -61,6 +61,8 @@ int vde_component_new(vde_component **component)
 
 /* XXX(godog): add to the component something like a format string to validate
  * va_list?
+ * XXX(shammash): instead of a va_list we can use a getsubopt(3) string, and add
+ * the tokens and their description to the module
  */
 int vde_component_init(vde_component *component, vde_quark qname,
                        vde_module *module, vde_context *ctx, va_list args)

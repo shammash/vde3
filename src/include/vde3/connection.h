@@ -62,6 +62,13 @@ typedef enum conn_cb_result conn_cb_result;
  *
  * @return zero on success, an error code otherwise
  */
+/*
+ * XXX(shammash): add a flag here to tell the connection backend if the packet
+ * needs to be copied or the same memory area / pointer can be used? This can be
+ * useful if, for instance, we have a send-queue in the engine and in the
+ * connection: right now the engine would have its own copy of the packet which
+ * needs to be copied again in the connection.
+ */
 typedef int (*conn_be_write)(vde_connection *conn, vde_pkt *pkt);
 
 /**
