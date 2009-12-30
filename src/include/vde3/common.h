@@ -42,6 +42,7 @@
 typedef GList vde_list;
 #define vde_list_first(list) g_list_first(list)
 #define vde_list_next(list) g_list_next(list)
+#define vde_list_length(list) g_list_length(list)
 #define vde_list_get_data(list) g_list_nth_data(list, 0)
 #define vde_list_prepend(list, data) g_list_prepend(list, data)
 #define vde_list_remove(list, data) g_list_remove(list, data)
@@ -75,8 +76,38 @@ typedef gchar vde_char;
 #define vde_return_if_fail(exp) g_return_if_fail(exp)
 #define vde_return_val_if_fail(exp, val) g_return_val_if_fail(exp, val)
 
-// XXX to be defined
-typedef struct json_object vde_serial_obj;
+// serializable object API
+typedef struct json_object vde_sobj;
+#define vde_sobj_to_string(o) json_object_to_json_string(o)
+#define vde_sobj_from_string(s) json_tokener_parse(s)
+#define vde_sobj_free(o) json_object_put(o)
+
+#define vde_sobj_new_int(i) json_object_new_int(i)
+#define vde_sobj_new_double(d) json_object_new_double(d)
+#define vde_sobj_new_bool(b) json_object_new_bool(b)
+#define vde_sobj_new_string(s) json_object_new_string(s)
+
+#define vde_sobj_new_array() json_object_new_array()
+#define vde_sobj_array_add(a, o) json_object_array_add(a, o)
+#define vde_sobj_array_length(a) json_object_array_length(a)
+#define vde_sobj_array_get_idx(a, i) json_object_array_get_idx(a, i)
+
+#define vde_sobj_new_hash() json_object_new_object()
+#define vde_sobj_hash_insert(d, k, v) json_object_object_add(d, k, v)
+#define vde_sobj_hash_remove(d, k) json_object_object_del(d, k)
+#define vde_sobj_hash_lookup(d, k) json_object_object_get(d, k)
+
+#define vde_sobj_is_type(o, t) json_object_is_type(o, t)
+#define vde_sobj_type_int json_type_int
+#define vde_sobj_type_double json_type_double
+#define vde_sobj_type_bool json_type_bool
+#define vde_sobj_type_string json_type_string
+#define vde_sobj_type_array json_type_array
+
+#define vde_sobj_get_int(o) json_object_get_int(o)
+#define vde_sobj_get_double(o) json_object_get_double(o)
+#define vde_sobj_get_bool(o) json_object_get_boolean(o)
+#define vde_sobj_get_string(o) json_object_get_string(o)
 
 // from vde2 port.h
 #define ETH_ALEN 6
