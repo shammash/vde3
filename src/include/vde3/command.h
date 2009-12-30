@@ -43,12 +43,10 @@ typedef struct {
 // un comando
 typedef struct {
   char const * const name;
-  // TODO definire qualcosa al posto di struct json_object
-  bool const (*func)(vde_serial_obj *in, vde_serial_obj **out);
+  bool (*func)(vde_component *component, vde_sobj *in, vde_sobj **out);
   char const * const description;
   vde_argument const * const args;
 } vde_command;
-
 
 
 #endif /* __VDE3_COMMAND_H__ */

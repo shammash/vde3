@@ -29,9 +29,8 @@ struct vde_component {
   vde_component_kind kind;
   vde_char *family;
   int refcount;
-  // XXX these two lists are right?
-  vde_list *commands;
-  vde_list *signals;
+  vde_hash *commands;
+  vde_hash *signals;
   void *priv;
   bool initialized;
   // Ops connection_manager specific:
@@ -78,6 +77,8 @@ int vde_component_init(vde_component *component, vde_quark qname,
   // XXX using the family string directly from module
   component->family = (char *)vde_module_get_family(module);
   component->cops = vde_module_get_component_ops(module);
+  component->commands = vde_hash_init();
+  component->signals = vde_hash_init();
 
   retval = component->cops->init(component, args);
   if (retval) {
@@ -100,6 +101,10 @@ void vde_component_fini(vde_component *component)
                 __PRETTY_FUNCTION__, component->refcount);
   }
   */
+
+  // XXX clean these up before delete
+  //vde_hash_delete(component->commands);
+  //vde_hash_delete(component->signals);
 
   component->cops->fini(component);
 
@@ -182,38 +187,54 @@ vde_quark vde_component_get_qname(vde_component *component)
   return component->qname;
 }
 
-/**
-* @brief vde_component utility to add a command
-*
-* @param component The component to add the command to
-* @param command The command to add
-*
-* @return zero on success, otherwise an error code
-*/
 int vde_component_command_add(vde_component *component,
-                               vde_command *command);
+                              vde_command *command)
+{
+  char *cmd_name;
 
-/**
-* @brief vde_component utility to remove a command
-*
-* @param component The component to remove the command from
-* @param command The command to remove
-*
-* @return zero on success, otherwise an error code
-*/
+  vde_return_val_if_fail(component != NULL, -1);
+  vde_return_val_if_fail(command != NULL, -2);
+
+  cmd_name = vde_command_get_name(command);
+
+  if (vde_hash_lookup(component->commands, cmd_name)) {
+    vde_error("%s: command %s already registered",
+              __PRETTY_FUNCTION__, cmd_name);
+    return -3;
+  }
+
+  vde_hash_insert(component->commands, cmd_name, command);
+
+  return 0;
+}
+
 int vde_component_command_del(vde_component *component,
-                               vde_command *command);
+                              vde_command *command)
+{
+  char *cmd_name;
 
-/**
-* @brief Lookup for a command in a component
-*
-* @param component The component to look into
-* @param name The name of the command
-*
-* @return a vde command, NULL if not found
-*/
+  vde_return_val_if_fail(component != NULL, -1);
+  vde_return_val_if_fail(command != NULL, -2);
+
+  cmd_name = vde_command_get_name(command);
+
+  if (!vde_hash_remove(component->commands, cmd_name)) {
+    vde_error("%s: unable to remove command %s",
+              __PRETTY_FUNCTION__, cmd_name);
+    return -3;
+  }
+
+  return 0;
+}
+
 vde_command *vde_component_command_get(vde_component *component,
-                                        const char *name);
+                                       const char *name)
+{
+  vde_return_val_if_fail(component != NULL, -1);
+  vde_return_val_if_fail(name != NULL, -2);
+
+  return vde_hash_lookup(component->commands, name);
+}
 
 /**
 * @brief List all commands of a component
@@ -233,7 +254,7 @@ vde_command **vde_component_commands_list(vde_component *component);
 * @return zero on success, otherwise an error code
 */
 int vde_component_signal_add(vde_component *component,
-                              vde_signal *signal);
+                             vde_signal *signal);
 
 /**
 * @brief vde_component utility to remove a signal
@@ -244,7 +265,7 @@ int vde_component_signal_add(vde_component *component,
 * @return zero on success, otherwise an error code
 */
 int vde_component_signal_del(vde_component *component,
-                              vde_signal *signal);
+                             vde_signal *signal);
 
 /**
 * @brief Lookup for a signal in a component
@@ -255,7 +276,7 @@ int vde_component_signal_del(vde_component *component,
 * @return a vde signal, NULL if not found
 */
 vde_signal *vde_component_signal_get(vde_component *component,
-                                       const char *name);
+                                     const char *name);
 
 /**
 * @brief List all signals of a component
@@ -276,7 +297,7 @@ vde_signal **vde_component_signals_list(vde_component *component);
 * @param data Callback private data
 */
 void vde_component_signal_callback(vde_component *component,
-                                    const char *signal, vde_serial_obj *infos,
+                                    const char *signal, vde_sobj *infos,
                                     void *data);
 
 /**

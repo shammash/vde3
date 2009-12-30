@@ -197,7 +197,7 @@ int vde_component_command_del(vde_component *component,
 * @return a vde command, NULL if not found
 */
 vde_command *vde_component_command_get(vde_component *component,
-                                        const char *name);
+                                       const char *name);
 
 /**
 * @brief List all commands of a component
@@ -260,7 +260,7 @@ vde_signal **vde_component_signals_list(vde_component *component);
 * @param data Callback private data
 */
 void vde_component_signal_callback(vde_component *component,
-                                    const char *signal, vde_serial_obj *infos,
+                                    const char *signal, vde_sobj *infos,
                                     void *data);
 
 /**
