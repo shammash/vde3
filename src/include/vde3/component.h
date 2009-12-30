@@ -167,6 +167,17 @@ vde_component_kind vde_component_get_kind(vde_component *component);
 vde_quark vde_component_get_qname(vde_component *component);
 
 /**
+* @brief vde_component utility to register commands
+*
+* @param component The component to add commands to
+* @param commands The NULL-terminated array of commands
+*
+* @return zero on success, otherwise an error code
+*/
+int vde_component_commands_register(vde_component *component,
+                                    vde_command *command);
+
+/**
 * @brief vde_component utility to add a command
 *
 * @param component The component to add the command to

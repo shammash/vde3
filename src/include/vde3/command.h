@@ -48,5 +48,13 @@ typedef struct {
   vde_argument const * const args;
 } vde_command;
 
+static inline const char *vde_command_get_name(vde_command *command)
+{
+  if (!command) {
+    return NULL;
+  }
+
+  return command->name;
+}
 
 #endif /* __VDE3_COMMAND_H__ */

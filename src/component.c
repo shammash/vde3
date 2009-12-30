@@ -187,6 +187,23 @@ vde_quark vde_component_get_qname(vde_component *component)
   return component->qname;
 }
 
+int vde_component_commands_register(vde_component *component,
+                                    vde_command *commands)
+{
+  vde_return_val_if_fail(component != NULL, -1);
+  vde_return_val_if_fail(commands != NULL, -2);
+
+  while (vde_command_get_name(commands) != NULL) {
+    if (vde_component_command_add(component, commands)) {
+      return -3;
+    }
+
+    commands++;
+  }
+
+  return 0;
+}
+
 int vde_component_command_add(vde_component *component,
                               vde_command *command)
 {
