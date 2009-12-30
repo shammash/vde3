@@ -22,6 +22,8 @@
 #include <vde3/context.h>
 #include <vde3/connection.h>
 
+#include <engine_hub_commands.h>
+
 // from vde_switch/packetq.c
 #define TIMEOUT 5
 #define TIMES 10
@@ -32,6 +34,26 @@ struct hub_engine {
   vde_list *ports;
 };
 typedef struct hub_engine hub_engine;
+
+int engine_hub_status(vde_component *component, vde_sobj **out)
+{
+  hub_engine *hub = vde_component_get_priv(component);
+
+  *out = vde_sobj_new_int(vde_list_length(hub->ports));
+
+  return 0;
+}
+
+int engine_hub_printport(vde_component *component, int port, vde_sobj **out)
+{
+  char str[128];
+  hub_engine *hub = vde_component_get_priv(component);
+
+  sprintf(str, "please print something useful for port %i", port);
+  *out = vde_sobj_new_string(str);
+
+  return 0;
+}
 
 conn_cb_result hub_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
 {
@@ -102,7 +124,6 @@ int hub_engine_newconn(vde_component *component, vde_connection *conn,
 // XXX: add a max_ports argument?
 static int engine_hub_init(vde_component *component)
 {
-
   hub_engine *hub;
 
   if (component == NULL) {
@@ -117,6 +138,15 @@ static int engine_hub_init(vde_component *component)
   }
 
   hub->component = component;
+
+  // command registration phase
+  // - the header for the wrappers has been included at the top
+  // - register the commands array, the name is in the json definition
+  if (vde_component_commands_register(component, engine_hub_commands)) {
+    vde_error("%s: could not register commands", __PRETTY_FUNCTION__);
+    vde_free(hub);
+    return -4;
+  }
 
   vde_component_set_engine_ops(component, &hub_engine_newconn);
   vde_component_set_priv(component, (void *)hub);
