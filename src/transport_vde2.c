@@ -313,6 +313,9 @@ void vde2_conn_close(vde_connection *conn)
   if (v2_conn->data_ev_wr != NULL) {
     vde_context_event_del(ctx, v2_conn->data_ev_wr);
   }
+  if (v2_conn->local_sa.sun_path != NULL) {
+    unlink(v2_conn->local_sa.sun_path);
+  }
   if (v2_conn->ctl_fd >= 0){
     close(v2_conn->ctl_fd);
   }
