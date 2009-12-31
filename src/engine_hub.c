@@ -47,7 +47,6 @@ int engine_hub_status(vde_component *component, vde_sobj **out)
 int engine_hub_printport(vde_component *component, int port, vde_sobj **out)
 {
   char str[128];
-  hub_engine *hub = vde_component_get_priv(component);
 
   sprintf(str, "please print something useful for port %i", port);
   *out = vde_sobj_new_string(str);

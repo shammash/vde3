@@ -19,9 +19,11 @@
 #define __VDE3_CONNECTION_H__
 
 #include <sys/time.h>
+#include <limits.h>
 
 #include <vde3/attributes.h>
 #include <vde3/packet.h>
+#include <vde3/common.h>
 
 enum vde_conn_error {
   CONN_OK,

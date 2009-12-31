@@ -207,7 +207,7 @@ int vde_component_commands_register(vde_component *component,
 int vde_component_command_add(vde_component *component,
                               vde_command *command)
 {
-  char *cmd_name;
+  const char *cmd_name;
 
   vde_return_val_if_fail(component != NULL, -1);
   vde_return_val_if_fail(command != NULL, -2);
@@ -228,7 +228,7 @@ int vde_component_command_add(vde_component *component,
 int vde_component_command_del(vde_component *component,
                               vde_command *command)
 {
-  char *cmd_name;
+  const char *cmd_name;
 
   vde_return_val_if_fail(component != NULL, -1);
   vde_return_val_if_fail(command != NULL, -2);
@@ -247,8 +247,8 @@ int vde_component_command_del(vde_component *component,
 vde_command *vde_component_command_get(vde_component *component,
                                        const char *name)
 {
-  vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(name != NULL, -2);
+  vde_return_val_if_fail(component != NULL, NULL);
+  vde_return_val_if_fail(name != NULL, NULL);
 
   return vde_hash_lookup(component->commands, name);
 }
