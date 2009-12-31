@@ -1,0 +1,23 @@
+{
+  "basename": "engine_hub",
+  "wrappables": [
+    {
+      "fun": "engine_hub_status",
+      "name": "status",
+      "parameters": [],
+      "description": "Prints the current status"
+    },
+    {
+      "fun": "engine_hub_printport",
+      "name": "printport",
+      "parameters": [
+        {
+          "type": "int",
+          "name": "port",
+          "description": "Port number"
+        }
+      ],
+      "description": "Print the port status"
+    }
+  ]
+}
