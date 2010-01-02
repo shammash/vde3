@@ -105,6 +105,7 @@ int vde_context_init(vde_context *ctx, vde_event_handler *handler)
   conn_manager_module_init(ctx);
   transport_vde2_module_init(ctx);
   engine_hub_module_init(ctx);
+  engine_ctrl_module_init(ctx);
 
   return 0;
 }
