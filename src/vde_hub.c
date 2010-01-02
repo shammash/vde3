@@ -27,6 +27,8 @@ int main(int argc, char **argv)
   vde_context *ctx;
   vde_component *transport, *engine, *cm;
 
+  vde_component *ctransport, *cengine, *ccm;
+
   event_init();
 
   res = vde_context_new(&ctx);
@@ -59,6 +61,29 @@ int main(int argc, char **argv)
   res = vde_component_conn_manager_listen(cm);
   if (res) {
     printf("no listen on cm: %d\n", res);
+  }
+
+  // control part
+  res = vde_context_new_component(ctx, VDE_TRANSPORT, "vde2", "tr2", &ctransport,
+                                  "/tmp/vde3_test_ctrl");
+  if (res) {
+    printf("no new ctransport: %d\n", res);
+  }
+
+  res = vde_context_new_component(ctx, VDE_ENGINE, "ctrl", "e2", &cengine);
+  if (res) {
+    printf("no new cengine: %d\n", res);
+  }
+
+  res = vde_context_new_component(ctx, VDE_CONNECTION_MANAGER, "default", "cm2",
+                                  &ccm, ctransport, cengine, 0);
+  if (res) {
+    printf("no new ccm: %d\n", res);
+  }
+
+  res = vde_component_conn_manager_listen(ccm);
+  if (res) {
+    printf("no listen on ccm: %d\n", res);
   }
 
   event_dispatch();
