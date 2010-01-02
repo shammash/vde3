@@ -19,7 +19,7 @@ ANNOYING_WARNINGS=-Wpadded # warn when adding pad to structs
 
 EXT_CFLAGS=$(shell pkg-config --cflags json glib-2.0)
 EXT_LIBS=$(shell pkg-config --libs json glib-2.0) -levent
-VDE_DEF=-ggdb -Iinclude/ -I.
+VDE_DEF=-D_GNU_SOURCE -DVDE3_DEBUG -ggdb -Iinclude/ -I.
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(EXT_CFLAGS) $(VDE_DEF) -Wall -c -o $@ $<
