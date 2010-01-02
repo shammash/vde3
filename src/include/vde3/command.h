@@ -18,7 +18,7 @@
 #ifndef __VDE3_COMMAND_H__
 #define __VDE3_COMMAND_H__
 
-#include <stdbool.h>
+#include <vde3.h>
 
 #include <vde3/common.h>
 
@@ -32,6 +32,8 @@
 //   - comando che wrappa in qualche modo vlan_add(), da cui poi viene generato
 //     automaticamente il wrapper vlan_add_cmq_wrapper()
 //    int vlan_add_cmd(component, int puppa, int fuffa, char* name, json_object);
+typedef int (*command_func)(vde_component *component, vde_sobj *in,
+                            vde_sobj **out);
 
 // un singolo argomento
 typedef struct {
@@ -43,7 +45,7 @@ typedef struct {
 // un comando
 typedef struct {
   char const * const name;
-  bool (*func)(vde_component *component, vde_sobj *in, vde_sobj **out);
+  command_func func;
   char const * const description;
   vde_argument const * const args;
 } vde_command;
@@ -55,6 +57,15 @@ static inline const char *vde_command_get_name(vde_command *command)
   }
 
   return command->name;
+}
+
+static inline command_func vde_command_get_func(vde_command *command)
+{
+  if (!command) {
+    return NULL;
+  }
+
+  return command->func;
 }
 
 #endif /* __VDE3_COMMAND_H__ */

@@ -57,9 +57,9 @@ def gen_command(info):
           '  "%(description)s", %(fun)s_wrapper_params },' % info]
 
 def gen_wrapper_declaration(info):
-  return ['bool %s_wrapper(%s, %s, %s);' % (info['fun'],
-                                            'vde_component *component',
-                                            'vde_sobj *in', 'vde_sobj **out')]
+  return ['int %s_wrapper(%s, %s, %s);' % (info['fun'],
+                                           'vde_component *component',
+                                           'vde_sobj *in', 'vde_sobj **out')]
 
 def gen_params(info):
   res = []
@@ -79,12 +79,12 @@ def gen_wrapper(info):
   args = ['vde_component *component']
   args.extend(["%(type)s %(name)s" % p for p in info['parameters']])
   args.append('vde_sobj **out')
-  wrap = ['bool %s(%s);' % (info['fun'], ', '.join(args))]
+  wrap = ['int %s(%s);' % (info['fun'], ', '.join(args))]
   wrap.append('')
-  wrap.append('bool %s_wrapper(%s, %s, %s) {' % (info['fun'],
-                                                 'vde_component *component',
-                                                 'vde_sobj *in',
-                                                 'vde_sobj **out'))
+  wrap.append('int %s_wrapper(%s, %s, %s) {' % (info['fun'],
+                                                'vde_component *component',
+                                                'vde_sobj *in',
+                                                'vde_sobj **out'))
 
   # declare variables
   for p in info['parameters']:
@@ -95,12 +95,12 @@ def gen_wrapper(info):
   # sanity check on received json
   wrap.append('  if (!vde_sobj_is_type(in, vde_sobj_type_array)) {')
   wrap.append('    *out = vde_sobj_new_string("Did not receive an array");')
-  wrap.append('    return false;')
+  wrap.append('    return -1;')
   wrap.append('  }')
   wrap.append('  if (vde_sobj_array_length(in) != %s) {' % num_params)
   wrap.append('    *out = vde_sobj_new_string("Expected %s params");' %
               num_params)
-  wrap.append('    return false;')
+  wrap.append('    return -1;')
   wrap.append('  }')
   # check and convert parameters
   for i, p in enumerate(info['parameters']):
@@ -112,7 +112,7 @@ def gen_wrapper(info):
                 (json_var, typemap[type][1]))
     wrap.append('    *out = vde_sobj_new_string("Param %s not a %s");' %
                 (var, type))
-    wrap.append('    return false;')
+    wrap.append('    return -1;')
     wrap.append('  }')
     wrap.append('  %s = %s(%s);' % (var, typemap[type][2], json_var))
     params += '%s, ' % var
