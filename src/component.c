@@ -208,19 +208,21 @@ int vde_component_command_add(vde_component *component,
                               vde_command *command)
 {
   const char *cmd_name;
+  vde_quark qname;
 
   vde_return_val_if_fail(component != NULL, -1);
   vde_return_val_if_fail(command != NULL, -2);
 
   cmd_name = vde_command_get_name(command);
+  qname = vde_quark_from_string(cmd_name);
 
-  if (vde_hash_lookup(component->commands, cmd_name)) {
+  if (vde_hash_lookup(component->commands, (long)qname)) {
     vde_error("%s: command %s already registered",
               __PRETTY_FUNCTION__, cmd_name);
     return -3;
   }
 
-  vde_hash_insert(component->commands, cmd_name, command);
+  vde_hash_insert(component->commands, (long)qname, command);
 
   return 0;
 }
@@ -229,13 +231,15 @@ int vde_component_command_del(vde_component *component,
                               vde_command *command)
 {
   const char *cmd_name;
+  vde_quark qname;
 
   vde_return_val_if_fail(component != NULL, -1);
   vde_return_val_if_fail(command != NULL, -2);
 
   cmd_name = vde_command_get_name(command);
+  qname = vde_quark_try_string(cmd_name);
 
-  if (!vde_hash_remove(component->commands, cmd_name)) {
+  if (!vde_hash_remove(component->commands, (long)qname)) {
     vde_error("%s: unable to remove command %s",
               __PRETTY_FUNCTION__, cmd_name);
     return -3;
@@ -247,10 +251,14 @@ int vde_component_command_del(vde_component *component,
 vde_command *vde_component_command_get(vde_component *component,
                                        const char *name)
 {
+  vde_quark qname;
+
   vde_return_val_if_fail(component != NULL, NULL);
   vde_return_val_if_fail(name != NULL, NULL);
 
-  return vde_hash_lookup(component->commands, name);
+  qname = vde_quark_try_string(name);
+
+  return vde_hash_lookup(component->commands, (long)qname);
 }
 
 /**
