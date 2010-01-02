@@ -18,6 +18,7 @@
 #include <vde3.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <vde3/module.h>
 #include <vde3/component.h>

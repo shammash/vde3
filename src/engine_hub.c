@@ -15,6 +15,8 @@
  *
  */
 
+#include <stdio.h>
+
 #include <vde3.h>
 
 #include <vde3/module.h>
