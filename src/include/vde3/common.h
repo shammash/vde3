@@ -79,8 +79,9 @@ typedef gchar vde_char;
 // serializable object API
 typedef struct json_object vde_sobj;
 #define vde_sobj_to_string(o) json_object_to_json_string(o)
-#define vde_sobj_from_string(s) json_tokener_parse(s)
-#define vde_sobj_free(o) json_object_put(o)
+vde_sobj *vde_sobj_from_string(const char *string);
+#define vde_sobj_put(o) json_object_put(o)
+#define vde_sobj_get(o) json_object_get(o)
 
 #define vde_sobj_new_int(i) json_object_new_int(i)
 #define vde_sobj_new_double(d) json_object_new_double(d)
@@ -103,11 +104,16 @@ typedef struct json_object vde_sobj;
 #define vde_sobj_type_bool json_type_bool
 #define vde_sobj_type_string json_type_string
 #define vde_sobj_type_array json_type_array
+#define vde_sobj_type_hash json_type_object
 
 #define vde_sobj_get_int(o) json_object_get_int(o)
 #define vde_sobj_get_double(o) json_object_get_double(o)
 #define vde_sobj_get_bool(o) json_object_get_boolean(o)
 #define vde_sobj_get_string(o) json_object_get_string(o)
+
+// logical XOR
+// use double negation to make it possible to compare truth values
+#define XOR(a, b) ((!!a) != (!!b))
 
 // from vde2 port.h
 #define ETH_ALEN 6
