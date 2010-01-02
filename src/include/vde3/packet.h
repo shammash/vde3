@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <vde3/common.h>
+
 // A packet exchanged by vde engines
 // (it should be used more or less like Linux socket buffers).
 //
@@ -63,6 +65,29 @@ static inline void vde_pkt_init(vde_pkt *pkt, unsigned int data,
   pkt->payload = pkt->head + head;
   pkt->tail = pkt->data + data - tail;
   pkt->data_size = data;
+}
+
+/**
+ * @brief Allocate and initialize a new vde_pkt
+ *
+ * @param payload_sz The size of the payload
+ * @param head The size of the space before payload
+ * @param tail The size of the space after payload
+ *
+ * @return The new packet or NULL if an error occurred
+ */
+static inline vde_pkt *vde_pkt_new(unsigned int payload_sz, unsigned int head,
+                                   unsigned int tail)
+{
+  unsigned int data_sz = sizeof(vde_hdr) + head + payload_sz + tail;
+  unsigned int pkt_sz = sizeof(vde_pkt) + data_sz;
+  vde_pkt *pkt = (vde_pkt *)vde_calloc(pkt_sz);
+
+  if (pkt == NULL) {
+    return NULL;
+  }
+  vde_pkt_init(pkt, data_sz, head, tail);
+  return pkt;
 }
 
 /**
