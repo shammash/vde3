@@ -1,0 +1,29 @@
+{
+  "basename": "engine_ctrl",
+  "wrappables": [
+    {
+      "fun": "engine_ctrl_notify_add",
+      "name": "notify_add",
+      "parameters": [
+        {
+          "type": "string",
+          "name": "signal",
+          "description": "signal path"
+        }
+      ],
+      "description": "Add a notify"
+    },
+    {
+      "fun": "engine_ctrl_notify_del",
+      "name": "notify_del",
+      "parameters": [
+        {
+          "type": "string",
+          "name": "signal",
+          "description": "signal path"
+        }
+      ],
+      "description": "Delete a notify"
+    }
+  ]
+}

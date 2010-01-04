@@ -4,7 +4,8 @@ VDE_SRC = context.c component.c conn_manager.c logging.c module.c \
 
 VDE_OBJ = context.o component.o conn_manager.o logging.o module.o \
   transport_vde2.o connection.o libevent_handler.o engine_hub.o \
-  localconnection.o engine_hub_commands.o common.o engine_ctrl.o signal.o
+  localconnection.o engine_hub_commands.o common.o engine_ctrl.o signal.o \
+  engine_ctrl_commands.o
 
 LOTSA_WARNINGS=-Winline -Wformat=2 -Wswitch-default -Wswitch-enum \
 -Wunused-parameter -Wfloat-equal -Wundef -Wshadow -Wunsafe-loop-optimizations \
@@ -35,12 +36,18 @@ vde_hub2hub: $(VDE_OBJ) vde_hub2hub.o
 engine_hub_commands.c: engine_hub_wrappable.json
 	python gen_checker.py engine_hub_wrappable.json
 
+engine_ctrl_commands.c: engine_ctrl_wrappable.json
+	python gen_checker.py engine_ctrl_wrappable.json
+
 engine_hub.c: engine_hub_commands.c
+
+engine_ctrl.c: engine_ctrl_commands.c
 
 clean:
 	-rm $(VDE_OBJ)
 	-rm vde_hub vde_hub2hub
 	-rm engine_hub_commands.c engine_hub_commands.h
+	-rm engine_ctrl_commands.c engine_ctrl_commands.h
 
 tags:
 	cscope -b -R -Iinclude/
