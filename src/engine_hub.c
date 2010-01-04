@@ -31,6 +31,17 @@
 #define TIMES 10
 // end from vde_switch/packetq.c
 
+
+// START temporary signals declaration
+#include <vde3/signal.h>
+static vde_signal engine_hub_signals [] = {
+  { "port_new", NULL, NULL, NULL },
+  { "port_del", NULL, NULL, NULL },
+  { NULL, NULL, NULL, NULL },
+};
+// END temporary signals declaration
+
+
 struct hub_engine {
   vde_component *component;
   vde_list *ports;
@@ -80,6 +91,7 @@ conn_cb_result hub_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
 conn_cb_result hub_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
                                   vde_conn_error err, void *arg)
 {
+  vde_sobj *info;
   hub_engine *hub = (hub_engine *)arg;
 
   if (err == CONN_WRITE_DELAY) {
@@ -91,6 +103,13 @@ conn_cb_result hub_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
 
   hub->ports = vde_list_remove(hub->ports, conn);
 
+  info = vde_sobj_new_array();
+  // XXX check info not null
+  // XXX print new port number instead of the total number of ports in the hub
+  vde_sobj_array_add(info, vde_sobj_new_int(vde_list_length(hub->ports)));
+  vde_component_signal_raise(hub->component, "port_del", info);
+  vde_sobj_put(info);
+
   return CONN_CB_CLOSE;
 }
 
@@ -99,6 +118,7 @@ int hub_engine_newconn(vde_component *component, vde_connection *conn,
 {
   unsigned int max_payload;
   struct timeval send_timeout;
+  vde_sobj *info;
   hub_engine *hub = vde_component_get_priv(component);
 
   max_payload = vde_connection_max_payload(conn);
@@ -118,6 +138,13 @@ int hub_engine_newconn(vde_component *component, vde_connection *conn,
   send_timeout.tv_sec = TIMEOUT;
   send_timeout.tv_usec = 0;
   vde_connection_set_send_properties(conn, TIMES, &send_timeout);
+
+  info = vde_sobj_new_array();
+  // XXX check info not null
+  // XXX print new port number instead of the total number of ports in the hub
+  vde_sobj_array_add(info, vde_sobj_new_int(vde_list_length(hub->ports)));
+  vde_component_signal_raise(component, "port_new", info);
+  vde_sobj_put(info);
 
   return 0;
 }
@@ -147,6 +174,12 @@ static int engine_hub_init(vde_component *component)
     vde_error("%s: could not register commands", __PRETTY_FUNCTION__);
     vde_free(hub);
     return -4;
+  }
+
+  if (vde_component_signals_register(component, engine_hub_signals)) {
+    vde_error("%s: could not register signals", __PRETTY_FUNCTION__);
+    vde_free(hub);
+    return -5;
   }
 
   vde_component_set_engine_ops(component, &hub_engine_newconn);
