@@ -44,7 +44,7 @@ WRAPPERS_SUFFIX='_commands.c'
 typemap = {'int': ('int', 'vde_sobj_type_int', 'vde_sobj_get_int'),
            'double': ('double', 'vde_sobj_type_double', 'vde_sobj_get_double'),
            'bool': ('bool', 'vde_sobj_type_boolean', 'vde_sobj_get_boolean'),
-           'string': ('char *', 'vde_sobj_type_string', 'vde_sobj_get_string'),
+           'string': ('const char *', 'vde_sobj_type_string', 'vde_sobj_get_string'),
 }
 
 def usage():
@@ -77,7 +77,7 @@ def gen_wrapper(info):
   num_params = len(info['parameters'])
   # function signature
   args = ['vde_component *component']
-  args.extend(["%(type)s %(name)s" % p for p in info['parameters']])
+  args.extend(["%s %s" % (typemap[p['type']][0], p['name']) for p in info['parameters']])
   args.append('vde_sobj **out')
   wrap = ['int %s(%s);' % (info['fun'], ', '.join(args))]
   wrap.append('')
