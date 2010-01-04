@@ -27,6 +27,10 @@
 
 #define MAX_INBUF_SZ 8192
 
+// XXX '/' is escaped by json
+#define SEP_CHAR '.'
+#define SEP_STRING "."
+
 struct ctrl_engine {
   // - aliases table
   vde_component *component;
@@ -200,7 +204,7 @@ static void ctrl_engine_deserialize_string(char *string, void *arg)
 
   method_name = vde_sobj_get_string(vde_sobj_hash_lookup(in_sobj, "method"));
 
-  sep = memchr(method_name, '/', strlen(method_name));
+  sep = memchr(method_name, SEP_CHAR, strlen(method_name));
   if (!sep) {
     vde_warning("%s: cannot find separator in method name",
                 __PRETTY_FUNCTION__);
@@ -236,8 +240,10 @@ static void ctrl_engine_deserialize_string(char *string, void *arg)
     reply = rpc_10_build_reply(mesg_id, out_sobj, NULL);
   }
   vde_sobj_put(out_sobj);
+
   // XXX check error
   ctrl_engine_conn_write(cc, reply);
+
   vde_sobj_put(reply);
 
 cleannames:
