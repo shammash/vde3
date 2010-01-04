@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <vde3/module.h>
 #include <vde3/component.h>
@@ -113,7 +114,7 @@ static int ctrl_engine_conn_write(ctrl_conn *cc, vde_sobj *out_obj) {
  * @brief Build a JSON-RPC 1.0 method call reply, one between result and error
  * must be NULL
  *
- * @param id The reply id
+ * @param id The reply id, an integer
  * @param result The object result
  * @param error The object error
  *
@@ -125,6 +126,9 @@ vde_sobj *rpc_10_build_reply(vde_sobj *id, vde_sobj *result, vde_sobj *error)
 
   vde_return_val_if_fail(XOR(result, error), NULL);
 
+  vde_return_val_if_fail(vde_sobj_is_type(id, vde_sobj_type_int), NULL);
+
+  // XXX check reply == NULL
   reply = vde_sobj_new_hash();
   vde_sobj_hash_insert(reply, "id", vde_sobj_get(id));
   vde_sobj_hash_insert(reply, "result", vde_sobj_get(result));
@@ -239,6 +243,8 @@ static void ctrl_engine_deserialize_string(char *string, void *arg)
   } else {
     reply = rpc_10_build_reply(mesg_id, out_sobj, NULL);
   }
+  // XXX check reply == NULL
+
   vde_sobj_put(out_sobj);
 
   // XXX check error
@@ -374,6 +380,8 @@ int ctrl_engine_newconn(vde_component *component, vde_connection *conn,
   cc->engine = ctrl;
 
   vde_debug("got new control conn");
+
+  // XXX register/deregister cc inside ctrl to keep a list of active cconns
 
   // XXX register write callback to flush queue conn
   vde_connection_set_callbacks(conn, &ctrl_engine_readcb, NULL,
