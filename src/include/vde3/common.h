@@ -68,6 +68,7 @@ typedef GQueue vde_queue;
 typedef GQuark vde_quark;
 #define vde_quark_try_string(s) g_quark_try_string(s)
 #define vde_quark_from_string(s) g_quark_from_string(s)
+#define vde_quark_to_string(q) g_quark_to_string(q)
 
 typedef gchar vde_char;
 #define vde_strdup(s) g_strdup(s)
