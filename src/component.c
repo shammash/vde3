@@ -277,38 +277,81 @@ vde_command *vde_component_command_get(vde_component *component,
 */
 vde_command **vde_component_commands_list(vde_component *component);
 
-/**
-* @brief vde_component utility to add a signal
-*
-* @param component The component to add the signal to
-* @param signal The signal to add
-*
-* @return zero on success, otherwise an error code
-*/
+int vde_component_signals_register(vde_component *component,
+                                   vde_signal *signals)
+{
+  vde_return_val_if_fail(component != NULL, -1);
+  vde_return_val_if_fail(signals != NULL, -2);
+
+  while (vde_signal_get_name(signals) != NULL) {
+    if (vde_component_signal_add(component, signals)) {
+      return -3;
+    }
+
+    signals++;
+  }
+
+  return 0;
+}
+
 int vde_component_signal_add(vde_component *component,
-                             vde_signal *signal);
+                             vde_signal *signal)
+{
+  const char *sig_name;
+  vde_quark qname;
 
-/**
-* @brief vde_component utility to remove a signal
-*
-* @param component The component to remove the signal from
-* @param signal The signal to remove
-*
-* @return zero on success, otherwise an error code
-*/
+  vde_return_val_if_fail(component != NULL, -1);
+  vde_return_val_if_fail(signal != NULL, -2);
+
+  sig_name = vde_signal_get_name(signal);
+  qname = vde_quark_from_string(sig_name);
+
+  if (vde_hash_lookup(component->signals, (long)qname)) {
+    vde_error("%s: signal %s already registered",
+              __PRETTY_FUNCTION__, sig_name);
+    return -3;
+  }
+
+  vde_hash_insert(component->signals, (long)qname, signal);
+
+  return 0;
+}
+
 int vde_component_signal_del(vde_component *component,
-                             vde_signal *signal);
+                             vde_signal *signal)
+{
+  const char *sig_name;
+  vde_quark qname;
 
-/**
-* @brief Lookup for a signal in a component
-*
-* @param component The component to look into
-* @param name The name of the signal
-*
-* @return a vde signal, NULL if not found
-*/
+  vde_return_val_if_fail(component != NULL, -1);
+  vde_return_val_if_fail(signal != NULL, -2);
+
+  sig_name = vde_signal_get_name(signal);
+  qname = vde_quark_try_string(sig_name);
+
+  if (!vde_hash_remove(component->signals, (long)qname)) {
+    vde_error("%s: unable to remove signal %s",
+              __PRETTY_FUNCTION__, sig_name);
+    return -3;
+  }
+
+  vde_signal_fini(signal, component);
+
+  return 0;
+}
+
 vde_signal *vde_component_signal_get(vde_component *component,
-                                     const char *name);
+                                     const char *name)
+{
+  vde_quark qname;
+
+  vde_return_val_if_fail(component != NULL, NULL);
+  vde_return_val_if_fail(name != NULL, NULL);
+
+  qname = vde_quark_try_string(name);
+
+  return vde_hash_lookup(component->signals, (long)qname);
+}
 
 /**
 * @brief List all signals of a component
@@ -319,45 +362,55 @@ vde_signal *vde_component_signal_get(vde_component *component,
 */
 vde_signal **vde_component_signals_list(vde_component *component);
 
-/**
-* @brief Signature of a signal callback
-*
-* @param component The component raising the signal
-* @param signal The signal name
-* @param infos Serialized signal parameters, if NULL the signal is being
-*              destroyed
-* @param data Callback private data
-*/
-void vde_component_signal_callback(vde_component *component,
-                                    const char *signal, vde_sobj *infos,
-                                    void *data);
+int vde_component_signal_attach(vde_component *component, const char *signal,
+                                vde_signal_cb cb,
+                                vde_signal_destroy_cb destroy_cb,
+                                void *data)
+{
+  vde_signal *sig;
 
-/**
-* @brief Attach a callback to a signal
-*
-* @param component The component to receive signals from
-* @param signal The signal name
-* @param callback The callback function
-* @param data Callback private data
-*
-* @return zero on success, otherwise an error code
-*/
+  vde_return_val_if_fail(cb != NULL, -1);
 
-//int vde_component_signal_attach(vde_component *component, const char *signal,
-//                                  vde_component_signal_callback (*callback),
-//                                  void *data);
+  sig = vde_component_signal_get(component, signal);
 
-/**
-* @brief Detach a callback from a signal
-*
-* @param component The component to stop receiving signals from
-* @param signal The signal name
-* @param callback The callback function to detach
-*
-* @return zero on success, otherwise an error code
-*/
-//int vde_component_signal_detach(vde_component *component, const char *signal,
-//                                 vde_component_signal_callback (*callback));
+  if (!sig) {
+    return -2;
+  }
+
+  return vde_signal_attach(sig, cb, destroy_cb, data);
+}
+
+int vde_component_signal_detach(vde_component *component, const char *signal,
+                                vde_signal_cb cb,
+                                vde_signal_destroy_cb destroy_cb,
+                                void *data)
+{
+  vde_signal *sig;
+
+  vde_return_val_if_fail(cb != NULL, -1);
+
+  sig = vde_component_signal_get(component, signal);
+
+  if (!sig) {
+    return -2;
+  }
+
+  return vde_signal_detach(sig, cb, destroy_cb, data);
+}
+
+void vde_component_signal_raise(vde_component *component, const char *signal,
+                               vde_sobj *info)
+{
+  vde_signal *sig;
+
+  sig = vde_component_signal_get(component, signal);
+
+  if (!sig) {
+    return;
+  }
+
+  vde_signal_raise(sig, info, component);
+}
 
 void vde_component_set_conn_manager_ops(vde_component *cm, cm_listen listen,
                                         cm_connect connect)

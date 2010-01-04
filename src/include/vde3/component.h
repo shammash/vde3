@@ -184,7 +184,7 @@ const char *vde_component_get_name(vde_component *component);
 * @return zero on success, otherwise an error code
 */
 int vde_component_commands_register(vde_component *component,
-                                    vde_command *command);
+                                    vde_command *commands);
 
 /**
 * @brief vde_component utility to add a command
@@ -228,90 +228,101 @@ vde_command *vde_component_command_get(vde_component *component,
 */
 vde_command **vde_component_commands_list(vde_component *component);
 
+// XXX consolidate naming of signals, use path or signal_path
 /**
-* @brief vde_component utility to add a signal
+* @brief vde_component utility to register signals
 *
-* @param component The component to add the signal to
-* @param signal The signal to add
+* @param component The component to add signals to
+* @param commands The NULL-terminated array of signals
 *
 * @return zero on success, otherwise an error code
 */
+int vde_component_signals_register(vde_component *component,
+                                   vde_signal *signals);
+
+/**
+ * @brief vde_component utility to add a signal
+ *
+ * @param component The component to add the signal to
+ * @param signal The signal to add
+ *
+ * @return zero on success, otherwise an error code
+ */
 int vde_component_signal_add(vde_component *component,
-                              vde_signal *signal);
+                             vde_signal *signal);
 
 /**
-* @brief vde_component utility to remove a signal
-*
-* @param component The component to remove the signal from
-* @param signal The signal to remove
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief vde_component utility to remove a signal
+ *
+ * @param component The component to remove the signal from
+ * @param signal The signal to remove
+ *
+ * @return zero on success, otherwise an error code
+ */
 int vde_component_signal_del(vde_component *component,
-                              vde_signal *signal);
+                             vde_signal *signal);
 
 /**
-* @brief Lookup for a signal in a component
-*
-* @param component The component to look into
-* @param name The name of the signal
-*
-* @return a vde signal, NULL if not found
-*/
+ * @brief Lookup for a signal in a component
+ *
+ * @param component The component to look into
+ * @param name The name of the signal
+ *
+ * @return a vde signal, NULL if not found
+ */
 vde_signal *vde_component_signal_get(vde_component *component,
-                                       const char *name);
+                                     const char *name);
 
 /**
-* @brief List all signals of a component
-*
-* @param component The component
-*
-* @return A null terminated array of signals
-*/
+ * @brief List all signals of a component
+ *
+ * @param component The component
+ *
+ * @return A null terminated array of signals
+ */
 vde_signal **vde_component_signals_list(vde_component *component);
 
 /**
-* @brief Signature of a signal callback
-*
-* @param component The component raising the signal
-* @param signal The signal name
-* @param infos Serialized signal parameters, if NULL the signal is being
-*              destroyed
-* @param data Callback private data
-*/
-void vde_component_signal_callback(vde_component *component,
-                                    const char *signal, vde_sobj *infos,
-                                    void *data);
+ * @brief Attach a callback to a signal
+ *
+ * @param component The component to start receiving signals from
+ * @param signal The signal name
+ * @param cb The callback function
+ * @param destroy_cb The callback destroy function
+ * @param data Callback private data
+ *
+ * @return zero on success, otherwise an error code
+ */
+int vde_component_signal_attach(vde_component *component, const char *signal,
+                                vde_signal_cb cb,
+                                vde_signal_destroy_cb destroy_cb,
+                                void *data);
 
 /**
-* @brief Attach a callback to a signal
-*
-* @param component The component to receive signals from
-* @param signal The signal name
-* @param callback The callback function
-* @param data Callback private data
-*
-* @return zero on success, otherwise an error code
-*/
-
-// XXX to be defined
-//int vde_component_signal_attach(vde_component *component, const char *signal,
-//                                  vde_component_signal_callback (*callback),
-//                                  void *data);
+ * @brief Detach a callback from a signal
+ *
+ * @param component The component to stop receiving signals from
+ * @param signal The signal name
+ * @param cb The callback function
+ * @param destroy_cb The callback destroy function
+ * @param data Callback private data
+ *
+ * @return zero on success, otherwise an error code
+ */
+int vde_component_signal_detach(vde_component *component, const char *signal,
+                                vde_signal_cb cb,
+                                vde_signal_destroy_cb destroy_cb,
+                                void *data);
 
 /**
-* @brief Detach a callback from a signal
-*
-* @param component The component to stop receiving signals from
-* @param signal The signal name
-* @param callback The callback function to detach
-*
-* @return zero on success, otherwise an error code
-*/
-
-// XXX to be defined
-// int vde_component_signal_detach(vde_component *component, const char *signal,
-//                                  vde_component_signal_callback (*callback));
+ * @brief Raise a signal from this component
+ *
+ * @param component The component to raise signal from
+ * @param signal The signal name
+ * @param info The information attached to the signal
+ */
+void vde_component_signal_raise(vde_component *component, const char *signal,
+                                vde_sobj *info);
 
 /**
  * @brief Fill the connection manager ops in a component
