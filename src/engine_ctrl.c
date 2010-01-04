@@ -43,6 +43,7 @@ struct ctrl_conn {
   char inbuf[MAX_INBUF_SZ];
   size_t inbuf_len;
   vde_queue *out_queue;
+  vde_list *reg_signals;
   // - permission level
   ctrl_engine *engine;
 };
@@ -138,6 +139,33 @@ vde_sobj *rpc_10_build_reply(vde_sobj *id, vde_sobj *result, vde_sobj *error)
 }
 
 /**
+ * @brief Build a JSON-RPC 1.0 notification message
+ *
+ * @param method Method name, a string
+ * @param params Notification parameters, an array
+ *
+ * @return The newly constructed notification, or NULL in case of error
+ */
+vde_sobj *rpc_10_build_notice(vde_sobj *method, vde_sobj *params)
+{
+  vde_sobj *notice;
+
+  vde_return_val_if_fail(method != NULL, NULL);
+  vde_return_val_if_fail(params != NULL, NULL);
+
+  vde_return_val_if_fail(vde_sobj_is_type(method, vde_sobj_type_string), NULL);
+  vde_return_val_if_fail(vde_sobj_is_type(params, vde_sobj_type_array), NULL);
+
+  // XXX check notice == NULL
+  notice = vde_sobj_new_hash();
+  vde_sobj_hash_insert(notice, "id", NULL);
+  vde_sobj_hash_insert(notice, "method", vde_sobj_get(method));
+  vde_sobj_hash_insert(notice, "params", vde_sobj_get(params));
+
+  return notice;
+}
+
+/**
  * @brief Validate a vde_sobj WRT JSON-RPC 1.0 method call
  *
  * @param sobj The sobj to validate
@@ -175,6 +203,163 @@ static int rpc_10_sobj_validate_call(vde_sobj *sobj)
   }
 
   return 0;
+}
+
+static inline char *build_signal_path(vde_component *component,
+                                      const char *signal_path)
+{
+  const char *component_name;
+  char *full_path;
+  int full_path_len;
+
+  component_name = vde_component_get_name(component);
+
+  full_path_len = strlen(component_name) +
+                  strlen(SEP_STRING) +
+                  strlen(signal_path) +
+                  1;
+  // XXX check error on allocation
+  full_path = vde_calloc(sizeof(char) * full_path_len);
+
+  snprintf(full_path, full_path_len, "%s%s%s",
+           component_name, SEP_STRING, signal_path);
+
+  return full_path;
+}
+
+static void signal_callback(vde_component *component,
+                            const char *signal_path, vde_sobj *info,
+                            void *arg)
+{
+  char *full_path;
+  vde_sobj *full_path_obj, *notice;
+  ctrl_conn *cc = (ctrl_conn *)arg;
+
+  full_path = build_signal_path(component, signal_path);
+
+  full_path_obj = vde_sobj_new_string(full_path);
+
+  notice = rpc_10_build_notice(full_path_obj, info);
+  // XXX check notice == NULL
+  ctrl_engine_conn_write(cc, notice);
+
+  vde_sobj_put(full_path_obj);
+  vde_sobj_put(notice);
+
+  vde_free(full_path);
+}
+
+static void signal_destroy_callback(vde_component *component,
+                                    const char *signal_path, void *arg)
+{
+  char *full_path, *reg_full_path;
+  ctrl_conn *cc = (ctrl_conn *)arg;
+  vde_list *iter;
+
+  // XXX check full_path == NULL
+  full_path = build_signal_path(component, signal_path);
+
+  iter = vde_list_first(cc->reg_signals);
+  while (iter != NULL) {
+    reg_full_path = (char *)vde_list_get_data(iter);
+
+    if (!strncmp(reg_full_path, full_path, strlen(reg_full_path))) {
+      cc->reg_signals = vde_list_remove(cc->reg_signals, reg_full_path);
+      vde_free(reg_full_path);
+      break;
+    }
+    iter = vde_list_next(iter);
+  }
+
+  vde_free(full_path);
+}
+
+int engine_ctrl_notify_add(vde_component *component, const char *full_path,
+                           vde_sobj **out)
+{
+  char *sep, *s_component_name, *signal_name;
+  vde_component *s_component;
+  int rv;
+
+  // builtin command, casting component
+  ctrl_conn *cc = (ctrl_conn *)component;
+
+  sep = memchr(full_path, SEP_CHAR, strlen(full_path));
+  if (!sep) {
+    *out = vde_sobj_new_string("Cannot find separator in signal path");
+    rv = -1;
+    goto out;
+  }
+
+  // XXX check for corner cases: full_path = '/' or 'foo/' or '/foo'
+
+  s_component_name = strndup(full_path, sep - full_path);
+  signal_name = strdup(sep + 1);
+
+  s_component = vde_context_get_component(vde_connection_get_context(cc->conn),
+                                          s_component_name);
+  if (!s_component) {
+    *out = vde_sobj_new_string("Component not found");
+    rv = -1;
+    goto cleannames;
+  }
+  rv = vde_component_signal_attach(s_component, signal_name, signal_callback,
+                                   signal_destroy_callback, (void *)cc);
+  if (rv != 0) {
+    *out = vde_sobj_new_string("Failed to attach to signal");
+  } else {
+    *out = vde_sobj_new_string("Signal attached");
+  }
+
+cleannames:
+  free(s_component_name);
+  free(signal_name);
+out:
+  return rv;
+}
+
+int engine_ctrl_notify_del(vde_component *component, const char *full_path,
+                           vde_sobj **out)
+{
+  char *sep, *s_component_name, *signal_name;
+  vde_component *s_component;
+  int rv;
+
+  // builtin command, casting component
+  ctrl_conn *cc = (ctrl_conn *)component;
+
+  sep = memchr(full_path, SEP_CHAR, strlen(full_path));
+  if (!sep) {
+    *out = vde_sobj_new_string("Cannot find separator in signal path");
+    rv = -1;
+    goto out;
+  }
+
+  // XXX check for corner cases: full_path = '/' or 'foo/' or '/foo'
+
+  s_component_name = strndup(full_path, sep - full_path);
+  signal_name = strdup(sep + 1);
+
+  s_component = vde_context_get_component(vde_connection_get_context(cc->conn),
+                                          s_component_name);
+  if (!s_component) {
+    *out = vde_sobj_new_string("Component not found");
+    rv = -1;
+    goto cleannames;
+  }
+  rv = vde_component_signal_detach(s_component, signal_name, signal_callback,
+                                   signal_destroy_callback, (void *)cc);
+  if (rv != 0) {
+    *out = vde_sobj_new_string("Failed to detach from signal");
+  } else {
+    *out = vde_sobj_new_string("Signal detached");
+  }
+
+cleannames:
+  free(s_component_name);
+  free(signal_name);
+out:
+  return rv;
 }
 
 // XXX write errors back to connection instead of vde_warning only
@@ -378,6 +563,7 @@ int ctrl_engine_newconn(vde_component *component, vde_connection *conn,
   cc->conn = conn;
   cc->out_queue = vde_queue_init();
   cc->engine = ctrl;
+  cc->reg_signals = NULL;
 
   vde_debug("got new control conn");
 
