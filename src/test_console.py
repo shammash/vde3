@@ -22,31 +22,66 @@ import tempfile
 import os
 import struct
 import atexit
-
+import termios
+import threading
 import select
 
 PROMPT='vde> '
 _MAXPATH=1024
 _MAXRECV=4096
 
+thread_loop=True
+data = None
+
+def get_from_data():
+  while thread_loop:
+    rlist, wlist, xlist = select.select([data], [], [], 1)
+    if data in rlist:
+      read = data.recv(_MAXRECV)
+      print repr(read)
+      sys.stdout.write(PROMPT)
+      sys.stdout.flush()
+
+def setterm():
+  old = termios.tcgetattr(sys.stdin)
+  new = termios.tcgetattr(sys.stdin)
+  #new[3] = new[3] & ~termios.ICANON & ~termios.ECHO
+  new[3] = new[3] & ~termios.ICANON
+  new[6] [termios.VMIN] = 1
+  new[6] [termios.VTIME] = 0
+
+  termios.tcsetattr(sys.stdin, termios.TCSANOW, new)
+  termios.tcsendbreak(sys.stdin,0)
+
+  atexit.register(termios.tcsetattr, sys.stdin, termios.TCSAFLUSH, old)
+
+
 def main():
-  ctl, data, peername = vde2_connect('/tmp/vde3_test_ctrl/ctl')
+  global data
+  global thread_loop
+  ctl, datasock, peername = vde2_connect('/tmp/vde3_test_ctrl/ctl')
   print 'connected to %s.' % peername
+  data = datasock
 
   atexit.register(os.remove, data.getsockname())
 
+  #setterm()
+
+  #sys.stdout.write(PROMPT)
+  #sys.stdout.flush()
+
+  th = threading.Thread(target = get_from_data, name = 'getter')
+  th.start()
   while True:
-    rlist, wlist, xlist = select.select([data], [data], [])
-    if rlist:
-      read = data.recv(_MAXRECV)
-      print repr(read)
-    if wlist:
-      try:
-        cmd = raw_input(PROMPT)
-      except EOFError:
-        break
-      if cmd:
-        data.sendto(cmd + '\x00', peername)
+    try:
+      cmd = raw_input(PROMPT)
+    except EOFError:
+      print 'Got EOF, quitting.'
+      thread_loop = False
+      th.join()
+      break
+    if cmd:
+      data.sendto(cmd + '\x00', peername)
 
   return 0
 
