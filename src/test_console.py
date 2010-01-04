@@ -21,6 +21,9 @@ import socket
 import tempfile
 import os
 import struct
+import atexit
+
+import select
 
 PROMPT='vde> '
 _MAXPATH=1024
@@ -30,15 +33,20 @@ def main():
   ctl, data, peername = vde2_connect('/tmp/vde3_test_ctrl/ctl')
   print 'connected to %s.' % peername
 
-  while True:
-    try:
-      cmd = raw_input(PROMPT)
-      data.sendto(cmd + '\x00', peername)
-      print repr(data.recv(_MAXRECV))
-    except EOFError:
-      break
+  atexit.register(os.remove, data.getsockname())
 
-  os.remove(data.getsockname())
+  while True:
+    rlist, wlist, xlist = select.select([data], [data], [])
+    if rlist:
+      read = data.recv(_MAXRECV)
+      print repr(read)
+    if wlist:
+      try:
+        cmd = raw_input(PROMPT)
+      except EOFError:
+        break
+      if cmd:
+        data.sendto(cmd + '\x00', peername)
 
   return 0
 
@@ -78,7 +86,6 @@ if __name__ == '__main__':
       readline.read_history_file(histfile)
   except IOError:
       pass
-  import atexit
   atexit.register(readline.write_history_file, histfile)
 
   sys.exit(main())
