@@ -18,18 +18,104 @@
 #ifndef __VDE3_SIGNAL_H__
 #define __VDE3_SIGNAL_H__
 
-struct vde_signal {
-  char *name;
-  char *description;
-  vde_argument **args;
-  vde_list *callbacks;
-};
+#include <vde3.h>
+#include <vde3/command.h>
+#include <vde3/common.h>
 
+struct vde_signal {
+  char const * const name;
+  char const * const description;
+  vde_argument const * const args;
+  vde_list * callbacks;
+};
 typedef struct vde_signal vde_signal;
 
-// XXX(shammash): Think if it's possible to register signals to be logged on vde
-// log system. Probably this can be done with a component which registers itself
-// for the signals and then writes the received signals using vde-logging
-// system.
+/**
+ * @brief Signature of a signal callback
+ *
+ * @param component The component raising the signal
+ * @param signal The signal name
+ * @param infos Serialized signal parameters, if NULL the signal is being
+ *              destroyed
+ * @param data Callback private data
+ */
+typedef void (*vde_signal_cb)(vde_component *component,
+                                        const char *signal,
+                                        vde_sobj *infos, void *data);
+
+/**
+ * @brief Signature of a signal destroy callback, called when the signal is
+ * being removed
+ *
+ * @param component The component removing the signal
+ * @param signal The signal name
+ * @param data Callback private data
+ */
+typedef void (*vde_signal_destroy_cb)(vde_component *component,
+                                                const char *signal,
+                                                void *data);
+
+
+/**
+ * @brief Attach a callback to signal
+ *
+ * @param signal The signal
+ * @param cb The callback function
+ * @param destroy_cb The callback destroy function
+ * @param data Callback private data
+ *
+ * @return zero on success, otherwise an error code
+ */
+int vde_signal_attach(vde_signal *signal,
+                      vde_signal_cb cb,
+                      vde_signal_destroy_cb destroy_cb,
+                      void *data);
+
+/**
+ * @brief Detach a callback from signal
+ *
+ * @param signal The signal
+ * @param cb The callback function
+ * @param destroy_cb The callback destroy function
+ * @param data Callback private data
+ *
+ * @return zero on success, otherwise an error code
+ */
+int vde_signal_detach(vde_signal *signal,
+                      vde_signal_cb cb,
+                      vde_signal_destroy_cb destroy_cb,
+                      void *data);
+
+/**
+ * @brief Raise signal
+ *
+ * @param signal The signal
+ * @param info The information attached to the signal
+ * @param component The component raising the signal
+ */
+void vde_signal_raise(vde_signal *signal, vde_sobj *info,
+                      vde_component *component);
+
+/**
+ * @brief Finalize signal and call destroy_cb on every callback
+ *
+ * @param signal The signal
+ * @param component The component finalizing the signal
+ */
+void vde_signal_fini(vde_signal *signal, vde_component *component);
+
+static inline const char *vde_signal_get_name(vde_signal *signal)
+{
+  if (!signal) {
+    return NULL;
+  }
+
+  return signal->name;
+}
+
+// XXX(shammash): Think if it's possible to register signals to be logged on
+// vde log system. Probably this can be done with a component which registers
+// itself for the signals and then writes the received signals using
+// vde-logging system.
 
 #endif /* __VDE3_SIGNAL_H__ */
