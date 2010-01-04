@@ -26,11 +26,30 @@
 #include <vde3/context.h>
 #include <vde3/connection.h>
 
+#include <engine_ctrl_commands.h>
+
 #define MAX_INBUF_SZ 8192
 
 // XXX '/' is escaped by json
 #define SEP_CHAR '.'
 #define SEP_STRING "."
+
+static char const * const builtin_commands[] = {
+  "notify_add",
+  "notify_del",
+  NULL
+};
+
+static int is_builtin(vde_command *command) {
+  int i = 0;
+  for (i=0 ; builtin_commands[i] != NULL ; i++) {
+    if (!strncmp(vde_command_get_name(command), builtin_commands[i],
+                 strlen(builtin_commands[i]))) {
+        return 1;
+    }
+  }
+  return 0;
+}
 
 struct ctrl_engine {
   // - aliases table
@@ -422,7 +441,15 @@ static void ctrl_engine_deserialize_string(char *string, void *arg)
   func = vde_command_get_func(command);
   // XXX check permission level
 
-  rv = func(component, vde_sobj_hash_lookup(in_sobj, "params"), &out_sobj);
+  if (component == cc->engine->component && is_builtin(command)) {
+    // ctrl engine builtin commands just need ctrl connection, passing cc
+    // instead of component
+    rv = func((vde_component *)cc, vde_sobj_hash_lookup(in_sobj, "params"),
+              &out_sobj);
+  } else {
+    rv = func(component, vde_sobj_hash_lookup(in_sobj, "params"), &out_sobj);
+  }
+
   if (rv) {
     reply = rpc_10_build_reply(mesg_id, NULL, out_sobj);
   } else {
@@ -599,6 +626,12 @@ static int engine_ctrl_init(vde_component *component)
   }
 
   ctrl->component = component;
+
+  if (vde_component_commands_register(component, engine_ctrl_commands)) {
+    vde_error("%s: could not register commands", __PRETTY_FUNCTION__);
+    vde_free(ctrl);
+    return -4;
+  }
 
   vde_component_set_engine_ops(component, &ctrl_engine_newconn);
   vde_component_set_priv(component, (void *)ctrl);
