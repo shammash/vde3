@@ -167,6 +167,15 @@ vde_component_kind vde_component_get_kind(vde_component *component);
 vde_quark vde_component_get_qname(vde_component *component);
 
 /**
+ * @brief Return component name
+ *
+ * @param component The component
+ *
+ * @return The string with component name
+ */
+const char *vde_component_get_name(vde_component *component);
+
+/**
 * @brief vde_component utility to register commands
 *
 * @param component The component to add commands to

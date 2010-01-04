@@ -187,6 +187,13 @@ vde_quark vde_component_get_qname(vde_component *component)
   return component->qname;
 }
 
+const char *vde_component_get_name(vde_component *component)
+{
+  vde_return_val_if_fail(component != NULL, NULL);
+
+  return vde_quark_to_string(component->qname);
+}
+
 int vde_component_commands_register(vde_component *component,
                                     vde_command *commands)
 {
