@@ -303,6 +303,9 @@ int vde_component_signal_add(vde_component *component,
   vde_return_val_if_fail(component != NULL, -1);
   vde_return_val_if_fail(signal != NULL, -2);
 
+  // XXX: signals must be duplicated before adding them to component->signals
+  // hash otherwise two components of the same family will share the list of
+  // callbacks
   sig_name = vde_signal_get_name(signal);
   qname = vde_quark_from_string(sig_name);
 

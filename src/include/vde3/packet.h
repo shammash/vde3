@@ -81,6 +81,7 @@ static inline vde_pkt *vde_pkt_new(unsigned int payload_sz, unsigned int head,
 {
   unsigned int data_sz = sizeof(vde_hdr) + head + payload_sz + tail;
   unsigned int pkt_sz = sizeof(vde_pkt) + data_sz;
+  // XXX consider using cached allocator
   vde_pkt *pkt = (vde_pkt *)vde_calloc(pkt_sz);
 
   if (pkt == NULL) {
