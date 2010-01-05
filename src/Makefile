@@ -46,6 +46,7 @@ engine_ctrl.c: engine_ctrl_commands.c
 clean:
 	-rm $(VDE_OBJ)
 	-rm vde_hub vde_hub2hub
+	-rm vde_hub.o vde_hub2hub.o
 	-rm engine_hub_commands.c engine_hub_commands.h
 	-rm engine_ctrl_commands.c engine_ctrl_commands.h
 
