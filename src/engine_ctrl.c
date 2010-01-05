@@ -284,7 +284,7 @@ static void signal_destroy_callback(vde_component *component,
 
     if (!strncmp(reg_full_path, full_path, strlen(reg_full_path))) {
       cc->reg_signals = vde_list_remove(cc->reg_signals, reg_full_path);
-      vde_free(reg_full_path);
+      free(reg_full_path);
       break;
     }
     iter = vde_list_next(iter);
@@ -296,7 +296,7 @@ static void signal_destroy_callback(vde_component *component,
 int engine_ctrl_notify_add(vde_component *component, const char *full_path,
                            vde_sobj **out)
 {
-  char *sep, *s_component_name, *signal_name;
+  char *sep, *s_component_name, *signal_name, *reg_full_path;
   vde_component *s_component;
   int rv;
 
@@ -328,6 +328,9 @@ int engine_ctrl_notify_add(vde_component *component, const char *full_path,
     *out = vde_sobj_new_string("Failed to attach to signal");
   } else {
     *out = vde_sobj_new_string("Signal attached");
+    // XXX check NULL
+    reg_full_path = strndup(full_path, strlen(full_path));
+    cc->reg_signals = vde_list_prepend(cc->reg_signals, reg_full_path);
   }
 
 cleannames:
@@ -341,11 +344,29 @@ int engine_ctrl_notify_del(vde_component *component, const char *full_path,
                            vde_sobj **out)
 {
   char *sep, *s_component_name, *signal_name;
+  char *iter_path, *reg_full_path = NULL;
   vde_component *s_component;
+  vde_list *iter;
   int rv;
 
   // builtin command, casting component
   ctrl_conn *cc = (ctrl_conn *)component;
+
+  // search full_path inside cc
+  iter = vde_list_first(cc->reg_signals);
+  while (iter != NULL) {
+    iter_path = (char *)vde_list_get_data(iter);
+    if (!strncmp(iter_path, full_path, strlen(iter_path))) {
+      reg_full_path = iter_path;
+      break;
+    }
+    iter = vde_list_next(iter);
+  }
+  if (reg_full_path == NULL) {
+    *out = vde_sobj_new_string("Signal not registered in connection");
+    rv = -1;
+    goto out;
+  }
 
   sep = memchr(full_path, SEP_CHAR, strlen(full_path));
   if (!sep) {
@@ -370,9 +391,13 @@ int engine_ctrl_notify_del(vde_component *component, const char *full_path,
                                    signal_destroy_callback, (void *)cc);
   if (rv != 0) {
     *out = vde_sobj_new_string("Failed to detach from signal");
-  } else {
-    *out = vde_sobj_new_string("Signal detached");
+    goto cleannames;
   }
+
+  cc->reg_signals = vde_list_remove(cc->reg_signals, reg_full_path);
+  free(reg_full_path);
+
+  *out = vde_sobj_new_string("Signal detached");
 
 cleannames:
   free(s_component_name);
@@ -385,7 +410,7 @@ out:
 static void ctrl_engine_deserialize_string(char *string, void *arg)
 {
   ctrl_conn *cc = (ctrl_conn *)arg;
-  vde_sobj *in_sobj, *out_sobj, *mesg_id, *reply;
+  vde_sobj *in_sobj, *out_sobj = NULL, *mesg_id, *reply;
   const char *method_name;
   char *sep, *component_name, *command_name;
   command_func func;
@@ -574,9 +599,30 @@ conn_cb_result ctrl_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
 conn_cb_result ctrl_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
                                    vde_conn_error err, void *arg)
 {
+  //ctrl_conn *cc = (ctrl_conn *)arg;
+
   vde_debug("got control error cb");
   // XXX fini ctrl_conn
   return CONN_CB_CLOSE;
+}
+
+static int ctrl_conn_fini(ctrl_conn *cc)
+{
+  vde_pkt *pkt;
+
+  pkt = vde_queue_pop_tail(cc->out_queue);
+  while (pkt != NULL) {
+    vde_free(pkt);
+    pkt = vde_queue_pop_tail(cc->out_queue);
+  }
+  vde_queue_delete(cc->out_queue);
+
+  // XXX deregister cc from cc->engine list of connections
+  // XXX iterate over cc->reg_signals, for each full_path found:
+  //     split path
+  //     deregister signal from component
+  //     free full_path
+  //vde_free(cc);
 }
 
 int ctrl_engine_newconn(vde_component *component, vde_connection *conn,
