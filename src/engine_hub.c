@@ -155,7 +155,7 @@ static int engine_hub_init(vde_component *component)
   int tmp_errno;
   hub_engine *hub;
 
-  vde_assert(component == NULL);
+  vde_assert(component != NULL);
 
   hub = (hub_engine *)vde_calloc(sizeof(hub_engine));
   if (hub == NULL) {

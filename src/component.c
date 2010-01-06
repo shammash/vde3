@@ -459,8 +459,8 @@ void vde_component_set_engine_ops(vde_component *engine, eng_new_conn new_conn)
 // XXX add application callback on accept?
 int vde_component_conn_manager_listen(vde_component *cm)
 {
-  vde_assert(cm == NULL);
-  vde_assert(cm->kind != VDE_CONNECTION_MANAGER);
+  vde_assert(cm != NULL);
+  vde_assert(cm->kind == VDE_CONNECTION_MANAGER);
 
   return cm->cm_listen(cm);
 }
@@ -474,8 +474,8 @@ int vde_component_conn_manager_connect(vde_component *cm,
                                        vde_connect_error_cb error_cb,
                                        void *arg)
 {
-  vde_assert(cm == NULL);
-  vde_assert(cm->kind != VDE_CONNECTION_MANAGER);
+  vde_assert(cm != NULL);
+  vde_assert(cm->kind == VDE_CONNECTION_MANAGER);
 
   return cm->cm_connect(cm, local, remote, success_cb, error_cb, arg);
 }

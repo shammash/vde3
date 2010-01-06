@@ -659,7 +659,7 @@ static int engine_ctrl_init(vde_component *component)
   int tmp_errno;
   ctrl_engine *ctrl;
 
-  vde_assert(component == NULL);
+  vde_assert(component != NULL);
 
   ctrl = (ctrl_engine *)vde_calloc(sizeof(ctrl_engine));
   if (ctrl == NULL) {

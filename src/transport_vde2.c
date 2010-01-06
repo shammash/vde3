@@ -666,7 +666,7 @@ static int transport_vde2_init(vde_component *component, const char *dir)
 
   vde2_tr *tr;
 
-  vde_assert(component == NULL);
+  vde_assert(component != NULL);
 
   if (strlen(dir) > UNIX_PATH_MAX - 4) { // we will add '/ctl' later
     vde_error("%s: directory name is too long", __PRETTY_FUNCTION__);
