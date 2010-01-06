@@ -5,6 +5,7 @@ AC_PREREQ([2.61])
 AC_INIT([vde3], [0.1], [BUG-REPORT-ADDRESS])
 AC_CONFIG_SRCDIR([src/context.c])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIR([m4])
 
 # foreign doesn't require GNU standard files to be present
 # http://www.gnu.org/software/automake/manual/automake.html#Strictness
@@ -23,10 +24,8 @@ PYTHON=python
 AC_SUBST([PYTHON])
 
 # Checks for mandatory dependencies
-AC_CHECK_HEADER([event.h], ,
-                AC_MSG_ERROR([Could not find libevent headers]))
-AC_CHECK_LIB([event], [event_init], ,
-             AC_MSG_ERROR([Could not find libevent]))
+VDE_CHECK_LIB_HEADER([event], [event_init], [event.h], ,
+                     AC_MSG_ERROR([Could not find libevent]))
 
 PKG_CHECK_MODULES(GLIB, glib-2.0, ,
                   AC_MSG_ERROR([Could not find glib 2.0]))

@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS = -I m4
+
 # note: include builddir first in case wrappers are regenerated there
 AM_CPPFLAGS = -D_GNU_SOURCE $(VDE_CPPFLAGS) \
   -I$(top_srcdir)/src/include/ -I$(top_builddir)/src/ -I$(top_srcdir)/src/
