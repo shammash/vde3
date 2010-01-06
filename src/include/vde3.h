@@ -315,7 +315,6 @@ void vvde_log(int priority, const char *format, va_list arg);
  */
 void vde_log(int priority, const char *format, ...);
 
-// XXX(shammash): vde_fatal -> error + exit
 #define vde_error(fmt, ...) vde_log(VDE3_LOG_ERROR, fmt, ##__VA_ARGS__)
 #define vde_warning(fmt, ...) vde_log(VDE3_LOG_WARNING, fmt, ##__VA_ARGS__)
 #define vde_notice(fmt, ...) vde_log(VDE3_LOG_NOTICE, fmt, ##__VA_ARGS__)
@@ -325,4 +324,5 @@ void vde_log(int priority, const char *format, ...);
 #else
 #define vde_debug(fmt, ...)
 #endif
+
 #endif /* __VDE3_H__ */

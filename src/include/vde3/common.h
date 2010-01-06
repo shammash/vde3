@@ -21,6 +21,10 @@
 #include <json.h>
 #include <glib.h>
 
+#ifdef VDE3_DEBUG
+#include <assert.h>
+#endif
+
 #define vde_cached_alloc(s) g_slice_alloc(s)
 #define vde_cached_calloc(s) g_slice_alloc0(s)
 #define vde_cached_free_type(t, d) g_slice_free(t, d)
@@ -76,6 +80,16 @@ typedef gchar vde_char;
 
 #define vde_return_if_fail(exp) g_return_if_fail(exp)
 #define vde_return_val_if_fail(exp, val) g_return_val_if_fail(exp, val)
+
+/*
+ * Decorating assert instead of defining NDEBUG if we don't want assert because
+ * we can add further instructions if needed.
+ */
+#ifdef VDE3_DEBUG
+#define vde_assert(expr) assert(expr)
+#else
+#define vde_assert(expr)
+#endif
 
 // serializable object API
 typedef struct json_object vde_sobj;
