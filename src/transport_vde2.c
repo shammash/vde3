@@ -106,7 +106,6 @@ void vde2_conn_read_ctl_event(int ctl_fd, short event_type, void *arg)
 {
   int len;
   char reqbuf[REQBUFLEN+1];
-  conn_cb_result cb_rv;
   vde2_conn *v2_conn = (vde2_conn *)arg;
   vde_connection *conn = v2_conn->conn;
   len = read(v2_conn->ctl_fd, reqbuf, REQBUFLEN);
@@ -116,8 +115,8 @@ void vde2_conn_read_ctl_event(int ctl_fd, short event_type, void *arg)
                   v2_conn->ctl_fd);
       return;
     }
-    cb_rv = vde_connection_call_error(conn, NULL, CONN_READ_CLOSED);
-    if (cb_rv == CONN_CB_CLOSE) {
+    if (vde_connection_call_error(conn, NULL, CONN_READ_CLOSED) &&
+        (errno == EPIPE)) {
       goto err_close;
     }
     vde_warning("%s: got fatal error on ctl_fd %d but connection not closed",
@@ -129,8 +128,8 @@ void vde2_conn_read_ctl_event(int ctl_fd, short event_type, void *arg)
     return;
   }
   if (len == 0) {
-    cb_rv = vde_connection_call_error(conn, NULL, CONN_READ_CLOSED);
-    if (cb_rv == CONN_CB_CLOSE) {
+    if (vde_connection_call_error(conn, NULL, CONN_READ_CLOSED) &&
+        (errno == EPIPE)) {
       goto err_close;
     }
     vde_warning("%s: got fatal error on ctl_fd %d but connection not closed",
@@ -151,7 +150,7 @@ void vde2_conn_read_data_event(int data_fd, short event_type, void *arg)
   vde_pkt *pkt;
   struct sockaddr sock;
   int len;
-  conn_cb_result cb_rv = CONN_CB_OK;
+  int cb_errno = 0;
   socklen_t socklen = sizeof(sock);
   vde2_conn *v2_conn = (vde2_conn *)arg;
   vde_connection *conn = v2_conn->conn;
@@ -174,7 +173,9 @@ void vde2_conn_read_data_event(int data_fd, short event_type, void *arg)
   if (len >= sizeof(struct eth_hdr)) {
     // XXX: set hdr version and type
     pkt->hdr->pkt_len = len;
-    cb_rv = vde_connection_call_read(conn, pkt);
+    if (vde_connection_call_read(conn, pkt)) {
+      cb_errno = errno;
+    }
   } else if (len < 0) {
     if (errno == EAGAIN) {
       vde_warning("%s: got EAGAIN on data_fd %d", __PRETTY_FUNCTION__,
@@ -191,7 +192,7 @@ void vde2_conn_read_data_event(int data_fd, short event_type, void *arg)
 
   // XXX: free packet if previously allocated with dynamic allocation
 
-  if (cb_rv == CONN_CB_CLOSE) {
+  if (cb_errno == EPIPE) {
     vde_connection_fini(conn);
     vde_connection_delete(conn);
   }
@@ -202,7 +203,7 @@ void vde2_conn_write_data_event(int data_fd, short event_type, void *arg)
   int len;
   vde2_pkt *v2_pkt;
   vde_pkt *pkt;
-  conn_cb_result cb_rv = CONN_CB_OK;
+  int cb_errno = 0;
   vde2_conn *v2_conn = (vde2_conn *)arg;
   vde_connection *conn = v2_conn->conn;
 
@@ -213,15 +214,19 @@ void vde2_conn_write_data_event(int data_fd, short event_type, void *arg)
                  (const struct sockaddr *)&v2_conn->remote_sa,
                  sizeof(struct sockaddr_un));
     if (len == pkt->hdr->pkt_len) {
-      cb_rv = vde_connection_call_write(conn, pkt);
+      if (vde_connection_call_write(conn, pkt)) {
+        cb_errno = errno;
+      }
       vde_cached_free_type(vde2_pkt, v2_pkt);
-      if (cb_rv == CONN_CB_CLOSE) {
+      if (cb_errno == EPIPE) {
         goto err_close;
       }
     } else if ((len < 0) && (errno != EAGAIN)) {
-      cb_rv = vde_connection_call_error(conn, pkt, CONN_WRITE_CLOSED);
+      if (vde_connection_call_error(conn, pkt, CONN_WRITE_CLOSED)) {
+        cb_errno = errno;
+      }
       vde_cached_free_type(vde2_pkt, v2_pkt);
-      if (cb_rv == CONN_CB_CLOSE) {
+      if (cb_errno == EPIPE) {
         goto err_close;
       } else {
         vde_warning("%s: fatal error on data_fd %d but connection not closed",
@@ -231,9 +236,11 @@ void vde2_conn_write_data_event(int data_fd, short event_type, void *arg)
     } else { /* (0 < len < pkt_len) || (len < 0 && errno == EAGAIN) */
       v2_pkt->numtries++;
       if (v2_pkt->numtries > vde_connection_get_send_maxtries(conn)) {
-        cb_rv = vde_connection_call_error(conn, pkt, CONN_WRITE_DELAY);
+        if (vde_connection_call_error(conn, pkt, CONN_WRITE_DELAY)) {
+          cb_errno = errno;
+        }
         vde_cached_free_type(vde2_pkt, v2_pkt);
-        if (cb_rv == CONN_CB_CLOSE) {
+        if (cb_errno == EPIPE) {
           goto err_close;
         }
       } else {

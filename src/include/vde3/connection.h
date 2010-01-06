@@ -41,15 +41,6 @@ typedef enum vde_conn_error vde_conn_error;
 struct vde_connection;
 typedef struct vde_connection vde_connection;
 
-enum conn_cb_result {
-  CONN_CB_OK, // the callback was successful
-  CONN_CB_ERROR, // error while invoking callback
-  CONN_CB_CLOSE, // the connection must be closed
-  CONN_CB_REQUEUE, // the packet should be requeued for transmission
-};
-
-typedef enum conn_cb_result conn_cb_result;
-
 /*
  * Functions to be implemented by a connection backend/transport
  *
@@ -83,7 +74,12 @@ typedef void (*conn_be_close)(vde_connection *conn);
 
 
 /*
- * Functions set by a component which uses the connection
+ * Functions set by a component which uses the connection.
+ *
+ * These functions return 0 on success, -1 on error (and errno is set
+ * appropriately). The following errno values have special meanings:
+ * - EAGAIN: requeue the packet
+ * - EPIPE: close the connection
  *
  */
 
@@ -95,10 +91,9 @@ typedef void (*conn_be_close)(vde_connection *conn);
  * @param pkt The new packet
  * @param arg The argument which has previously been set by connection user
  *
- * @return The result of callback
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
-typedef conn_cb_result (*conn_read_cb)(vde_connection *conn, vde_pkt *pkt,
-                                       void *arg);
+typedef int (*conn_read_cb)(vde_connection *conn, vde_pkt *pkt, void *arg);
 
 /**
  * @brief (Optional) Callback called when a packet has been sent by the
@@ -108,10 +103,9 @@ typedef conn_cb_result (*conn_read_cb)(vde_connection *conn, vde_pkt *pkt,
  * @param pkt The sent packet
  * @param arg The argument which has previously been set by connection user
  *
- * @return The result of callback
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
-typedef conn_cb_result (*conn_write_cb)(vde_connection *conn, vde_pkt *pkt,
-                                        void *arg);
+typedef int (*conn_write_cb)(vde_connection *conn, vde_pkt *pkt, void *arg);
 
 /**
  * @brief Callback called when an error occur.
@@ -122,14 +116,14 @@ typedef conn_cb_result (*conn_write_cb)(vde_connection *conn, vde_pkt *pkt,
  * @param err The error type
  * @param arg The argument which has previously been set by connection user
  *
- * @return The result of callback
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 /* XXX(godog): consider introducing the following semantic for conn_error_cb
  * return value: if it's non-zero and the error is non-fatal then the pkt is
  * re-queued for transmission
  */
-typedef conn_cb_result (*conn_error_cb)(vde_connection *conn, vde_pkt *pkt,
-                                        vde_conn_error err, void *arg);
+typedef int (*conn_error_cb)(vde_connection *conn, vde_pkt *pkt,
+                             vde_conn_error err, void *arg);
 
 
 /*
@@ -216,10 +210,9 @@ static inline int vde_connection_write(vde_connection *conn, vde_pkt *pkt)
  * @param pkt The new packet. Connection users will duplicate the pkt if they
  * need it after this callback will return, so it can be free()d afterwards
  *
- * @return The callback result
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
-static inline conn_cb_result vde_connection_call_read(vde_connection *conn,
-                                                      vde_pkt *pkt)
+static inline int vde_connection_call_read(vde_connection *conn, vde_pkt *pkt)
 {
   vde_assert(conn != NULL);
   vde_assert(conn->read_cb != NULL);
@@ -235,17 +228,16 @@ static inline conn_cb_result vde_connection_call_read(vde_connection *conn,
  * @param pkt The sent packet. Connection users will duplicate the pkt if they
  * need it after this callback will return, so it can be free()d afterwards
  *
- * @return The callback result
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
-static inline conn_cb_result vde_connection_call_write(vde_connection *conn,
-                                                       vde_pkt *pkt)
+static inline int vde_connection_call_write(vde_connection *conn, vde_pkt *pkt)
 {
   vde_assert(conn != NULL);
 
   if (conn->write_cb != NULL) {
     return conn->write_cb(conn, pkt, conn->cb_priv);
   }
-  return CONN_CB_OK;
+  return 0;
 }
 
 /**
@@ -256,11 +248,10 @@ static inline conn_cb_result vde_connection_call_write(vde_connection *conn,
  * @param pkt The packet which was being sent when the error occurred, can be
  * NULL
  *
- * @return The callback result
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
-static inline conn_cb_result vde_connection_call_error(vde_connection *conn,
-                                                       vde_pkt *pkt,
-                                                       vde_conn_error err)
+static inline int vde_connection_call_error(vde_connection *conn, vde_pkt *pkt,
+                                            vde_conn_error err)
 {
   vde_assert(conn != NULL);
   vde_assert(conn->error_cb != NULL);

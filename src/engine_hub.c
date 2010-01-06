@@ -67,7 +67,7 @@ int engine_hub_printport(vde_component *component, int port, vde_sobj **out)
   return 0;
 }
 
-conn_cb_result hub_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
+int hub_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
 {
   vde_list *iter;
   vde_connection *port;
@@ -85,10 +85,10 @@ conn_cb_result hub_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
     iter = vde_list_next(iter);
   }
 
-  return CONN_CB_OK;
+  return 0;
 }
 
-conn_cb_result hub_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
+int hub_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
                                   vde_conn_error err, void *arg)
 {
   vde_sobj *info;
@@ -96,7 +96,7 @@ conn_cb_result hub_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
 
   if (err == CONN_WRITE_DELAY) {
     vde_warning("%s: dropping packet", __PRETTY_FUNCTION__);
-    return CONN_CB_OK;
+    return 0;
   }
 
   // XXX: handle different errors, the following is just the fatal case
@@ -110,7 +110,8 @@ conn_cb_result hub_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
   vde_component_signal_raise(hub->component, "port_del", info);
   vde_sobj_put(info);
 
-  return CONN_CB_CLOSE;
+  errno = EPIPE;
+  return -1;
 }
 
 int hub_engine_newconn(vde_component *component, vde_connection *conn,

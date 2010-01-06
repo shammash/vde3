@@ -34,7 +34,7 @@ typedef struct vde_lc vde_lc;
 
 int vde_lc_write(vde_connection *conn, vde_pkt *pkt)
 {
-  conn_cb_result cb_rv;
+  int tmp_errno;
   vde_lc *lc = (vde_lc *)vde_connection_get_priv(conn);
   vde_lc *peer = lc->peer;
   vde_connection *peer_conn = peer->conn;
@@ -42,30 +42,30 @@ int vde_lc_write(vde_connection *conn, vde_pkt *pkt)
   if (peer == NULL) {
     return -1;
   }
-  cb_rv = vde_connection_call_read(peer_conn, pkt);
-  if (cb_rv == CONN_CB_OK) {
-    return 0;
+  if (vde_connection_call_read(peer_conn, pkt)) {
+    tmp_errno = errno;
+    if (errno == EPIPE) {
+      vde_connection_fini(peer_conn);
+      vde_connection_delete(peer_conn);
+    }
+    errno = tmp_errno;
+    return -1;
   }
-  if (cb_rv == CONN_CB_CLOSE) {
-    vde_connection_fini(peer_conn);
-    vde_connection_delete(peer_conn);
-  }
-  return -1;
+  return 0;
 }
 
 void vde_lc_close(vde_connection *conn)
 {
-  conn_cb_result cb_rv;
   vde_lc *lc = (vde_lc *)vde_connection_get_priv(conn);
   vde_lc *peer = lc->peer;
   vde_connection *peer_conn = peer->conn;
 
   if (peer != NULL) {
     peer->peer = NULL; // detach from peer to avoid circular close calls
-    cb_rv = vde_connection_call_error(peer_conn, NULL, CONN_READ_CLOSED);
-    if (cb_rv == CONN_CB_CLOSE) {
-      vde_connection_fini(peer_conn);
-      vde_connection_delete(peer_conn);
+    if (vde_connection_call_error(peer_conn, NULL, CONN_READ_CLOSED) &&
+        (errno == EPIPE)) {
+        vde_connection_fini(peer_conn);
+        vde_connection_delete(peer_conn);
     } else {
       vde_warning("%s: called fatal error but engine did not close",
           __PRETTY_FUNCTION__);

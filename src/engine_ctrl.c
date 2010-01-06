@@ -578,7 +578,7 @@ exit:
   return rv;
 }
 
-conn_cb_result ctrl_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
+int ctrl_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
 {
   ctrl_conn *cc = (ctrl_conn *)arg;
 
@@ -592,20 +592,22 @@ conn_cb_result ctrl_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
     vde_debug("got control readcb error");
 
     // XXX fini ctrl_conn
-    return CONN_CB_CLOSE;
+    errno = EPIPE;
+    return -1;
   }
 
-  return CONN_CB_OK;
+  return 0;
 }
 
-conn_cb_result ctrl_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
+int ctrl_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
                                    vde_conn_error err, void *arg)
 {
   //ctrl_conn *cc = (ctrl_conn *)arg;
 
   vde_debug("got control error cb");
   // XXX fini ctrl_conn
-  return CONN_CB_CLOSE;
+  errno = EPIPE;
+  return -1;
 }
 
 static void ctrl_conn_fini(ctrl_conn *cc)
