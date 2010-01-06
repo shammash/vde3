@@ -65,6 +65,7 @@ void *libevent_event_add(int fd, short events, const struct timeval *timeout,
   ev = (struct event *)vde_alloc(sizeof(struct event));
   if (!ev) {
     vde_error("%s: can't allocate memory for new event", __PRETTY_FUNCTION__);
+    errno = ENOMEM;
     return NULL;
   }
 
@@ -91,6 +92,7 @@ void *libevent_timeout_add(const struct timeval *timeout, short events,
   ev = (struct event *)vde_alloc(sizeof(struct event));
   if (!ev) {
     vde_error("%s: can't allocate memory for timeout", __PRETTY_FUNCTION__);
+    errno = ENOMEM;
     return NULL;
   }
 
@@ -100,6 +102,7 @@ void *libevent_timeout_add(const struct timeval *timeout, short events,
       vde_free(ev);
     }
     vde_error("%s: can't allocate memory for timeout", __PRETTY_FUNCTION__);
+    errno = ENOMEM;
     return NULL;
   }
   rt->ev = ev;

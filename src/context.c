@@ -79,12 +79,14 @@ int vde_context_new(vde_context **ctx)
 {
   if (!ctx) {
     vde_error("%s: context pointer reference is NULL", __PRETTY_FUNCTION__);
+    errno = EINVAL;
     return -1;
   }
   *ctx = (vde_context *)vde_calloc(sizeof(vde_context));
   if (*ctx == NULL) {
     vde_error("%s: cannot create context", __PRETTY_FUNCTION__);
-    return -2;
+    errno = ENOMEM;
+    return -1;
   }
   return 0;
 }
@@ -93,6 +95,7 @@ int vde_context_init(vde_context *ctx, vde_event_handler *handler)
 {
   if (ctx == NULL || handler == NULL) {
     vde_error("%s: cannot initialize context", __PRETTY_FUNCTION__);
+    errno = EINVAL;
     return -1;
   }
   ctx->event_handler = handler;
@@ -150,34 +153,41 @@ int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
   vde_quark qname;
   vde_module *module;
   va_list arg;
-  int refcount;
+  int refcount, tmp_errno;
 
   if (ctx == NULL || ctx->initialized != true) {
     vde_error("%s: cannot create new component, context not initialized",
               __PRETTY_FUNCTION__);
+    errno = EINVAL;
     return -1;
   }
-  // TODO(shammash): check name is not 'context' or 'commands' for config
+  // XXX: check name is not 'context' or 'commands' for config
   if (vde_context_get_component(ctx, name)) {
     vde_error("%s: cannot create new component, %s already exists",
               __PRETTY_FUNCTION__);
-    return -2;
+    errno = EEXIST;
+    return -1;
   }
   if ((module=vde_context_lookup_module(ctx, kind, family)) == NULL) {
     vde_error("%s: cannot create new component, module %d %s not found",
               __PRETTY_FUNCTION__, kind, family);
-    return -3;
+    errno = ENOENT;
+    return -1;
   }
   if (vde_component_new(component)) {
+    tmp_errno = errno;
     vde_error("%s: cannot allocate new component", __PRETTY_FUNCTION__);
-    return -4;
+    errno = tmp_errno;
+    return -1;
   }
   qname = vde_quark_from_string(name);
   va_start(arg, component);
   if (vde_component_init(*component, qname, module, ctx, arg)) {
+    tmp_errno = errno;
     vde_component_delete(*component);
     vde_error("%s: cannot init new component", __PRETTY_FUNCTION__);
-    return -5;
+    errno = tmp_errno;
+    return -1;
   }
   va_end(arg);
   // cast to long because vde_hash_insert keys are pointers
@@ -193,6 +203,7 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name)
   if (ctx == NULL || ctx->initialized != true) {
     vde_error("%s: cannot get component, context not initialized",
               __PRETTY_FUNCTION__);
+    errno = EINVAL;
     return NULL;
   }
   qname = vde_quark_try_string(name);
@@ -202,16 +213,17 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name)
 vde_component* vde_context_get_component_by_qname(vde_context *ctx,
                                                   vde_quark qname)
 {
+  // XXX: assert on ctx == NULL
   return vde_hash_lookup(ctx->components, (long)qname);
 }
 
 /**
-* @brief Get all the components of a context
-*
-* @param ctx The context holding the components
-*
-* @return a list of all the components, NULL if there are no components
-*/
+ * @brief Get all the components of a context
+ *
+ * @param ctx The context holding the components
+ *
+ * @return a list of all the components, NULL if there are no components
+ */
 /* XXX(shammash):
  *  - change list with something which doesn't need to be generated
  *  - maybe just names are needed..
@@ -228,31 +240,31 @@ int vde_context_component_del(vde_context *ctx, vde_component *component)
   if (ctx == NULL || ctx->initialized != true) {
     vde_error("%s: cannot delete component, context not initialized",
               __PRETTY_FUNCTION__);
+    errno = EINVAL;
     return -1;
   }
   if (component == NULL) {
     vde_error("%s: cannot delete component, component is NULL",
               __PRETTY_FUNCTION__);
-    return -2;
+    errno = EINVAL;
+    return -1;
   }
   qname = vde_component_get_qname(component);
   if (vde_context_get_component_by_qname(ctx, qname) == NULL) {
     vde_error("%s: cannot delete component, component not found",
               __PRETTY_FUNCTION__);
-    return -3;
+    errno = ENOENT;
+    return -1;
   }
   not_in_use = vde_component_put_if_last(component, NULL);
   if (!not_in_use) {
     vde_error("%s: cannot delete component, component is in use",
               __PRETTY_FUNCTION__);
-    return -4;
+    errno = EBUSY;
+    return -1;
   }
-  if (!vde_hash_remove(ctx->components, (long)qname)) {
-    vde_component_get(component, NULL);
-    vde_error("%s: cannot delete component, error removing from hash table",
-              __PRETTY_FUNCTION__);
-    return -5;
-  }
+  // XXX: assert on hash_remove
+  vde_hash_remove(ctx->components, (long)qname);
 
   // here the component is deleted because it doesn't make sense to have it out
   // of the vde_context
@@ -263,23 +275,23 @@ int vde_context_component_del(vde_context *ctx, vde_component *component)
 }
 
 /**
-* @brief Save current configuration in a file
-*
-* @param ctx The context to save the configuration from
-* @param file The file to save the configuration to
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief Save current configuration in a file
+ *
+ * @param ctx The context to save the configuration from
+ * @param file The file to save the configuration to
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_context_config_save(vde_context *ctx, const char* file);
 
 /**
-* @brief Load configuration from a file
-*
-* @param ctx The context to load the configuration into
-* @param file The file to read the configuration from
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief Load configuration from a file
+ *
+ * @param ctx The context to load the configuration into
+ * @param file The file to read the configuration from
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_context_config_load(vde_context *ctx, const char* file);
 
 int vde_context_register_module(vde_context *ctx, vde_module *module)
@@ -296,7 +308,8 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
   if(vde_context_lookup_module(ctx, kind, family)) {
     vde_error("%s: module for kind %d family %s already registered",
               __PRETTY_FUNCTION__, kind, family);
-    return -2;
+    errno = EEXIST;
+    return -1;
   }
 
   // module's component_ops sanity checks

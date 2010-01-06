@@ -265,17 +265,20 @@ int vde2_conn_write(vde_connection *conn, vde_pkt *pkt)
   if (vde_queue_get_length(v2_conn->pkt_queue) >= MAXQLEN) {
     vde_warning("%s: packet queue for %s is full, discarding",
                 __PRETTY_FUNCTION__, v2_conn->data_fd);
+    errno = EAGAIN;
     return -1; // discard pkt
   }
   if (pkt->data_size > PKT_DATA_SZ) {
     // XXX: should alloc a struct greater than sizeof(vde2_pkt)
     vde_warning("%s: packet size larger than vde2_pkt, discarding",
                 __PRETTY_FUNCTION__);
+    errno = EBADMSG;
     return -1;
   }
   v2_pkt = vde_cached_alloc(sizeof(vde2_pkt));
   if (v2_pkt == NULL) {
     vde_warning("%s: cannot alloc new pkt, discarding", __PRETTY_FUNCTION__);
+    errno = ENOMEM;
     return -1;
   }
 
@@ -577,6 +580,7 @@ error_close:
 
 int vde2_listen(vde_component *component)
 {
+  int tmp_errno; /* errno will be set back in last goto label */
   struct sockaddr_un sa_unix;
   int one = 1;
   vde_context *ctx = vde_component_get_context(component);
@@ -584,22 +588,26 @@ int vde2_listen(vde_component *component)
 
   tr->listen_fd = socket(PF_UNIX, SOCK_STREAM, 0);
   if (tr->listen_fd < 0) {
+    tmp_errno = errno;
     vde_error("%s: Could not obtain a BSD socket: %s", __PRETTY_FUNCTION__,
               strerror(errno));
-    return -1;
+    goto error;
   }
   if (setsockopt(tr->listen_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&one,
                  sizeof(one)) < 0) {
+    tmp_errno = errno;
     vde_error("%s: Could not set socket options: %s", __PRETTY_FUNCTION__,
               strerror(errno));
     goto error_close;
   }
   if (fcntl(tr->listen_fd, F_SETFL, O_NONBLOCK) < 0) {
+    tmp_errno = errno;
     vde_error("%s: Could not set O_NONBLOCK: %s", __PRETTY_FUNCTION__,
               strerror(errno));
     goto error_close;
   }
   if (((mkdir(tr->vdesock_dir, 0777) < 0) && (errno != EEXIST))) {
+    tmp_errno = errno;
     vde_error("%s: Could not create vdesock directory %s: %s",
               __PRETTY_FUNCTION__, tr->vdesock_dir, strerror(errno));
     goto error_close;
@@ -609,12 +617,14 @@ int vde2_listen(vde_component *component)
            tr->vdesock_dir);
   if (bind(tr->listen_fd, (struct sockaddr *)&sa_unix, sizeof(sa_unix)) < 0) {
     if ((errno == EADDRINUSE) && vde2_remove_sock_if_unused(&sa_unix)) {
+      tmp_errno = errno;
       vde_error("%s: Could not bind to %s/ctl: socket in use",
                 __PRETTY_FUNCTION__, tr->vdesock_dir);
       goto error_close;
     } else {
       if (bind(tr->listen_fd, (struct sockaddr *)&sa_unix,
                sizeof(sa_unix)) < 0) {
+        tmp_errno = errno;
         vde_error("%s: Could not bind to %s/ctl: %s", __PRETTY_FUNCTION__,
                   tr->vdesock_dir, strerror(errno));
         goto error_close;
@@ -622,6 +632,7 @@ int vde2_listen(vde_component *component)
     }
   }
   if (listen(tr->listen_fd, LISTEN_QUEUE) < 0) {
+    tmp_errno = errno;
     vde_error("%s: Could not listen: %s", __PRETTY_FUNCTION__,
               strerror(errno));
     goto error_unlink;
@@ -640,7 +651,9 @@ error_unlink:
 error_close:
   close(tr->listen_fd);
   tr->listen_fd = -1;
-  return -2;
+error:
+  errno = tmp_errno;
+  return -1;
 }
 
 int vde2_connect(vde_component *component, vde_connection *conn)
@@ -653,19 +666,18 @@ static int transport_vde2_init(vde_component *component, const char *dir)
 
   vde2_tr *tr;
 
-  if (component == NULL) {
-    vde_error("%s: component is NULL", __PRETTY_FUNCTION__);
-    return -1;
-  }
+  vde_return_val_if_fail(component == NULL, -1);
 
   if (strlen(dir) > UNIX_PATH_MAX - 4) { // we will add '/ctl' later
     vde_error("%s: directory name is too long", __PRETTY_FUNCTION__);
-    return -2;
+    errno = EINVAL;
+    return -1;
   }
   tr = (vde2_tr *)vde_calloc(sizeof(vde2_tr));
   if (tr == NULL) {
     vde_error("%s: could not allocate private data", __PRETTY_FUNCTION__);
-    return -3;
+    errno = ENOMEM;
+    return -1;
   }
 
   // XXX: path needs to be normalized/checked somewhere
@@ -673,7 +685,8 @@ static int transport_vde2_init(vde_component *component, const char *dir)
   if (tr->vdesock_dir == NULL) {
     vde_free(tr);
     vde_error("%s: could not allocate private path", __PRETTY_FUNCTION__);
-    return -4;
+    errno = ENOMEM;
+    return -1;
   }
 
   vde_component_set_transport_ops(component, &vde2_listen, &vde2_connect);

@@ -43,6 +43,7 @@ int vde_signal_attach(vde_signal *signal,
         entry->data == data) {
       vde_warning("%s: callbacks already registered for %s, skipping",
                   __PRETTY_FUNCTION__, signal->name);
+      errno = EEXIST;
       return -1;
     }
     iter = vde_list_next(iter);
@@ -83,6 +84,7 @@ int vde_signal_detach(vde_signal *signal,
 
   vde_warning("%s: callbacks not found for %s, skipping",
               __PRETTY_FUNCTION__, signal->name);
+  errno = ENOENT;
   return -1;
 }
 

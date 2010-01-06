@@ -53,7 +53,10 @@ int vde_component_new(vde_component **component)
   vde_return_val_if_fail(component != NULL, -1);
 
   *component = (vde_component *)vde_calloc(sizeof(vde_component));
-  vde_return_val_if_fail(*component != NULL, -2);
+  if (*component == NULL) {
+    errno = ENOMEM;
+    return -1;
+  }
 
   return 0;
 }
@@ -66,7 +69,7 @@ int vde_component_new(vde_component **component)
 int vde_component_init(vde_component *component, vde_quark qname,
                        vde_module *module, vde_context *ctx, va_list args)
 {
-  int retval;
+  int retval, tmp_errno;
 
   vde_return_val_if_fail(component != NULL, -1);
   vde_return_val_if_fail(module != NULL, -1);
@@ -82,10 +85,12 @@ int vde_component_init(vde_component *component, vde_quark qname,
 
   retval = component->cops->init(component, args);
   if (retval) {
-    vde_error("%s: cannot initialize component, init returned %d",
-              __PRETTY_FUNCTION__, retval);
-    return -2;
+    tmp_errno = errno;
+    vde_error("%s: cannot initialize component", __PRETTY_FUNCTION__);
+    errno = tmp_errno;
+    return -1;
   }
+
   component->initialized = true;
   return 0;
 }
@@ -119,26 +124,24 @@ void vde_component_delete(vde_component *component)
   vde_free(component);
 }
 
-int vde_component_get(vde_component *component, int *count)
+void vde_component_get(vde_component *component, int *count)
 {
-  vde_return_val_if_fail(component != NULL, -1);
+  vde_return_if_fail(component != NULL);
 
   component->refcount++;
   if(count) {
       *count = component->refcount;
   }
-  return 0;
 }
 
-int vde_component_put(vde_component *component, int *count)
+void vde_component_put(vde_component *component, int *count)
 {
-  vde_return_val_if_fail(component != NULL, -1);
+  vde_return_if_fail(component != NULL);
 
   component->refcount--;
   if(count) {
       *count = component->refcount;
   }
-  return 0;
 }
 
 int vde_component_put_if_last(vde_component *component, int *count)
@@ -148,7 +151,8 @@ int vde_component_put_if_last(vde_component *component, int *count)
   if (component->refcount != 1) {
     return 1;
   } else {
-    return vde_component_put(component, count);
+    vde_component_put(component, count);
+    return 0;
   }
 }
 
@@ -198,13 +202,12 @@ int vde_component_commands_register(vde_component *component,
                                     vde_command *commands)
 {
   vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(commands != NULL, -2);
+  vde_return_val_if_fail(commands != NULL, -1);
 
   while (vde_command_get_name(commands) != NULL) {
     if (vde_component_command_add(component, commands)) {
-      return -3;
+      return -1;
     }
-
     commands++;
   }
 
@@ -218,7 +221,7 @@ int vde_component_command_add(vde_component *component,
   vde_quark qname;
 
   vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(command != NULL, -2);
+  vde_return_val_if_fail(command != NULL, -1);
 
   cmd_name = vde_command_get_name(command);
   qname = vde_quark_from_string(cmd_name);
@@ -226,7 +229,8 @@ int vde_component_command_add(vde_component *component,
   if (vde_hash_lookup(component->commands, (long)qname)) {
     vde_error("%s: command %s already registered",
               __PRETTY_FUNCTION__, cmd_name);
-    return -3;
+    errno = EEXIST;
+    return -1;
   }
 
   vde_hash_insert(component->commands, (long)qname, command);
@@ -241,7 +245,7 @@ int vde_component_command_del(vde_component *component,
   vde_quark qname;
 
   vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(command != NULL, -2);
+  vde_return_val_if_fail(command != NULL, -1);
 
   cmd_name = vde_command_get_name(command);
   qname = vde_quark_try_string(cmd_name);
@@ -249,7 +253,8 @@ int vde_component_command_del(vde_component *component,
   if (!vde_hash_remove(component->commands, (long)qname)) {
     vde_error("%s: unable to remove command %s",
               __PRETTY_FUNCTION__, cmd_name);
-    return -3;
+    errno = ENOENT;
+    return -1;
   }
 
   return 0;
@@ -269,23 +274,23 @@ vde_command *vde_component_command_get(vde_component *component,
 }
 
 /**
-* @brief List all commands of a component
-*
-* @param component The component
-*
-* @return A null terminated array of commands
-*/
+ * @brief List all commands of a component
+ *
+ * @param component The component
+ *
+ * @return A null terminated array of commands
+ */
 vde_command **vde_component_commands_list(vde_component *component);
 
 int vde_component_signals_register(vde_component *component,
                                    vde_signal *signals)
 {
   vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(signals != NULL, -2);
+  vde_return_val_if_fail(signals != NULL, -1);
 
   while (vde_signal_get_name(signals) != NULL) {
     if (vde_component_signal_add(component, signals)) {
-      return -3;
+      return -1;
     }
 
     signals++;
@@ -301,7 +306,7 @@ int vde_component_signal_add(vde_component *component,
   vde_quark qname;
 
   vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(signal != NULL, -2);
+  vde_return_val_if_fail(signal != NULL, -1);
 
   // XXX: signals must be duplicated before adding them to component->signals
   // hash otherwise two components of the same family will share the list of
@@ -312,7 +317,8 @@ int vde_component_signal_add(vde_component *component,
   if (vde_hash_lookup(component->signals, (long)qname)) {
     vde_error("%s: signal %s already registered",
               __PRETTY_FUNCTION__, sig_name);
-    return -3;
+    errno = EEXIST;
+    return -1;
   }
 
   vde_hash_insert(component->signals, (long)qname, signal);
@@ -327,7 +333,7 @@ int vde_component_signal_del(vde_component *component,
   vde_quark qname;
 
   vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(signal != NULL, -2);
+  vde_return_val_if_fail(signal != NULL, -1);
 
   sig_name = vde_signal_get_name(signal);
   qname = vde_quark_try_string(sig_name);
@@ -335,7 +341,8 @@ int vde_component_signal_del(vde_component *component,
   if (!vde_hash_remove(component->signals, (long)qname)) {
     vde_error("%s: unable to remove signal %s",
               __PRETTY_FUNCTION__, sig_name);
-    return -3;
+    errno = ENOENT;
+    return -1;
   }
 
   vde_signal_fini(signal, component);
@@ -377,7 +384,8 @@ int vde_component_signal_attach(vde_component *component, const char *signal,
   sig = vde_component_signal_get(component, signal);
 
   if (!sig) {
-    return -2;
+    errno = ENOENT;
+    return -1;
   }
 
   return vde_signal_attach(sig, cb, destroy_cb, data);
@@ -395,7 +403,8 @@ int vde_component_signal_detach(vde_component *component, const char *signal,
   sig = vde_component_signal_get(component, signal);
 
   if (!sig) {
-    return -2;
+    errno = ENOENT;
+    return -1;
   }
 
   return vde_signal_detach(sig, cb, destroy_cb, data);
@@ -447,21 +456,16 @@ void vde_component_set_engine_ops(vde_component *engine, eng_new_conn new_conn)
   engine->eng_new_conn = new_conn;
 }
 
-// XXX add application callback on accept and/or on error?
+// XXX add application callback on accept?
 int vde_component_conn_manager_listen(vde_component *cm)
 {
-  if (cm == NULL) {
-    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
-    return -1;
-  }
-  if (cm->kind != VDE_CONNECTION_MANAGER) {
-    vde_error("%s: component is not a conn. manager", __PRETTY_FUNCTION__);
-    return -2;
-  }
+  vde_return_val_if_fail(cm == NULL, -1);
+  vde_return_val_if_fail(cm->kind != VDE_CONNECTION_MANAGER, -1);
+
   return cm->cm_listen(cm);
 }
 
-/* TODO: memory handling, what happens to local_request/remote_request? should
+/* XXX: memory handling, what happens to local_request/remote_request? should
  * the caller hand them over? */
 int vde_component_conn_manager_connect(vde_component *cm,
                                        vde_request *local,
@@ -470,14 +474,9 @@ int vde_component_conn_manager_connect(vde_component *cm,
                                        vde_connect_error_cb error_cb,
                                        void *arg)
 {
-  if (cm == NULL) {
-    vde_error("%s: NULL component", __PRETTY_FUNCTION__);
-    return -1;
-  }
-  if (cm->kind != VDE_CONNECTION_MANAGER) {
-    vde_error("%s: component is not a conn. manager", __PRETTY_FUNCTION__);
-    return -2;
-  }
+  vde_return_val_if_fail(cm == NULL, -1);
+  vde_return_val_if_fail(cm->kind != VDE_CONNECTION_MANAGER, -1);
+
   return cm->cm_connect(cm, local, remote, success_cb, error_cb, arg);
 }
 

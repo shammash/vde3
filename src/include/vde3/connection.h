@@ -154,12 +154,12 @@ struct vde_connection {
 
 
 /**
-* @brief Alloc a new VDE 3 connection
-*
-* @param conn reference to new connection pointer
-*
-* @return zero on success, an error code otherwise
-*/
+ * @brief Alloc a new VDE 3 connection
+ *
+ * @param conn reference to new connection pointer
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_connection_new(vde_connection **conn);
 
 /**

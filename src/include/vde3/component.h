@@ -57,7 +57,7 @@ typedef int (*eng_new_conn)(vde_component *engine, vde_connection *conn,
  *
  * @param component reference to new component pointer
  *
- * @return zero on success, otherwise an error code
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_new(vde_component **component);
 
@@ -70,7 +70,7 @@ int vde_component_new(vde_component **component);
  * @param ctx The context in which the component will run
  * @param args Parameters for initialization of module properties
  *
- * @return zero on success, otherwise an error code
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_init(vde_component *component, vde_quark qname,
                        vde_module *module, vde_context *ctx, va_list args);
@@ -90,26 +90,22 @@ void vde_component_fini(vde_component *component);
 void vde_component_delete(vde_component *component);
 
 /**
-* @brief Increase reference counter
-*
-* @param component The component
-* @param count The pointer where to store reference counter value (might be
-* NULL)
-*
-* @return zero on success, otherwise an error
-*/
-int vde_component_get(vde_component *component, int *count);
+ * @brief Increase reference counter
+ *
+ * @param component The component
+ * @param count The pointer where to store reference counter value (might be
+ * NULL)
+ */
+void vde_component_get(vde_component *component, int *count);
 
 /**
-* @brief Decrease reference counter
-*
-* @param component The component
-* @param count The pointer where to store reference counter value (might be
-* NULL)
-*
-* @return zero on success, otherwise an error
-*/
-int vde_component_put(vde_component *component, int *count);
+ * @brief Decrease reference counter
+ *
+ * @param component The component
+ * @param count The pointer where to store reference counter value (might be
+ * NULL)
+ */
+void vde_component_put(vde_component *component, int *count);
 
 /**
  * @brief Decrease reference counter if there's only one reference
@@ -118,7 +114,7 @@ int vde_component_put(vde_component *component, int *count);
  * @param count The pointer where to store reference counter value (might be
  * NULL)
  *
- * @return zero if there was only one reference, 1 otherwise, an error code
+ * @return zero if there was only one reference, 1 otherwise
  */
 int vde_component_put_if_last(vde_component *component, int *count);
 
@@ -176,67 +172,67 @@ vde_quark vde_component_get_qname(vde_component *component);
 const char *vde_component_get_name(vde_component *component);
 
 /**
-* @brief vde_component utility to register commands
-*
-* @param component The component to add commands to
-* @param commands The NULL-terminated array of commands
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief vde_component utility to register commands
+ *
+ * @param component The component to add commands to
+ * @param commands The NULL-terminated array of commands
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_component_commands_register(vde_component *component,
                                     vde_command *commands);
 
 /**
-* @brief vde_component utility to add a command
-*
-* @param component The component to add the command to
-* @param command The command to add
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief vde_component utility to add a command
+ *
+ * @param component The component to add the command to
+ * @param command The command to add
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_component_command_add(vde_component *component,
                               vde_command *command);
 
 /**
-* @brief vde_component utility to remove a command
-*
-* @param component The component to remove the command from
-* @param command The command to remove
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief vde_component utility to remove a command
+ *
+ * @param component The component to remove the command from
+ * @param command The command to remove
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_component_command_del(vde_component *component,
                               vde_command *command);
 
 /**
-* @brief Lookup for a command in a component
-*
-* @param component The component to look into
-* @param name The name of the command
-*
-* @return a vde command, NULL if not found
-*/
+ * @brief Lookup for a command in a component
+ *
+ * @param component The component to look into
+ * @param name The name of the command
+ *
+ * @return a vde command, NULL if not found
+ */
 vde_command *vde_component_command_get(vde_component *component,
                                        const char *name);
 
 /**
-* @brief List all commands of a component
-*
-* @param component The component
-*
-* @return A null terminated array of commands
-*/
+ * @brief List all commands of a component
+ *
+ * @param component The component
+ *
+ * @return A null terminated array of commands
+ */
 vde_command **vde_component_commands_list(vde_component *component);
 
 // XXX consolidate naming of signals, use path or signal_path
 /**
-* @brief vde_component utility to register signals
-*
-* @param component The component to add signals to
-* @param commands The NULL-terminated array of signals
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief vde_component utility to register signals
+ *
+ * @param component The component to add signals to
+ * @param commands The NULL-terminated array of signals
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_component_signals_register(vde_component *component,
                                    vde_signal *signals);
 
@@ -246,7 +242,7 @@ int vde_component_signals_register(vde_component *component,
  * @param component The component to add the signal to
  * @param signal The signal to add
  *
- * @return zero on success, otherwise an error code
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_signal_add(vde_component *component,
                              vde_signal *signal);
@@ -257,7 +253,7 @@ int vde_component_signal_add(vde_component *component,
  * @param component The component to remove the signal from
  * @param signal The signal to remove
  *
- * @return zero on success, otherwise an error code
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_signal_del(vde_component *component,
                              vde_signal *signal);
@@ -291,7 +287,7 @@ vde_signal **vde_component_signals_list(vde_component *component);
  * @param destroy_cb The callback destroy function
  * @param data Callback private data
  *
- * @return zero on success, otherwise an error code
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_signal_attach(vde_component *component, const char *signal,
                                 vde_signal_cb cb,
@@ -307,7 +303,7 @@ int vde_component_signal_attach(vde_component *component, const char *signal,
  * @param destroy_cb The callback destroy function
  * @param data Callback private data
  *
- * @return zero on success, otherwise an error code
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_signal_detach(vde_component *component, const char *signal,
                                 vde_signal_cb cb,
@@ -358,7 +354,7 @@ void vde_component_set_engine_ops(vde_component *engine, eng_new_conn new_conn);
  *
  * @param cm The connection manager to use
  *
- * @return zero on successful listen, an error code otherwise
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_conn_manager_listen(vde_component *cm);
 
@@ -369,7 +365,7 @@ int vde_component_conn_manager_listen(vde_component *cm);
  * @param local_request The request for the local system
  * @param remote_request The request for the remote system
  *
- * @return zero on successful queuing of connection, an error code otherwise
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_conn_manager_connect(vde_component *cm,
                                        vde_request *local_request,
@@ -383,7 +379,7 @@ int vde_component_conn_manager_connect(vde_component *cm,
  *
  * @param transport The transport
  *
- * @return 0 on success, otherwise an error code
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_transport_listen(vde_component *transport);
 
@@ -393,7 +389,7 @@ int vde_component_transport_listen(vde_component *transport);
  * @param transport The transport
  * @param conn The connection to use
  *
- * @return 0 on success, otherwise an error code
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_transport_connect(vde_component *transport,
                                     vde_connection *conn);
@@ -404,7 +400,7 @@ int vde_component_transport_connect(vde_component *transport,
  * @param engine The engine to attach the connection to
  * @param conn The connection to attach
  *
- * @return zero on success, an error code otherwise
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_engine_new_conn(vde_component *engine, vde_connection *conn,
                                   vde_request *req);

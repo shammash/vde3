@@ -152,13 +152,15 @@ typedef enum vde_component_kind vde_component_kind;
 struct vde_component;
 
 /**
-* @brief VDE 3 Component
-*/
+ * @brief VDE 3 Component
+ */
 typedef struct vde_component vde_component;
 
 
-// Callbacks set by application to receive results of after a connect is called
-// on the connection manager
+/*
+ * Callbacks set by application to receive results of after a connect is
+ * called on the connection manager.
+ */
 typedef void (*vde_connect_success_cb)(vde_component *cm, void *arg);
 typedef void (*vde_connect_error_cb)(vde_component *cm, void *arg);
 
@@ -171,102 +173,98 @@ typedef void (*vde_connect_error_cb)(vde_component *cm, void *arg);
 struct vde_context;
 
 /**
-* @brief VDE 3 Context
-*/
+ * @brief VDE 3 Context
+ */
 typedef struct vde_context vde_context;
 
 /**
-* @brief Alloc a new VDE 3 context
-*
-* @param ctx reference to new context pointer
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief Alloc a new VDE 3 context
+ *
+ * @param ctx reference to new context pointer
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_context_new(vde_context **ctx);
 
 /**
-* @brief Initialize VDE 3 context
-*
-* @param ctx The context to initialize
-* @param handler An implementation of vde_event_handler to use
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief Initialize VDE 3 context
+ *
+ * @param ctx The context to initialize
+ * @param handler An implementation of vde_event_handler to use
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_context_init(vde_context *ctx, vde_event_handler *handler);
 
 /**
-* @brief Stop and reset a VDE 3 context
-*
-* @param ctx The context to fini
-*/
+ * @brief Stop and reset a VDE 3 context
+ *
+ * @param ctx The context to fini
+ */
 void vde_context_fini(vde_context *ctx);
 
 /**
-* @brief Deallocate a VDE 3 context
-*
-* @param ctx The context to delete
-*/
+ * @brief Deallocate a VDE 3 context
+ *
+ * @param ctx The context to delete
+ */
 void vde_context_delete(vde_context *ctx);
 
 /**
-* @brief Alloc a new VDE 3 component
-*
-* @param ctx The context where to allocate this component
-* @param kind The component kind  (transport, engine, ...)
-* @param family The component family (unix, data, ...)
-* @param name The component unique name (NULL for auto generation)
-* @param component reference to new component pointer
-* @param args The arguments component-specific
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief Alloc a new VDE 3 component
+ *
+ * @param ctx The context where to allocate this component
+ * @param kind The component kind  (transport, engine, ...)
+ * @param family The component family (unix, data, ...)
+ * @param name The component unique name (NULL for auto generation)
+ * @param component reference to new component pointer
+ * @param args The arguments component-specific
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
                               const char *family, const char *name,
                               vde_component **component, ...);
 
 /**
-* @brief Component lookup
-*        Lookup for a component by name
-*
-* @param ctx The context where to lookup
-* @param name The component name
-*
-* @return the component, NULL if not found
-*/
+ * @brief Component lookup
+ *        Lookup for a component by name
+ *
+ * @param ctx The context where to lookup
+ * @param name The component name
+ *
+ * @return the component, NULL if not found
+ */
 vde_component* vde_context_get_component(vde_context *ctx, const char *name);
 
 /**
-* @brief Remove a component from a given context
-*
-* @param ctx The context where to remove from
-* @param component the component pointer to remove
-*
-* @return zero on success, otherwise an error code
-*/
-/* XXX(shammash):
- *  - this needs to check reference counter and fail if the component is in use
- *    by another component
+ * @brief Remove a component from a given context
+ *
+ * @param ctx The context where to remove from
+ * @param component the component pointer to remove
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_context_component_del(vde_context *ctx, vde_component *component);
 
 /**
-* @brief Save current configuration in a file
-*
-* @param ctx The context to save the configuration from
-* @param file The file to save the configuration to
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief Save current configuration in a file
+ *
+ * @param ctx The context to save the configuration from
+ * @param file The file to save the configuration to
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_context_config_save(vde_context *ctx, const char* file);
 
 /**
-* @brief Load configuration from a file
-*
-* @param ctx The context to load the configuration into
-* @param file The file to read the configuration from
-*
-* @return zero on success, otherwise an error code
-*/
+ * @brief Load configuration from a file
+ *
+ * @param ctx The context to load the configuration into
+ * @param file The file to read the configuration from
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
 int vde_context_config_load(vde_context *ctx, const char* file);
 
 

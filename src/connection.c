@@ -23,14 +23,14 @@
 #include <limits.h>
 
 int vde_connection_new(vde_connection **conn) {
-  if (!conn) {
-    vde_error("%s: connection pointer reference is NULL", __PRETTY_FUNCTION__);
-    return -1;
-  }
+
+  vde_return_val_if_fail(conn, -1);
+
   *conn = (vde_connection *)vde_calloc(sizeof(vde_connection));
   if (*conn == NULL) {
     vde_error("%s: cannot create connection", __PRETTY_FUNCTION__);
-    return -2;
+    errno = ENOMEM;
+    return -1;
   }
   return 0;
 }

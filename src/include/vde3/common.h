@@ -21,6 +21,8 @@
 #include <json.h>
 #include <glib.h>
 
+#include <errno.h>
+
 #ifdef VDE3_DEBUG
 #include <assert.h>
 #endif

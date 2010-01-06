@@ -61,7 +61,7 @@ component_ops *vde_module_get_component_ops(vde_module *module);
  *
  * @param ctx The context
  *
- * @return zero on success, an error code otherwise
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_module_init(vde_context *ctx);
 

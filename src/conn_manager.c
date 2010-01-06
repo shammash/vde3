@@ -88,9 +88,12 @@ int conn_manager_connect(vde_component *component,
   conn_manager *cm;
   vde_connection *conn;
   struct pending_conn *pc;
+  int tmp_errno;
 
   if (vde_connection_new(&conn)) {
+    tmp_errno = errno;
     vde_error("%s: cannot create connection", __PRETTY_FUNCTION__);
+    errno = tmp_errno;
     return -1;
   }
 
@@ -98,7 +101,8 @@ int conn_manager_connect(vde_component *component,
   if (!pc) {
     vde_connection_delete(conn);
     vde_error("%s: cannot create pending connection", __PRETTY_FUNCTION__);
-    return -2;
+    errno = ENOMEM;
+    return -1;
   }
 
   // XXX: check requests with do_remote_authorization,
@@ -128,7 +132,7 @@ static int post_authorization(conn_manager *cm, struct pending_conn *pc)
   vde_component_engine_new_conn(cm->engine, pc->conn, pc->lreq);
   // if there's an application callback call it
   cm->pending_conns = vde_list_remove(cm->pending_conns, pc);
-  vde_free(pc); // free requests here ?
+  vde_free(pc); // XXX: free requests here ?
   return 0;
 }
 
@@ -146,7 +150,8 @@ void conn_manager_connect_cb(vde_connection *conn, void *arg)
     return;
   }
   if (cm->do_remote_authorization) {
-    //vde_connection_set_callbacks(conn, connection_read_cb, connection_error_cb, component);
+    //vde_connection_set_callbacks(conn, connection_read_cb,
+    //                             connection_error_cb, component);
     // - fill defaults for remote_request?
     // - search remote_request in cm->priv->pending_conns
     // - begin authorization process
@@ -178,7 +183,8 @@ void conn_manager_accept_cb(vde_connection *conn, void *arg)
   cm->pending_conns = vde_list_prepend(cm->pending_conns, pc);
 
   if (cm->do_remote_authorization) {
-    //vde_conn_set_callbacks(conn, connection_read_cb, connection_error_cb, component);
+    //vde_conn_set_callbacks(conn, connection_read_cb, connection_error_cb,
+    //                       component);
     // exchange authorization, eventually call post_authorization if
     // successful
     // pc->state = AUTHORIZATION_REQ_WAIT
@@ -210,22 +216,26 @@ int conn_manager_init(vde_component *component, vde_component *transport,
   if (component == NULL || transport == NULL || engine == NULL) {
     vde_error("%s: either component, transport or engine is NULL",
               __PRETTY_FUNCTION__);
+    errno = EINVAL;
     return -1;
   }
   if (vde_component_get_kind(transport) != VDE_TRANSPORT) {
     vde_error("%s: component transport is not a transport",
               __PRETTY_FUNCTION__);
-    return -2;
+    errno = EINVAL;
+    return -1;
   }
   if (vde_component_get_kind(engine) != VDE_ENGINE) {
     vde_error("%s: component engine is not a engine",
               __PRETTY_FUNCTION__);
-    return -2;
+    errno = EINVAL;
+    return -1;
   }
   cm = (conn_manager *)vde_calloc(sizeof(conn_manager));
   if (cm == NULL) {
     vde_error("%s: could not allocate private data", __PRETTY_FUNCTION__);
-    return -4;
+    errno = ENOMEM;
+    return -1;
   }
 
   cm->transport = transport;

@@ -152,17 +152,16 @@ int hub_engine_newconn(vde_component *component, vde_connection *conn,
 // XXX: add a max_ports argument?
 static int engine_hub_init(vde_component *component)
 {
+  int tmp_errno;
   hub_engine *hub;
 
-  if (component == NULL) {
-    vde_error("%s: component is NULL", __PRETTY_FUNCTION__);
-    return -1;
-  }
+  vde_return_val_if_fail(component == NULL, -1);
 
   hub = (hub_engine *)vde_calloc(sizeof(hub_engine));
   if (hub == NULL) {
     vde_error("%s: could not allocate private data", __PRETTY_FUNCTION__);
-    return -3;
+    errno = ENOMEM;
+    return -1;
   }
 
   hub->component = component;
@@ -171,15 +170,19 @@ static int engine_hub_init(vde_component *component)
   // - the header for the wrappers has been included at the top
   // - register the commands array, the name is in the json definition
   if (vde_component_commands_register(component, engine_hub_commands)) {
+    tmp_errno = errno;
     vde_error("%s: could not register commands", __PRETTY_FUNCTION__);
     vde_free(hub);
-    return -4;
+    errno = tmp_errno;
+    return -1;
   }
 
   if (vde_component_signals_register(component, engine_hub_signals)) {
+    tmp_errno = errno;
     vde_error("%s: could not register signals", __PRETTY_FUNCTION__);
     vde_free(hub);
-    return -5;
+    errno = tmp_errno;
+    return -1;
   }
 
   vde_component_set_engine_ops(component, &hub_engine_newconn);

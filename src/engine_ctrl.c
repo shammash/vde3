@@ -530,6 +530,7 @@ static int vde_split_payload(vde_pkt *pkt,
         vde_error("%s: cannot allocate memory for temp buffer",
                   __PRETTY_FUNCTION__);
         // XXX document somewhere that inbuf is not reset in this case
+        errno = ENOMEM;
         rv = -1;
         goto exit;
       }
@@ -564,7 +565,8 @@ static int vde_split_payload(vde_pkt *pkt,
       *inbuf_len = 0;
       vde_warning("%s: partial string too long for inbuf, dropping",
                   __PRETTY_FUNCTION__);
-      rv = -2;
+      errno = ENOSPC;
+      rv = -1;
       goto exit;
     } else {
       memcpy(inbuf + *inbuf_len, buf, remaining);
@@ -606,7 +608,7 @@ conn_cb_result ctrl_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
   return CONN_CB_CLOSE;
 }
 
-static int ctrl_conn_fini(ctrl_conn *cc)
+static void ctrl_conn_fini(ctrl_conn *cc)
 {
   vde_pkt *pkt;
 
@@ -638,8 +640,6 @@ int ctrl_engine_newconn(vde_component *component, vde_connection *conn,
   cc->engine = ctrl;
   cc->reg_signals = NULL;
 
-  vde_debug("got new control conn");
-
   // XXX register/deregister cc inside ctrl to keep a list of active cconns
 
   // XXX register write callback to flush queue conn
@@ -656,31 +656,31 @@ int ctrl_engine_newconn(vde_component *component, vde_connection *conn,
 
 static int engine_ctrl_init(vde_component *component)
 {
+  int tmp_errno;
   ctrl_engine *ctrl;
 
-  vde_debug("got control init");
-
-  if (component == NULL) {
-    vde_error("%s: component is NULL", __PRETTY_FUNCTION__);
-    return -1;
-  }
+  vde_return_val_if_fail(component == NULL, -1);
 
   ctrl = (ctrl_engine *)vde_calloc(sizeof(ctrl_engine));
   if (ctrl == NULL) {
     vde_error("%s: could not allocate private data", __PRETTY_FUNCTION__);
-    return -3;
+    errno = ENOMEM;
+    return -1;
   }
 
   ctrl->component = component;
 
   if (vde_component_commands_register(component, engine_ctrl_commands)) {
+    tmp_errno = errno;
     vde_error("%s: could not register commands", __PRETTY_FUNCTION__);
     vde_free(ctrl);
-    return -4;
+    errno = tmp_errno;
+    return -1;
   }
 
   vde_component_set_engine_ops(component, &ctrl_engine_newconn);
   vde_component_set_priv(component, (void *)ctrl);
+
   return 0;
 }
 

@@ -64,7 +64,7 @@ typedef void (*vde_signal_destroy_cb)(vde_component *component,
  * @param destroy_cb The callback destroy function
  * @param data Callback private data
  *
- * @return zero on success, otherwise an error code
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_signal_attach(vde_signal *signal,
                       vde_signal_cb cb,
@@ -79,7 +79,7 @@ int vde_signal_attach(vde_signal *signal,
  * @param destroy_cb The callback destroy function
  * @param data Callback private data
  *
- * @return zero on success, otherwise an error code
+ * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_signal_detach(vde_signal *signal,
                       vde_signal_cb cb,

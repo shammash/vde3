@@ -74,7 +74,8 @@ static inline void vde_pkt_init(vde_pkt *pkt, unsigned int data,
  * @param head The size of the space before payload
  * @param tail The size of the space after payload
  *
- * @return The new packet or NULL if an error occurred
+ * @return The new packet on success, NULL on error (and errno is set
+ * appropriately)
  */
 static inline vde_pkt *vde_pkt_new(unsigned int payload_sz, unsigned int head,
                                    unsigned int tail)
@@ -85,6 +86,7 @@ static inline vde_pkt *vde_pkt_new(unsigned int payload_sz, unsigned int head,
   vde_pkt *pkt = (vde_pkt *)vde_calloc(pkt_sz);
 
   if (pkt == NULL) {
+    errno = ENOMEM;
     return NULL;
   }
   vde_pkt_init(pkt, data_sz, head, tail);

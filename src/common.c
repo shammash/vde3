@@ -25,6 +25,10 @@ vde_sobj *vde_sobj_from_string(const char *str)
   struct json_object *obj;
 
   tok = json_tokener_new();
+  if (tok == NULL) {
+    errno = ENOMEM;
+    return NULL;
+  }
   obj = json_tokener_parse_ex(tok, str, -1);
   json_tokener_free(tok);
   return obj;
