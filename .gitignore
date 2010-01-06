@@ -1,13 +1,6 @@
 .*.swp
 *.pyc
 
-*.o
-
-# libtool stuff
-*.lo
-.libs
-.deps
-
 cscope.out
 tags
 TAGS
@@ -27,8 +20,29 @@ compile
 config.h*
 config.log
 config.status
+config.guess
+config.sub
 configure
 depcomp
 install-sh
 missing
 stamp-h1
+.dirstamp
+.deps
+
+# libtool
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
+libtool
+ltmain.sh
+*.lo
+.libs
+
+# binaries/libs
+src/libvde.la
+src/vde_hub
+src/vde_hub2hub
+*.o
