@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.65])
+AC_PREREQ([2.61])
 AC_INIT([vde3], [0.1], [BUG-REPORT-ADDRESS])
 AC_CONFIG_SRCDIR([src/context.c])
 AC_CONFIG_HEADERS([config.h])
@@ -48,6 +48,17 @@ AC_TYPE_UINT8_T
 # Checks for library functions.
 AC_CHECK_FUNCS([memchr mkdir rmdir socket strdup strerror strndup])
 
+VDE_CFLAGS="-Wall"
+# consider also these warnings
+# VDE_CFLAGS="$VDE_CFLAGS -Winline -Wformat=2 -Wswitch-default -Wswitch-enum \
+# -Wunused-parameter -Wfloat-equal -Wundef -Wshadow -Wunsafe-loop-optimizations \
+# -Wtype-limits -Wcast-qual -Wcast-align -Wconversion -Wno-sign-conversion \
+# -Wempty-body -Wsign-compare -Wlogical-op -Waggregate-return \
+# -Wstrict-prototypes -Wold-style-declaration -Wold-style-definition \
+# -Wmissing-parameter-type -Wmissing-prototypes -Wmissing-declarations \
+# -Wmissing-noreturn -Wmissing-format-attribute -Wpacked -Wunreachable-code \
+# -Wnested-externs -Wdisabled-optimization -Wunused -Wunused-parameter"
+
 AC_ARG_ENABLE(debug,
   AS_HELP_STRING([--enable-debug],
                  [compile with debug checks and symbols (yes)]),
@@ -56,7 +67,10 @@ AC_ARG_ENABLE(debug,
 if test x$enable_debug = xyes; then
   VDE_CPPFLAGS="$VDE_CPPFLAGS -DVDE3_DEBUG"
   VDE_CFLAGS="$VDE_CFLAGS -ggdb"
+else
+  VDE_CFLAGS="$VDE_CFLAGS -O2"
 fi
+
 AC_SUBST([VDE_CPPFLAGS])
 AC_SUBST([VDE_CFLAGS])
 
