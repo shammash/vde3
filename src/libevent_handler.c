@@ -16,10 +16,11 @@
  */
 
 #include <vde3.h>
-#include <vde3/common.h>
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <stdlib.h>
 
 #include <event.h>
 
@@ -62,7 +63,7 @@ void *libevent_event_add(int fd, short events, const struct timeval *timeout,
 {
   struct event *ev;
 
-  ev = (struct event *)vde_alloc(sizeof(struct event));
+  ev = (struct event *)malloc(sizeof(struct event));
   if (!ev) {
     vde_error("%s: can't allocate memory for new event", __PRETTY_FUNCTION__);
     errno = ENOMEM;
@@ -80,7 +81,7 @@ void libevent_event_del(void *event)
   struct event *ev = (struct event *)event;
 
   event_del(ev);
-  vde_free(ev);
+  free(ev);
 }
 
 void *libevent_timeout_add(const struct timeval *timeout, short events,
@@ -89,17 +90,17 @@ void *libevent_timeout_add(const struct timeval *timeout, short events,
   struct event *ev;
   struct rtimeout *rt;
 
-  ev = (struct event *)vde_alloc(sizeof(struct event));
+  ev = (struct event *)malloc(sizeof(struct event));
   if (!ev) {
     vde_error("%s: can't allocate memory for timeout", __PRETTY_FUNCTION__);
     errno = ENOMEM;
     return NULL;
   }
 
-  rt = (struct rtimeout *)vde_calloc(sizeof(struct rtimeout));
+  rt = (struct rtimeout *)calloc(1, sizeof(struct rtimeout));
   if (!rt) {
     if (ev) {
-      vde_free(ev);
+      free(ev);
     }
     vde_error("%s: can't allocate memory for timeout", __PRETTY_FUNCTION__);
     errno = ENOMEM;
@@ -109,7 +110,7 @@ void *libevent_timeout_add(const struct timeval *timeout, short events,
 
   // if it is a recurrent timeout hook our callback instead of user's
   if (events & VDE_EV_PERSIST) {
-    rt->timeout = (struct timeval *)vde_alloc(sizeof(struct timeval));
+    rt->timeout = (struct timeval *)malloc(sizeof(struct timeval));
     memcpy(rt->timeout, timeout, sizeof(struct timeval));
     rt->cb = cb;
     rt->arg = arg;
@@ -128,13 +129,13 @@ void libevent_timeout_del(void *timeout)
   struct rtimeout *rt = (struct rtimeout *)timeout;
 
   event_del(rt->ev);
-  vde_free(rt->ev);
+  free(rt->ev);
 
   if(rt->timeout) {
-    vde_free(rt->timeout);
+    free(rt->timeout);
   }
 
-  vde_free(rt);
+  free(rt);
 }
 
 vde_event_handler libevent_eh = {
