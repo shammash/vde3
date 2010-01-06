@@ -72,6 +72,10 @@ src_vde_hub2hub_SOURCES = src/vde_hub2hub.c src/libevent_handler.c
 src_vde_hub2hub_LDADD = src/libvde.la
 src_vde_hub2hub_LDFLAGS = -levent
 
-src_vde_hub2hub_SOURCES = \
-  $(VDE_SRC) \
-  src/vde_hub2hub.c
+if CHECK
+TESTS = tests/check_context
+check_PROGRAMS = tests/check_context
+tests_check_context_SOURCES = tests/check_context.c
+tests_check_context_CFLAGS = $(CHECK_CFLAGS) -I$(top_srcdir)/src/include/
+tests_check_context_LDADD = $(CHECK_LIBS) src/libvde.la
+endif

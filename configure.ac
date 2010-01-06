@@ -9,7 +9,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 # foreign doesn't require GNU standard files to be present
 # http://www.gnu.org/software/automake/manual/automake.html#Strictness
-AM_INIT_AUTOMAKE([dist-bzip2 subdir-objects foreign])
+AM_INIT_AUTOMAKE([dist-bzip2 subdir-objects color-tests foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Checks for programs.
@@ -70,6 +70,10 @@ if test x$enable_debug = xyes; then
 else
   VDE_CFLAGS="$VDE_CFLAGS -O2"
 fi
+
+# check for check
+PKG_CHECK_MODULES([CHECK], [check >= 0.9.4], [have_check=yes], [have_check=no])
+AM_CONDITIONAL(CHECK, [test x$have_check = xyes])
 
 AC_SUBST([VDE_CPPFLAGS])
 AC_SUBST([VDE_CFLAGS])
