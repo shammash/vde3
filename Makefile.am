@@ -1,8 +1,7 @@
 # note: include builddir first in case wrappers are regenerated there
 AM_CPPFLAGS = -D_GNU_SOURCE $(VDE_CPPFLAGS) \
   -I$(top_srcdir)/src/include/ -I$(top_builddir)/src/ -I$(top_srcdir)/src/
-AM_LDFLAGS = $(GLIB_LIBS) $(JSONC_LIBS) -levent
-AM_CFLAGS = $(GLIB_CFLAGS) $(JSONC_CFLAGS) $(VDE_CFLAGS)
+AM_CFLAGS = $(VDE_CFLAGS)
 
 GEN_CHECKER = $(top_srcdir)/src/gen_checker.py
 
@@ -46,7 +45,6 @@ VDE_SRC = \
   src/module.c \
   src/transport_vde2.c \
   src/connection.c \
-  src/libevent_handler.c \
   src/localconnection.c \
   src/common.c \
   src/signal.c
@@ -58,9 +56,19 @@ $(WRAPPERS_SRC): $(WRAPPERS_JSON)
 
 bin_PROGRAMS = src/vde_hub src/vde_hub2hub
 
-src_vde_hub_SOURCES = \
-  $(VDE_SRC) \
-  src/vde_hub.c
+lib_LTLIBRARIES = src/libvde.la
+src_libvde_la_SOURCES = $(VDE_SRC)
+# XXX investigate -version-number and --export-dynamic
+src_libvde_la_LDFLAGS = $(GLIB_LIBS) $(JSONC_LIBS) -version-number 0:0:1 --export-dynamic
+src_libvde_la_CFLAGS = $(GLIB_CFLAGS) $(JSONC_CFLAGS) $(VDE_CFLAGS)
+
+src_vde_hub_SOURCES = src/vde_hub.c src/libevent_handler.c
+src_vde_hub_LDADD = src/libvde.la
+src_vde_hub_LDFLAGS = -levent
+
+src_vde_hub2hub_SOURCES = src/vde_hub2hub.c src/libevent_handler.c
+src_vde_hub2hub_LDADD = src/libvde.la
+src_vde_hub2hub_LDFLAGS = -levent
 
 src_vde_hub2hub_SOURCES = \
   $(VDE_SRC) \
