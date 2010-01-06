@@ -80,9 +80,6 @@ typedef gchar vde_char;
 #define vde_strdup(s) g_strdup(s)
 #define vde_strndup(s, n) g_strndup(s, n)
 
-#define vde_return_if_fail(exp) g_return_if_fail(exp)
-#define vde_return_val_if_fail(exp, val) g_return_val_if_fail(exp, val)
-
 /*
  * Decorating assert instead of defining NDEBUG if we don't want assert because
  * we can add further instructions if needed.

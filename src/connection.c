@@ -24,7 +24,7 @@
 
 int vde_connection_new(vde_connection **conn) {
 
-  vde_return_val_if_fail(conn, -1);
+  vde_assert(conn);
 
   *conn = (vde_connection *)vde_calloc(sizeof(vde_connection));
   if (*conn == NULL) {
@@ -61,7 +61,7 @@ void vde_connection_fini(vde_connection *conn)
 
 void vde_connection_delete(vde_connection *conn)
 {
-  vde_return_if_fail(conn != NULL);
+  vde_assert(conn != NULL);
 
   // XXX(shammash):
   // - check errors, conn can't be NULL (stuff initialized?)
@@ -75,8 +75,8 @@ void vde_connection_set_callbacks(vde_connection *conn,
                                   conn_error_cb error_cb,
                                   void *cb_priv)
 {
-  vde_return_if_fail(conn != NULL);
-  vde_return_if_fail(read_cb != NULL && error_cb != NULL);
+  vde_assert(conn != NULL);
+  vde_assert(read_cb != NULL && error_cb != NULL);
 
   conn->read_cb = read_cb;
   conn->write_cb = write_cb;
@@ -86,7 +86,7 @@ void vde_connection_set_callbacks(vde_connection *conn,
 
 unsigned int vde_connection_max_payload(vde_connection *conn)
 {
-  vde_return_val_if_fail(conn != NULL, 1);
+  vde_assert(conn != NULL);
 
   return conn->max_pload;
 }
@@ -95,7 +95,7 @@ void vde_connection_set_pkt_properties(vde_connection *conn,
                                        unsigned int head_sz,
                                        unsigned int tail_sz)
 {
-  vde_return_if_fail(conn != NULL);
+  vde_assert(conn != NULL);
 
   conn->pkt_head_sz = head_sz;
   conn->pkt_tail_sz = tail_sz;
@@ -105,8 +105,8 @@ void vde_connection_set_send_properties(vde_connection *conn,
                                         unsigned int max_tries,
                                         struct timeval *max_timeout)
 {
-  vde_return_if_fail(conn != NULL);
-  vde_return_if_fail(max_timeout != NULL);
+  vde_assert(conn != NULL);
+  vde_assert(max_timeout != NULL);
 
   conn->send_maxtries = max_tries;
   timerclear(&conn->send_maxtimeout);
@@ -116,14 +116,14 @@ void vde_connection_set_send_properties(vde_connection *conn,
 void vde_connection_set_attributes(vde_connection *conn,
                                    vde_attributes *attributes)
 {
-  vde_return_if_fail(conn != NULL);
+  vde_assert(conn != NULL);
 
   conn->attributes = attributes;
 }
 
 vde_attributes *vde_connection_get_attributes(vde_connection *conn)
 {
-  vde_return_val_if_fail(conn != NULL, NULL);
+  vde_assert(conn != NULL);
 
   return conn->attributes;
 }

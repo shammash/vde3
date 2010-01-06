@@ -57,8 +57,8 @@ static vde_module *vde_context_lookup_module(vde_context *ctx,
   vde_list *iter;
   vde_module *module = NULL;
 
-  vde_return_val_if_fail(ctx != NULL, NULL);
-  vde_return_val_if_fail(ctx->initialized == true , NULL);
+  vde_assert(ctx != NULL);
+  vde_assert(ctx->initialized == true);
 
   comp_family = vde_quark_from_string(family);
   iter = vde_list_first(ctx->modules);
@@ -300,8 +300,8 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
   const char *family;
   component_ops *module_cops;
 
-  vde_return_val_if_fail(ctx != NULL, -1);
-  vde_return_val_if_fail(ctx->initialized == true, -1);
+  vde_assert(ctx != NULL);
+  vde_assert(ctx->initialized == true);
 
   kind = vde_module_get_kind(module);
   family = vde_module_get_family(module);
@@ -314,9 +314,9 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
 
   // module's component_ops sanity checks
   module_cops = vde_module_get_component_ops(module);
-  vde_return_val_if_fail(module_cops != NULL, -3);
-  vde_return_val_if_fail(module_cops->init != NULL, -3);
-  vde_return_val_if_fail(module_cops->fini != NULL, -3);
+  vde_assert(module_cops != NULL);
+  vde_assert(module_cops->init != NULL);
+  vde_assert(module_cops->fini != NULL);
 
   ctx->modules = vde_list_prepend(ctx->modules, module);
   return 0;
@@ -326,17 +326,17 @@ void *vde_context_event_add(vde_context *ctx, int fd, short events,
                             const struct timeval *timeout,
                             event_cb cb, void *arg)
 {
-  vde_return_val_if_fail(ctx != NULL, NULL);
-  vde_return_val_if_fail(ctx->initialized == true, NULL);
+  vde_assert(ctx != NULL);
+  vde_assert(ctx->initialized == true);
 
   return ctx->event_handler->event_add(fd, events, timeout, cb, arg);
 }
 
 void vde_context_event_del(vde_context *ctx, void *event)
 {
-  vde_return_if_fail(ctx != NULL);
-  vde_return_if_fail(ctx->initialized == true);
-  vde_return_if_fail(event != NULL);
+  vde_assert(ctx != NULL);
+  vde_assert(ctx->initialized == true);
+  vde_assert(event != NULL);
 
   ctx->event_handler->event_del(event);
 }
@@ -345,17 +345,17 @@ void *vde_context_timeout_add(vde_context *ctx, short events,
                               const struct timeval *timeout,
                               event_cb cb, void *arg)
 {
-  vde_return_val_if_fail(ctx != NULL, NULL);
-  vde_return_val_if_fail(ctx->initialized == true, NULL);
+  vde_assert(ctx != NULL);
+  vde_assert(ctx->initialized == true);
 
   return ctx->event_handler->timeout_add(timeout, events, cb, arg);
 }
 
 void vde_context_timeout_del(vde_context *ctx, void *timeout)
 {
-  vde_return_if_fail(ctx != NULL);
-  vde_return_if_fail(ctx->initialized == true);
-  vde_return_if_fail(timeout != NULL);
+  vde_assert(ctx != NULL);
+  vde_assert(ctx->initialized == true);
+  vde_assert(timeout != NULL);
 
   ctx->event_handler->timeout_del(timeout);
 }

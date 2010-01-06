@@ -50,7 +50,7 @@ struct vde_component {
 
 int vde_component_new(vde_component **component)
 {
-  vde_return_val_if_fail(component != NULL, -1);
+  vde_assert(component != NULL);
 
   *component = (vde_component *)vde_calloc(sizeof(vde_component));
   if (*component == NULL) {
@@ -71,8 +71,8 @@ int vde_component_init(vde_component *component, vde_quark qname,
 {
   int retval, tmp_errno;
 
-  vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(module != NULL, -1);
+  vde_assert(component != NULL);
+  vde_assert(module != NULL);
 
   component->ctx = ctx;
   component->qname = qname;
@@ -97,8 +97,8 @@ int vde_component_init(vde_component *component, vde_quark qname,
 
 void vde_component_fini(vde_component *component)
 {
-  vde_return_if_fail(component != NULL);
-  vde_return_if_fail(component->initialized == true);
+  vde_assert(component != NULL);
+  vde_assert(component->initialized == true);
 
   /* XXX(godog): switch this on only if debugging
   if (component->refcount) {
@@ -118,15 +118,15 @@ void vde_component_fini(vde_component *component)
 
 void vde_component_delete(vde_component *component)
 {
-  vde_return_if_fail(component != NULL);
-  vde_return_if_fail(component->initialized == false);
+  vde_assert(component != NULL);
+  vde_assert(component->initialized == false);
 
   vde_free(component);
 }
 
 void vde_component_get(vde_component *component, int *count)
 {
-  vde_return_if_fail(component != NULL);
+  vde_assert(component != NULL);
 
   component->refcount++;
   if(count) {
@@ -136,7 +136,7 @@ void vde_component_get(vde_component *component, int *count)
 
 void vde_component_put(vde_component *component, int *count)
 {
-  vde_return_if_fail(component != NULL);
+  vde_assert(component != NULL);
 
   component->refcount--;
   if(count) {
@@ -146,7 +146,7 @@ void vde_component_put(vde_component *component, int *count)
 
 int vde_component_put_if_last(vde_component *component, int *count)
 {
-  vde_return_val_if_fail(component != NULL, -1);
+  vde_assert(component != NULL);
 
   if (component->refcount != 1) {
     return 1;
@@ -158,42 +158,42 @@ int vde_component_put_if_last(vde_component *component, int *count)
 
 void *vde_component_get_priv(vde_component *component)
 {
-  vde_return_val_if_fail(component != NULL, NULL);
+  vde_assert(component != NULL);
 
   return component->priv;
 }
 
 void vde_component_set_priv(vde_component *component, void *priv)
 {
-  vde_return_if_fail(component != NULL);
+  vde_assert(component != NULL);
 
   component->priv = priv;
 }
 
 vde_context *vde_component_get_context(vde_component *component)
 {
-  vde_return_val_if_fail(component != NULL, NULL);
+  vde_assert(component != NULL);
 
   return component->ctx;
 }
 
 vde_component_kind vde_component_get_kind(vde_component *component)
 {
-  vde_return_val_if_fail(component != NULL, -1);
+  vde_assert(component != NULL);
 
   return component->kind;
 }
 
 vde_quark vde_component_get_qname(vde_component *component)
 {
-  vde_return_val_if_fail(component != NULL, -1);
+  vde_assert(component != NULL);
 
   return component->qname;
 }
 
 const char *vde_component_get_name(vde_component *component)
 {
-  vde_return_val_if_fail(component != NULL, NULL);
+  vde_assert(component != NULL);
 
   return vde_quark_to_string(component->qname);
 }
@@ -201,8 +201,8 @@ const char *vde_component_get_name(vde_component *component)
 int vde_component_commands_register(vde_component *component,
                                     vde_command *commands)
 {
-  vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(commands != NULL, -1);
+  vde_assert(component != NULL);
+  vde_assert(commands != NULL);
 
   while (vde_command_get_name(commands) != NULL) {
     if (vde_component_command_add(component, commands)) {
@@ -220,8 +220,8 @@ int vde_component_command_add(vde_component *component,
   const char *cmd_name;
   vde_quark qname;
 
-  vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(command != NULL, -1);
+  vde_assert(component != NULL);
+  vde_assert(command != NULL);
 
   cmd_name = vde_command_get_name(command);
   qname = vde_quark_from_string(cmd_name);
@@ -244,8 +244,8 @@ int vde_component_command_del(vde_component *component,
   const char *cmd_name;
   vde_quark qname;
 
-  vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(command != NULL, -1);
+  vde_assert(component != NULL);
+  vde_assert(command != NULL);
 
   cmd_name = vde_command_get_name(command);
   qname = vde_quark_try_string(cmd_name);
@@ -265,8 +265,8 @@ vde_command *vde_component_command_get(vde_component *component,
 {
   vde_quark qname;
 
-  vde_return_val_if_fail(component != NULL, NULL);
-  vde_return_val_if_fail(name != NULL, NULL);
+  vde_assert(component != NULL);
+  vde_assert(name != NULL);
 
   qname = vde_quark_try_string(name);
 
@@ -285,8 +285,8 @@ vde_command **vde_component_commands_list(vde_component *component);
 int vde_component_signals_register(vde_component *component,
                                    vde_signal *signals)
 {
-  vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(signals != NULL, -1);
+  vde_assert(component != NULL);
+  vde_assert(signals != NULL);
 
   while (vde_signal_get_name(signals) != NULL) {
     if (vde_component_signal_add(component, signals)) {
@@ -305,8 +305,8 @@ int vde_component_signal_add(vde_component *component,
   const char *sig_name;
   vde_quark qname;
 
-  vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(signal != NULL, -1);
+  vde_assert(component != NULL);
+  vde_assert(signal != NULL);
 
   // XXX: signals must be duplicated before adding them to component->signals
   // hash otherwise two components of the same family will share the list of
@@ -332,8 +332,8 @@ int vde_component_signal_del(vde_component *component,
   const char *sig_name;
   vde_quark qname;
 
-  vde_return_val_if_fail(component != NULL, -1);
-  vde_return_val_if_fail(signal != NULL, -1);
+  vde_assert(component != NULL);
+  vde_assert(signal != NULL);
 
   sig_name = vde_signal_get_name(signal);
   qname = vde_quark_try_string(sig_name);
@@ -355,8 +355,8 @@ vde_signal *vde_component_signal_get(vde_component *component,
 {
   vde_quark qname;
 
-  vde_return_val_if_fail(component != NULL, NULL);
-  vde_return_val_if_fail(name != NULL, NULL);
+  vde_assert(component != NULL);
+  vde_assert(name != NULL);
 
   qname = vde_quark_try_string(name);
 
@@ -379,7 +379,7 @@ int vde_component_signal_attach(vde_component *component, const char *signal,
 {
   vde_signal *sig;
 
-  vde_return_val_if_fail(cb != NULL, -1);
+  vde_assert(cb != NULL);
 
   sig = vde_component_signal_get(component, signal);
 
@@ -398,7 +398,7 @@ int vde_component_signal_detach(vde_component *component, const char *signal,
 {
   vde_signal *sig;
 
-  vde_return_val_if_fail(cb != NULL, -1);
+  vde_assert(cb != NULL);
 
   sig = vde_component_signal_get(component, signal);
 
@@ -427,9 +427,9 @@ void vde_component_signal_raise(vde_component *component, const char *signal,
 void vde_component_set_conn_manager_ops(vde_component *cm, cm_listen listen,
                                         cm_connect connect)
 {
-  vde_return_if_fail(cm != NULL);
-  vde_return_if_fail(listen != NULL);
-  vde_return_if_fail(connect != NULL);
+  vde_assert(cm != NULL);
+  vde_assert(listen != NULL);
+  vde_assert(connect != NULL);
 
   cm->cm_connect = connect;
   cm->cm_listen = listen;
@@ -439,9 +439,9 @@ void vde_component_set_transport_ops(vde_component *transport,
                                      tr_listen listen,
                                      tr_connect connect)
 {
-  vde_return_if_fail(transport != NULL);
-  vde_return_if_fail(listen != NULL);
-  vde_return_if_fail(connect != NULL);
+  vde_assert(transport != NULL);
+  vde_assert(listen != NULL);
+  vde_assert(connect != NULL);
 
   transport->tr_connect = connect;
   transport->tr_listen = listen;
@@ -449,9 +449,9 @@ void vde_component_set_transport_ops(vde_component *transport,
 
 void vde_component_set_engine_ops(vde_component *engine, eng_new_conn new_conn)
 {
-  vde_return_if_fail(engine != NULL);
-  vde_return_if_fail(engine->kind == VDE_ENGINE);
-  vde_return_if_fail(new_conn != NULL);
+  vde_assert(engine != NULL);
+  vde_assert(engine->kind == VDE_ENGINE);
+  vde_assert(new_conn != NULL);
 
   engine->eng_new_conn = new_conn;
 }
@@ -459,8 +459,8 @@ void vde_component_set_engine_ops(vde_component *engine, eng_new_conn new_conn)
 // XXX add application callback on accept?
 int vde_component_conn_manager_listen(vde_component *cm)
 {
-  vde_return_val_if_fail(cm == NULL, -1);
-  vde_return_val_if_fail(cm->kind != VDE_CONNECTION_MANAGER, -1);
+  vde_assert(cm == NULL);
+  vde_assert(cm->kind != VDE_CONNECTION_MANAGER);
 
   return cm->cm_listen(cm);
 }
@@ -474,16 +474,16 @@ int vde_component_conn_manager_connect(vde_component *cm,
                                        vde_connect_error_cb error_cb,
                                        void *arg)
 {
-  vde_return_val_if_fail(cm == NULL, -1);
-  vde_return_val_if_fail(cm->kind != VDE_CONNECTION_MANAGER, -1);
+  vde_assert(cm == NULL);
+  vde_assert(cm->kind != VDE_CONNECTION_MANAGER);
 
   return cm->cm_connect(cm, local, remote, success_cb, error_cb, arg);
 }
 
 int vde_component_transport_listen(vde_component *transport)
 {
-  vde_return_val_if_fail(transport != NULL, -1);
-  vde_return_val_if_fail(transport->kind == VDE_TRANSPORT, -1);
+  vde_assert(transport != NULL);
+  vde_assert(transport->kind == VDE_TRANSPORT);
 
   return transport->tr_listen(transport);
 }
@@ -491,9 +491,9 @@ int vde_component_transport_listen(vde_component *transport)
 int vde_component_transport_connect(vde_component *transport,
                                     vde_connection *conn)
 {
-  vde_return_val_if_fail(transport != NULL, -1);
-  vde_return_val_if_fail(transport->kind == VDE_TRANSPORT, -1);
-  vde_return_val_if_fail(conn != NULL, -1);
+  vde_assert(transport != NULL);
+  vde_assert(transport->kind == VDE_TRANSPORT);
+  vde_assert(conn != NULL);
 
   return transport->tr_connect(transport, conn);
 }
@@ -501,9 +501,9 @@ int vde_component_transport_connect(vde_component *transport,
 int vde_component_engine_new_conn(vde_component *engine, vde_connection *conn,
                                   vde_request *req)
 {
-  vde_return_val_if_fail(engine != NULL, -1);
-  vde_return_val_if_fail(engine->kind == VDE_ENGINE, -1);
-  vde_return_val_if_fail(conn != NULL, -1);
+  vde_assert(engine != NULL);
+  vde_assert(engine->kind == VDE_ENGINE);
+  vde_assert(conn != NULL);
 
   return engine->eng_new_conn(engine, conn, req);
 }
@@ -513,9 +513,9 @@ void vde_component_set_transport_cm_callbacks(vde_component *transport,
                                               cm_accept_cb accept_cb,
                                               cm_error_cb error_cb, void *arg)
 {
-  vde_return_if_fail(transport != NULL);
-  vde_return_if_fail(transport->kind == VDE_TRANSPORT);
-  vde_return_if_fail(connect_cb != NULL &&
+  vde_assert(transport != NULL);
+  vde_assert(transport->kind == VDE_TRANSPORT);
+  vde_assert(connect_cb != NULL &&
                      accept_cb != NULL &&
                      error_cb != NULL);
 
@@ -528,9 +528,9 @@ void vde_component_set_transport_cm_callbacks(vde_component *transport,
 void vde_component_transport_call_cm_connect_cb(vde_component *transport,
                                                 vde_connection *conn)
 {
-  vde_return_if_fail(transport != NULL);
-  vde_return_if_fail(transport->kind == VDE_TRANSPORT);
-  vde_return_if_fail(conn != NULL);
+  vde_assert(transport != NULL);
+  vde_assert(transport->kind == VDE_TRANSPORT);
+  vde_assert(conn != NULL);
 
   transport->cm_connect_cb(conn, transport->cm_cb_arg);
 }
@@ -538,9 +538,9 @@ void vde_component_transport_call_cm_connect_cb(vde_component *transport,
 void vde_component_transport_call_cm_accept_cb(vde_component *transport,
                                                vde_connection *conn)
 {
-  vde_return_if_fail(transport != NULL);
-  vde_return_if_fail(transport->kind == VDE_TRANSPORT);
-  vde_return_if_fail(conn != NULL);
+  vde_assert(transport != NULL);
+  vde_assert(transport->kind == VDE_TRANSPORT);
+  vde_assert(conn != NULL);
 
   transport->cm_accept_cb(conn, transport->cm_cb_arg);
 }
@@ -549,9 +549,9 @@ void vde_component_transport_call_cm_error_cb(vde_component *transport,
                                               vde_connection *conn,
                                               vde_transport_error err)
 {
-  vde_return_if_fail(transport != NULL);
-  vde_return_if_fail(transport->kind == VDE_TRANSPORT);
-  vde_return_if_fail(conn != NULL);
+  vde_assert(transport != NULL);
+  vde_assert(transport->kind == VDE_TRANSPORT);
+  vde_assert(conn != NULL);
 
   transport->cm_error_cb(conn, err, transport->cm_cb_arg);
 }

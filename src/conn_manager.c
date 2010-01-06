@@ -272,7 +272,7 @@ int conn_manager_va_init(vde_component *component, va_list args)
 // XXX to be defined
 void conn_manager_fini(vde_component *component)
 {
-  vde_return_if_fail(component != NULL);
+  vde_assert(component != NULL);
 }
 
 struct component_ops conn_manager_component_ops = {

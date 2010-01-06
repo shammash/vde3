@@ -203,7 +203,7 @@ void vde_connection_delete(vde_connection *conn);
  */
 static inline int vde_connection_write(vde_connection *conn, vde_pkt *pkt)
 {
-  vde_return_val_if_fail(conn != NULL, -1);
+  vde_assert(conn != NULL);
 
   return conn->be_write(conn, pkt);
 }
@@ -221,8 +221,8 @@ static inline int vde_connection_write(vde_connection *conn, vde_pkt *pkt)
 static inline conn_cb_result vde_connection_call_read(vde_connection *conn,
                                                       vde_pkt *pkt)
 {
-  vde_return_val_if_fail(conn != NULL, CONN_CB_ERROR);
-  vde_return_val_if_fail(conn->read_cb != NULL, CONN_CB_ERROR);
+  vde_assert(conn != NULL);
+  vde_assert(conn->read_cb != NULL);
 
   return conn->read_cb(conn, pkt, conn->cb_priv);
 }
@@ -240,7 +240,7 @@ static inline conn_cb_result vde_connection_call_read(vde_connection *conn,
 static inline conn_cb_result vde_connection_call_write(vde_connection *conn,
                                                        vde_pkt *pkt)
 {
-  vde_return_val_if_fail(conn != NULL, CONN_CB_ERROR);
+  vde_assert(conn != NULL);
 
   if (conn->write_cb != NULL) {
     return conn->write_cb(conn, pkt, conn->cb_priv);
@@ -262,8 +262,8 @@ static inline conn_cb_result vde_connection_call_error(vde_connection *conn,
                                                        vde_pkt *pkt,
                                                        vde_conn_error err)
 {
-  vde_return_val_if_fail(conn != NULL, CONN_CB_ERROR);
-  vde_return_val_if_fail(conn->error_cb != NULL, CONN_CB_ERROR);
+  vde_assert(conn != NULL);
+  vde_assert(conn->error_cb != NULL);
 
   return conn->error_cb(conn, pkt, err, conn->cb_priv);
 }
@@ -292,7 +292,7 @@ void vde_connection_set_callbacks(vde_connection *conn,
  */
 static inline vde_context *vde_connection_get_context(vde_connection *conn)
 {
-  vde_return_val_if_fail(conn != NULL, NULL);
+  vde_assert(conn != NULL);
 
   return conn->context;
 }
@@ -315,7 +315,7 @@ unsigned int vde_connection_max_payload(vde_connection *conn);
  */
 static inline void *vde_connection_get_priv(vde_connection *conn)
 {
-  vde_return_val_if_fail(conn != NULL, NULL);
+  vde_assert(conn != NULL);
 
   return conn->be_priv;
 }
@@ -341,7 +341,7 @@ void vde_connection_set_pkt_properties(vde_connection *conn,
  */
 static inline unsigned int vde_connection_get_pkt_headsize(vde_connection *conn)
 {
-  vde_return_val_if_fail(conn != NULL, UINT_MAX);
+  vde_assert(conn != NULL);
 
   return conn->pkt_head_sz;
 }
@@ -356,7 +356,7 @@ static inline unsigned int vde_connection_get_pkt_headsize(vde_connection *conn)
 static inline
 unsigned int vde_connection_get_pkt_tailsize(vde_connection *conn)
 {
-  vde_return_val_if_fail(conn != NULL, UINT_MAX);
+  vde_assert(conn != NULL);
 
   return conn->pkt_tail_sz;
 }
@@ -386,7 +386,7 @@ void vde_connection_set_send_properties(vde_connection *conn,
 static inline
 unsigned int vde_connection_get_send_maxtries(vde_connection *conn)
 {
-  vde_return_val_if_fail(conn != NULL, UINT_MAX);
+  vde_assert(conn != NULL);
 
   return conn->send_maxtries;
 }
@@ -401,7 +401,7 @@ unsigned int vde_connection_get_send_maxtries(vde_connection *conn)
 static inline
 struct timeval *vde_connection_get_send_maxtimeout(vde_connection *conn)
 {
-  vde_return_val_if_fail(conn != NULL, NULL);
+  vde_assert(conn != NULL);
 
   return &(conn->send_maxtimeout);
 }

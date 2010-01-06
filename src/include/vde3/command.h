@@ -52,14 +52,14 @@ typedef struct {
 
 static inline const char *vde_command_get_name(vde_command *command)
 {
-  vde_return_val_if_fail(command != NULL, NULL);
+  vde_assert(command != NULL);
 
   return command->name;
 }
 
 static inline command_func vde_command_get_func(vde_command *command)
 {
-  vde_return_val_if_fail(command != NULL, NULL);
+  vde_assert(command != NULL);
 
   return command->func;
 }

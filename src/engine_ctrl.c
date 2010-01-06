@@ -144,9 +144,9 @@ vde_sobj *rpc_10_build_reply(vde_sobj *id, vde_sobj *result, vde_sobj *error)
 {
   vde_sobj *reply;
 
-  vde_return_val_if_fail(XOR(result, error), NULL);
+  vde_assert(XOR(result, error));
 
-  vde_return_val_if_fail(vde_sobj_is_type(id, vde_sobj_type_int), NULL);
+  vde_assert(vde_sobj_is_type(id, vde_sobj_type_int));
 
   // XXX check reply == NULL
   reply = vde_sobj_new_hash();
@@ -169,11 +169,11 @@ vde_sobj *rpc_10_build_notice(vde_sobj *method, vde_sobj *params)
 {
   vde_sobj *notice;
 
-  vde_return_val_if_fail(method != NULL, NULL);
-  vde_return_val_if_fail(params != NULL, NULL);
+  vde_assert(method != NULL);
+  vde_assert(params != NULL);
 
-  vde_return_val_if_fail(vde_sobj_is_type(method, vde_sobj_type_string), NULL);
-  vde_return_val_if_fail(vde_sobj_is_type(params, vde_sobj_type_array), NULL);
+  vde_assert(vde_sobj_is_type(method, vde_sobj_type_string));
+  vde_assert(vde_sobj_is_type(params, vde_sobj_type_array));
 
   // XXX check notice == NULL
   notice = vde_sobj_new_hash();
@@ -659,7 +659,7 @@ static int engine_ctrl_init(vde_component *component)
   int tmp_errno;
   ctrl_engine *ctrl;
 
-  vde_return_val_if_fail(component == NULL, -1);
+  vde_assert(component == NULL);
 
   ctrl = (ctrl_engine *)vde_calloc(sizeof(ctrl_engine));
   if (ctrl == NULL) {
