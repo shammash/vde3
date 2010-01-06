@@ -547,12 +547,12 @@ void vde_component_transport_call_cm_accept_cb(vde_component *transport,
 
 void vde_component_transport_call_cm_error_cb(vde_component *transport,
                                               vde_connection *conn,
-                                              vde_transport_error err)
+                                              int tr_errno)
 {
   vde_assert(transport != NULL);
   vde_assert(transport->kind == VDE_TRANSPORT);
   vde_assert(conn != NULL);
 
-  transport->cm_error_cb(conn, err, transport->cm_cb_arg);
+  transport->cm_error_cb(conn, tr_errno, transport->cm_cb_arg);
 }
 

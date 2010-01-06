@@ -24,13 +24,6 @@
 #include <vde3/module.h>
 #include <vde3/signal.h>
 
-// XXX to be defined, maybe unify with vde_connection_error?
-enum vde_transport_error {
-  TRANSPORT_GENERIC_ERROR,
-};
-
-typedef enum vde_transport_error vde_transport_error;
-
 // Connection manager ops
 typedef int (*cm_listen)(vde_component *cm);
 typedef int (*cm_connect)(vde_component *cm, vde_request *local,
@@ -45,7 +38,7 @@ typedef int (*tr_connect)(vde_component *transport, vde_connection *conn);
 // Transport connection manager callbacks
 typedef void (*cm_connect_cb)(vde_connection *conn, void *arg);
 typedef void (*cm_accept_cb)(vde_connection *conn, void *arg);
-typedef void (*cm_error_cb)(vde_connection *conn, vde_transport_error err,
+typedef void (*cm_error_cb)(vde_connection *conn, int tr_errno,
                             void *arg);
 
 // Engine ops
@@ -446,10 +439,10 @@ void vde_component_transport_call_cm_accept_cb(vde_component *transport,
  * @param transport The calling transport
  * @param conn The connection which was being created when error occurred (can
  * be NULL)
- * @param err The error type
+ * @param tr_errno The errno value
  */
 void vde_component_transport_call_cm_error_cb(vde_component *transport,
                                               vde_connection *conn,
-                                              vde_transport_error err);
+                                              int tr_errno);
 
 #endif /* __VDE3_COMPONENT_H__ */

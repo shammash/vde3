@@ -195,7 +195,7 @@ void conn_manager_accept_cb(vde_connection *conn, void *arg)
   }
 }
 
-void conn_manager_error_cb(vde_connection *conn, vde_transport_error err,
+void conn_manager_error_cb(vde_connection *conn, int tr_errno,
                            void *arg)
 {
   // if conn in pending_conn and there's an application callback call it,
