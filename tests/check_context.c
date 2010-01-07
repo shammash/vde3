@@ -118,6 +118,36 @@ START_TEST (test_component_get)
 }
 END_TEST
 
+START_TEST (test_component_del)
+{
+  int rv;
+  vde_event_handler eh;
+  vde_component *comp;
+
+  vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "test_e", &comp);
+  rv = vde_context_component_del(f_ctx, comp);
+  fail_unless(rv == 0, "del fails on valid arguments %s", strerror(errno));
+}
+END_TEST
+
+START_TEST (test_component_del_invalid)
+{
+  int rv;
+  vde_event_handler eh;
+  vde_component *comp;
+
+  rv = vde_context_component_del(f_ctx, NULL);
+  fail_unless(rv == -1 && errno == EINVAL, "success on NULL component %s",
+              strerror(errno));
+
+  vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "test_e", &comp);
+  vde_context_component_del(f_ctx, comp);
+  rv = vde_context_component_del(f_ctx, comp);
+  fail_unless(rv == -1 && errno == ENOENT, "success on double del %s",
+              strerror(errno));
+}
+END_TEST
+
 Suite *
 context_suite (void)
 {
@@ -138,6 +168,8 @@ context_suite (void)
   tcase_add_test (tc_component, test_component_new);
   tcase_add_test (tc_component, test_component_new_invalid);
   tcase_add_test (tc_component, test_component_get);
+  tcase_add_test (tc_component, test_component_del);
+  tcase_add_test (tc_component, test_component_del_invalid);
   suite_add_tcase (s, tc_component);
   return s;
 }
