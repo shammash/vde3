@@ -194,6 +194,9 @@ int vde_context_new(vde_context **ctx);
  *
  * @return zero on success, -1 on error (and errno is set appropriately)
  */
+// XXX consider passing a NULL-terminated array of modules search paths to
+// override the default one
+// XXX add a vde_context_default_modules_path() to get default search path
 int vde_context_init(vde_context *ctx, vde_event_handler *handler);
 
 /**

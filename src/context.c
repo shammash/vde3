@@ -164,7 +164,7 @@ int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
   // XXX: check name is not 'context' or 'commands' for config
   if (vde_context_get_component(ctx, name)) {
     vde_error("%s: cannot create new component, %s already exists",
-              __PRETTY_FUNCTION__);
+              __PRETTY_FUNCTION__, name);
     errno = EEXIST;
     return -1;
   }
@@ -234,7 +234,6 @@ vde_list *vde_context_list_components(vde_context *ctx);
 
 int vde_context_component_del(vde_context *ctx, vde_component *component)
 {
-  int not_in_use;
   vde_quark qname;
 
   if (ctx == NULL || ctx->initialized != true) {
@@ -256,8 +255,8 @@ int vde_context_component_del(vde_context *ctx, vde_component *component)
     errno = ENOENT;
     return -1;
   }
-  not_in_use = vde_component_put_if_last(component, NULL);
-  if (!not_in_use) {
+
+  if (vde_component_put_if_last(component, NULL)) {
     vde_error("%s: cannot delete component, component is in use",
               __PRETTY_FUNCTION__);
     errno = EBUSY;
