@@ -18,12 +18,10 @@
 #ifndef __VDE3_CONTEXT_H__
 #define __VDE3_CONTEXT_H__
 
-#include <stdbool.h>
-
 #include <vde3/module.h>
 
 struct vde_context {
-  bool initialized;
+  int initialized;
   vde_event_handler event_handler;
   // hash table vde_quark component_name: vde_component *component
   vde_hash *components; /* XXX(shammash): couple this hash with a list to keep
@@ -53,7 +51,7 @@ static inline void *vde_context_event_add(vde_context *ctx, int fd,
                                           event_cb cb, void *arg)
 {
   vde_assert(ctx != NULL);
-  vde_assert(ctx->initialized == true);
+  vde_assert(ctx->initialized == 1);
 
   return ctx->event_handler.event_add(fd, events, timeout, cb, arg);
 }
@@ -61,7 +59,7 @@ static inline void *vde_context_event_add(vde_context *ctx, int fd,
 static inline void vde_context_event_del(vde_context *ctx, void *event)
 {
   vde_assert(ctx != NULL);
-  vde_assert(ctx->initialized == true);
+  vde_assert(ctx->initialized == 1);
   vde_assert(event != NULL);
 
   ctx->event_handler.event_del(event);
@@ -72,7 +70,7 @@ static inline void *vde_context_timeout_add(vde_context *ctx, short events,
                                             event_cb cb, void *arg)
 {
   vde_assert(ctx != NULL);
-  vde_assert(ctx->initialized == true);
+  vde_assert(ctx->initialized == 1);
 
   return ctx->event_handler.timeout_add(timeout, events, cb, arg);
 }
@@ -80,7 +78,7 @@ static inline void *vde_context_timeout_add(vde_context *ctx, short events,
 static inline void vde_context_timeout_del(vde_context *ctx, void *timeout)
 {
   vde_assert(ctx != NULL);
-  vde_assert(ctx->initialized == true);
+  vde_assert(ctx->initialized == 1);
   vde_assert(timeout != NULL);
 
   ctx->event_handler.timeout_del(timeout);

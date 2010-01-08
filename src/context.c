@@ -16,8 +16,6 @@
 */
 
 
-#include <stdbool.h>
-
 #include <vde3.h>
 
 #include <vde3/common.h>
@@ -44,7 +42,7 @@ static vde_module *vde_context_lookup_module(vde_context *ctx,
   vde_module *module = NULL;
 
   vde_assert(ctx != NULL);
-  vde_assert(ctx->initialized == true);
+  vde_assert(ctx->initialized == 1);
 
   comp_family = vde_quark_from_string(family);
   iter = vde_list_first(ctx->modules);
@@ -98,7 +96,7 @@ int vde_context_init(vde_context *ctx, vde_event_handler *handler,
   memcpy(&ctx->event_handler, handler, sizeof(vde_event_handler));
   ctx->modules = NULL;
   ctx->components = vde_hash_init();
-  ctx->initialized = true;
+  ctx->initialized = 1;
 
   // XXX temporary, should be done via a list of builtin modules vs dynamically
   // loaded modules
@@ -114,7 +112,7 @@ int vde_context_init(vde_context *ctx, vde_event_handler *handler,
 
 void vde_context_fini(vde_context *ctx)
 {
-  if (ctx == NULL || ctx->initialized != true) {
+  if (ctx == NULL || ctx->initialized != 1) {
     vde_error("%s: cannot finalize context", __PRETTY_FUNCTION__);
     return;
   }
@@ -137,13 +135,13 @@ void vde_context_fini(vde_context *ctx)
   vde_list_delete(ctx->modules);
   ctx->modules = NULL;
 
-  ctx->initialized = false;
+  ctx->initialized = 0;
   return;
 }
 
 void vde_context_delete(vde_context *ctx)
 {
-  if (ctx == NULL || ctx->initialized != false) {
+  if (ctx == NULL || ctx->initialized != 0) {
     vde_error("%s: cannot delete context", __PRETTY_FUNCTION__);
     return;
   }
@@ -160,7 +158,7 @@ int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
   va_list arg;
   int refcount, tmp_errno;
 
-  if (ctx == NULL || ctx->initialized != true) {
+  if (ctx == NULL || ctx->initialized != 1) {
     vde_error("%s: cannot create new component, context not initialized",
               __PRETTY_FUNCTION__);
     errno = EINVAL;
@@ -205,7 +203,7 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name)
 {
   vde_quark qname;
 
-  if (ctx == NULL || ctx->initialized != true) {
+  if (ctx == NULL || ctx->initialized != 1) {
     vde_error("%s: cannot get component, context not initialized",
               __PRETTY_FUNCTION__);
     errno = EINVAL;
@@ -241,7 +239,7 @@ int vde_context_component_del(vde_context *ctx, vde_component *component)
 {
   vde_quark qname;
 
-  if (ctx == NULL || ctx->initialized != true) {
+  if (ctx == NULL || ctx->initialized != 1) {
     vde_error("%s: cannot delete component, context not initialized",
               __PRETTY_FUNCTION__);
     errno = EINVAL;
@@ -305,7 +303,7 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
   component_ops *module_cops;
 
   vde_assert(ctx != NULL);
-  vde_assert(ctx->initialized == true);
+  vde_assert(ctx->initialized == 1);
 
   kind = vde_module_get_kind(module);
   family = vde_module_get_family(module);
