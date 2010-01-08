@@ -13,7 +13,7 @@ void
 setup (void)
 {
   vde_context_new(&f_ctx);
-  vde_context_init(f_ctx, &f_eh);
+  vde_context_init(f_ctx, &f_eh, NULL);
 }
 
 void
@@ -43,6 +43,7 @@ START_TEST (test_context_new_invalid)
 }
 END_TEST
 
+// XXX test module loading
 START_TEST (test_context_init)
 {
   int rv;
@@ -50,7 +51,7 @@ START_TEST (test_context_init)
   vde_context *ctx;
 
   vde_context_new(&ctx);
-  rv = vde_context_init(ctx, &eh);
+  rv = vde_context_init(ctx, &eh, NULL);
   fail_unless (rv == 0, "fail on valid arguments");
 }
 END_TEST
@@ -61,10 +62,10 @@ START_TEST (test_context_init_invalid)
   vde_event_handler eh;
   vde_context *ctx;
 
-  rv = vde_context_init(NULL, &eh);
+  rv = vde_context_init(NULL, &eh, NULL);
   fail_unless (rv == -1, "success on null ctx");
 
-  rv = vde_context_init(ctx, NULL);
+  rv = vde_context_init(ctx, NULL, NULL);
   fail_unless (rv == -1, "success on null eh");
 }
 END_TEST
