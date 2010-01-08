@@ -97,12 +97,30 @@ void vde_signal_raise(vde_signal *signal, vde_sobj *info,
                       vde_component *component);
 
 /**
+ * @brief Duplicate a signal struct. The callbacks list won't be duplicated.
+ *
+ * @param signal The signal to duplicate
+ *
+ * @return The duplicated signal, NULL if an error occurs (and errno is set
+ * appropriately)
+ */
+vde_signal *vde_signal_dup(vde_signal *signal);
+
+/**
  * @brief Finalize signal and call destroy_cb on every callback
  *
  * @param signal The signal
  * @param component The component finalizing the signal
  */
 void vde_signal_fini(vde_signal *signal, vde_component *component);
+
+/**
+ * @brief Release the memory occupied by a vde_signal. The list of callbacks
+ * won't be touched so vde_signal_fini() must be used before.
+ *
+ * @param signal The signal to free
+ */
+void vde_signal_delete(vde_signal *signal);
 
 static inline const char *vde_signal_get_name(vde_signal *signal)
 {

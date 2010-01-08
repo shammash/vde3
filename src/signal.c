@@ -19,6 +19,8 @@
 
 #include <vde3/signal.h>
 
+#include <string.h>
+
 struct signal_cb {
   vde_signal_cb cb;
   vde_signal_destroy_cb destroy_cb;
@@ -102,6 +104,20 @@ void vde_signal_raise(vde_signal *signal, vde_sobj *info,
   }
 }
 
+vde_signal *vde_signal_dup(vde_signal *signal)
+{
+  vde_signal *new = (vde_signal *)vde_calloc(sizeof(vde_signal));
+  if (new == NULL) {
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  memcpy(new, signal, sizeof(vde_signal));
+  new->callbacks = NULL; /* no callbacks on new signal */
+
+  return new;
+}
+
 void vde_signal_fini(vde_signal *signal, vde_component *component)
 {
   vde_list *iter;
@@ -116,3 +132,9 @@ void vde_signal_fini(vde_signal *signal, vde_component *component)
   }
   vde_list_delete(signal->callbacks);
 }
+
+void vde_signal_delete(vde_signal *signal)
+{
+  vde_free(signal);
+}
+
