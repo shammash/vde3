@@ -72,14 +72,16 @@ static int module_try_load(vde_context *ctx, char *path)
   if (last_dlerror) {
     vde_warning("%s: dlsym error: %s", __PRETTY_FUNCTION__, last_dlerror);
     errno = ENOENT;
-    return -1;
+    rv = -1;
+    goto cleanup;
   }
 
   if (!mod) {
     vde_warning("%s: symbol %s is NULL", __PRETTY_FUNCTION__,
                 VDE_MODULE_START_S);
     errno = EINVAL;
-    return -1;
+    rv = -1;
+    goto cleanup;
   }
 
   rv = vde_context_register_module(ctx, mod);
@@ -87,12 +89,18 @@ static int module_try_load(vde_context *ctx, char *path)
     tmp_errno = errno;
     vde_error("%s: unable to register module to context", __PRETTY_FUNCTION__);
     errno = tmp_errno;
-    return -1;
+    rv = -1;
+    goto cleanup;
   }
 
   mod->dlhandle = handle;
+  rv = 0;
+  goto exit;
 
-  return 0;
+cleanup:
+  dlclose(handle);
+exit:
+  return rv;
 }
 
 #ifdef VDE_DEFAULT_MODULES_PATH
