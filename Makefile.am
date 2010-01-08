@@ -31,6 +31,9 @@ noinst_HEADERS = \
   src/include/vde3/signal.h \
   src/include/vde3/packet.h \
   src/include/vde3/component.h \
+  src/include/vde3/engine.h \
+  src/include/vde3/transport.h \
+  src/include/vde3/conn_manager.h \
   src/include/vde3/connection.h \
   src/include/vde3/command.h \
   src/include/vde3/context.h \
