@@ -206,7 +206,7 @@ void conn_manager_error_cb(vde_connection *conn, int tr_errno,
 
 // in engine.new_conn: vde_conn_set_callbacks(conn, engine_callbacks..)
 
-// TODO cm_read_cb / cm_error_cb, they need to be different for accept/connect
+// XXX: cm_read_cb / cm_error_cb, they need to be different for accept/connect
 // callbacks?
 
 // XXX: is it better to pass transport/engine as a quark/string?

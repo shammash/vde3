@@ -143,7 +143,7 @@ def do_wrap(wrappable):
   wrappers = []
 
   for info in wrappable:
-    # TODO: check info is a dict, parameters is an array, type is in typemap
+    # XXX: check info is a dict, parameters is an array, type is in typemap
     declarations.extend(gen_wrapper_declaration(info))
     params.extend(gen_params(info))
     commands.extend(gen_command(info))
