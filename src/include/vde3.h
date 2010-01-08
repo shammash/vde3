@@ -164,6 +164,29 @@ typedef struct vde_component vde_component;
 typedef void (*vde_connect_success_cb)(vde_component *cm, void *arg);
 typedef void (*vde_connect_error_cb)(vde_component *cm, void *arg);
 
+/**
+ * @brief Put the underlying transport in listen mode
+ *
+ * @param cm The connection manager to use
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
+int vde_conn_manager_listen(vde_component *cm);
+
+/**
+ * @brief Initiate a new connection using the underlying transport
+ *
+ * @param cm The connection manager for the connection
+ * @param local_request The request for the local system
+ * @param remote_request The request for the remote system
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
+int vde_conn_manager_connect(vde_component *cm, vde_request *local,
+                             vde_request *remote,
+                             vde_connect_success_cb success_cb,
+                             vde_connect_error_cb error_cb, void *arg);
+
 
 /*
  * context

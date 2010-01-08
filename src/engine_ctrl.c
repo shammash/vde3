@@ -22,7 +22,7 @@
 #include <stdio.h>
 
 #include <vde3/module.h>
-#include <vde3/component.h>
+#include <vde3/engine.h>
 #include <vde3/context.h>
 #include <vde3/connection.h>
 
@@ -680,7 +680,7 @@ static int engine_ctrl_init(vde_component *component)
     return -1;
   }
 
-  vde_component_set_engine_ops(component, &ctrl_engine_newconn);
+  vde_engine_set_ops(component, &ctrl_engine_newconn);
   vde_component_set_priv(component, (void *)ctrl);
 
   return 0;

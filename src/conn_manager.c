@@ -18,7 +18,9 @@
 #include <vde3.h>
 
 #include <vde3/module.h>
-#include <vde3/component.h>
+#include <vde3/engine.h>
+#include <vde3/transport.h>
+#include <vde3/conn_manager.h>
 #include <vde3/context.h>
 
 enum vde_conn_state {
@@ -74,7 +76,7 @@ int conn_manager_listen(vde_component *component)
   conn_manager *cm = (conn_manager *)vde_component_get_priv(component);
 
   // XXX check return of this
-  vde_component_transport_listen(cm->transport);
+  vde_transport_listen(cm->transport);
 
   return 0;
 }
@@ -120,7 +122,7 @@ int conn_manager_connect(vde_component *component,
   cm->pending_conns = vde_list_prepend(cm->pending_conns, pc);
 
   // XXX check return of this
-  vde_component_transport_connect(cm->transport, conn);
+  vde_transport_connect(cm->transport, conn);
 
   return 0;
 }
@@ -129,7 +131,7 @@ static int post_authorization(conn_manager *cm, struct pending_conn *pc)
 {
   // XXX: this can fail, e.g.: maximum number of ports on a switch already
   // reached..
-  vde_component_engine_new_conn(cm->engine, pc->conn, pc->lreq);
+  vde_engine_new_connection(cm->engine, pc->conn, pc->lreq);
   // if there's an application callback call it
   cm->pending_conns = vde_list_remove(cm->pending_conns, pc);
   vde_free(pc); // XXX: free requests here ?
@@ -247,14 +249,13 @@ int conn_manager_init(vde_component *component, vde_component *transport,
   vde_component_get(transport, NULL);
   vde_component_get(engine, NULL);
 
-  vde_component_set_transport_cm_callbacks(transport, &conn_manager_connect_cb,
-                                           &conn_manager_accept_cb,
-                                           &conn_manager_error_cb,
-                                           (void *)component);
+  vde_transport_set_cm_callbacks(transport, &conn_manager_connect_cb,
+                                 &conn_manager_accept_cb,
+                                 &conn_manager_error_cb, (void *)component);
 
   // XXX(shammash): this will be probably done by vde_component_init()
-  vde_component_set_conn_manager_ops(component, &conn_manager_listen,
-                                     &conn_manager_connect);
+  vde_conn_manager_set_ops(component, &conn_manager_listen,
+                           &conn_manager_connect);
 
   vde_component_set_priv(component, cm);
   return 0;

@@ -58,7 +58,7 @@ int main(int argc, char **argv)
     printf("no new cm: %d\n", res);
   }
 
-  res = vde_component_conn_manager_listen(cm);
+  res = vde_conn_manager_listen(cm);
   if (res) {
     printf("no listen on cm: %d\n", res);
   }
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     printf("no new ccm: %d\n", res);
   }
 
-  res = vde_component_conn_manager_listen(ccm);
+  res = vde_conn_manager_listen(ccm);
   if (res) {
     printf("no listen on ccm: %d\n", res);
   }

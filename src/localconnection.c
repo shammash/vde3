@@ -18,7 +18,7 @@
 #include <vde3/localconnection.h>
 
 #include <vde3/common.h>
-#include <vde3/component.h>
+#include <vde3/engine.h>
 
 /*
  * Unqueued Local Connection
@@ -101,9 +101,9 @@ int vde_connect_engines_unqueued(vde_context *ctx, vde_component *engine1,
   vde_connection_init(c1, ctx, 0, &vde_lc_write, &vde_lc_close, (void *)lc1);
   vde_connection_init(c2, ctx, 0, &vde_lc_write, &vde_lc_close, (void *)lc2);
 
-  // XXX: check new_conn errors
-  vde_component_engine_new_conn(engine1, c1, req1);
-  vde_component_engine_new_conn(engine2, c2, req2);
+  // XXX: check new_connection errors
+  vde_engine_new_connection(engine1, c1, req1);
+  vde_engine_new_connection(engine2, c2, req2);
 
   return 0;
 }

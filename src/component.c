@@ -20,6 +20,10 @@
 #include <vde3.h>
 
 #include <vde3/component.h>
+#include <vde3/engine.h>
+#include <vde3/transport.h>
+#include <vde3/conn_manager.h>
+
 #include <vde3/module.h>
 
 struct vde_component {
@@ -424,20 +428,37 @@ void vde_component_signal_raise(vde_component *component, const char *signal,
   vde_signal_raise(sig, info, component);
 }
 
-void vde_component_set_conn_manager_ops(vde_component *cm, cm_listen listen,
-                                        cm_connect connect)
-{
-  vde_assert(cm != NULL);
-  vde_assert(listen != NULL);
-  vde_assert(connect != NULL);
+/*
+ * Engine-specific functions.
+ *
+ */
 
-  cm->cm_connect = connect;
-  cm->cm_listen = listen;
+void vde_engine_set_ops(vde_component *engine, eng_new_conn new_conn)
+{
+  vde_assert(engine != NULL);
+  vde_assert(engine->kind == VDE_ENGINE);
+  vde_assert(new_conn != NULL);
+
+  engine->eng_new_conn = new_conn;
 }
 
-void vde_component_set_transport_ops(vde_component *transport,
-                                     tr_listen listen,
-                                     tr_connect connect)
+int vde_engine_new_connection(vde_component *engine, vde_connection *conn,
+                              vde_request *req)
+{
+  vde_assert(engine != NULL);
+  vde_assert(engine->kind == VDE_ENGINE);
+  vde_assert(conn != NULL);
+
+  return engine->eng_new_conn(engine, conn, req);
+}
+
+/*
+ * Transport-specific functions.
+ *
+ */
+
+void vde_transport_set_ops(vde_component *transport, tr_listen listen,
+                           tr_connect connect)
 {
   vde_assert(transport != NULL);
   vde_assert(listen != NULL);
@@ -447,40 +468,7 @@ void vde_component_set_transport_ops(vde_component *transport,
   transport->tr_listen = listen;
 }
 
-void vde_component_set_engine_ops(vde_component *engine, eng_new_conn new_conn)
-{
-  vde_assert(engine != NULL);
-  vde_assert(engine->kind == VDE_ENGINE);
-  vde_assert(new_conn != NULL);
-
-  engine->eng_new_conn = new_conn;
-}
-
-// XXX add application callback on accept?
-int vde_component_conn_manager_listen(vde_component *cm)
-{
-  vde_assert(cm != NULL);
-  vde_assert(cm->kind == VDE_CONNECTION_MANAGER);
-
-  return cm->cm_listen(cm);
-}
-
-/* XXX: memory handling, what happens to local_request/remote_request? should
- * the caller hand them over? */
-int vde_component_conn_manager_connect(vde_component *cm,
-                                       vde_request *local,
-                                       vde_request *remote,
-                                       vde_connect_success_cb success_cb,
-                                       vde_connect_error_cb error_cb,
-                                       void *arg)
-{
-  vde_assert(cm != NULL);
-  vde_assert(cm->kind == VDE_CONNECTION_MANAGER);
-
-  return cm->cm_connect(cm, local, remote, success_cb, error_cb, arg);
-}
-
-int vde_component_transport_listen(vde_component *transport)
+int vde_transport_listen(vde_component *transport)
 {
   vde_assert(transport != NULL);
   vde_assert(transport->kind == VDE_TRANSPORT);
@@ -488,8 +476,7 @@ int vde_component_transport_listen(vde_component *transport)
   return transport->tr_listen(transport);
 }
 
-int vde_component_transport_connect(vde_component *transport,
-                                    vde_connection *conn)
+int vde_transport_connect(vde_component *transport, vde_connection *conn)
 {
   vde_assert(transport != NULL);
   vde_assert(transport->kind == VDE_TRANSPORT);
@@ -498,20 +485,10 @@ int vde_component_transport_connect(vde_component *transport,
   return transport->tr_connect(transport, conn);
 }
 
-int vde_component_engine_new_conn(vde_component *engine, vde_connection *conn,
-                                  vde_request *req)
-{
-  vde_assert(engine != NULL);
-  vde_assert(engine->kind == VDE_ENGINE);
-  vde_assert(conn != NULL);
-
-  return engine->eng_new_conn(engine, conn, req);
-}
-
-void vde_component_set_transport_cm_callbacks(vde_component *transport,
-                                              cm_connect_cb connect_cb,
-                                              cm_accept_cb accept_cb,
-                                              cm_error_cb error_cb, void *arg)
+void vde_transport_set_cm_callbacks(vde_component *transport,
+                                    cm_connect_cb connect_cb,
+                                    cm_accept_cb accept_cb,
+                                    cm_error_cb error_cb, void *arg)
 {
   vde_assert(transport != NULL);
   vde_assert(transport->kind == VDE_TRANSPORT);
@@ -525,8 +502,8 @@ void vde_component_set_transport_cm_callbacks(vde_component *transport,
   transport->cm_cb_arg = arg;
 }
 
-void vde_component_transport_call_cm_connect_cb(vde_component *transport,
-                                                vde_connection *conn)
+void vde_transport_call_cm_connect_cb(vde_component *transport,
+                                      vde_connection *conn)
 {
   vde_assert(transport != NULL);
   vde_assert(transport->kind == VDE_TRANSPORT);
@@ -535,8 +512,8 @@ void vde_component_transport_call_cm_connect_cb(vde_component *transport,
   transport->cm_connect_cb(conn, transport->cm_cb_arg);
 }
 
-void vde_component_transport_call_cm_accept_cb(vde_component *transport,
-                                               vde_connection *conn)
+void vde_transport_call_cm_accept_cb(vde_component *transport,
+                                     vde_connection *conn)
 {
   vde_assert(transport != NULL);
   vde_assert(transport->kind == VDE_TRANSPORT);
@@ -545,14 +522,52 @@ void vde_component_transport_call_cm_accept_cb(vde_component *transport,
   transport->cm_accept_cb(conn, transport->cm_cb_arg);
 }
 
-void vde_component_transport_call_cm_error_cb(vde_component *transport,
-                                              vde_connection *conn,
-                                              int tr_errno)
+void vde_transport_call_cm_error_cb(vde_component *transport,
+                                    vde_connection *conn, int tr_errno)
 {
   vde_assert(transport != NULL);
   vde_assert(transport->kind == VDE_TRANSPORT);
   vde_assert(conn != NULL);
 
   transport->cm_error_cb(conn, tr_errno, transport->cm_cb_arg);
+}
+
+
+/*
+ * Connection Manager-specific functions.
+ *
+ */
+
+void vde_conn_manager_set_ops(vde_component *cm, cm_listen listen,
+                              cm_connect connect)
+{
+  vde_assert(cm != NULL);
+  vde_assert(listen != NULL);
+  vde_assert(connect != NULL);
+
+  cm->cm_connect = connect;
+  cm->cm_listen = listen;
+}
+
+// XXX add application callback on accept?
+int vde_conn_manager_listen(vde_component *cm)
+{
+  vde_assert(cm != NULL);
+  vde_assert(cm->kind == VDE_CONNECTION_MANAGER);
+
+  return cm->cm_listen(cm);
+}
+
+/* XXX: memory handling, what happens to local_request/remote_request? should
+ * the caller hand them over? */
+int vde_conn_manager_connect(vde_component *cm, vde_request *local,
+                             vde_request *remote,
+                             vde_connect_success_cb success_cb,
+                             vde_connect_error_cb error_cb, void *arg)
+{
+  vde_assert(cm != NULL);
+  vde_assert(cm->kind == VDE_CONNECTION_MANAGER);
+
+  return cm->cm_connect(cm, local, remote, success_cb, error_cb, arg);
 }
 

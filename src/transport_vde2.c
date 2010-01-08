@@ -29,7 +29,7 @@
 #include <vde3/common.h>
 #include <vde3/module.h>
 #include <vde3/connection.h>
-#include <vde3/component.h>
+#include <vde3/transport.h>
 #include <vde3/context.h>
 #include <vde3/packet.h>
 
@@ -449,7 +449,7 @@ void vde2_srv_send_request(int ctl_fd, short event_type, void *arg)
                                               NULL, &vde2_conn_read_data_event,
                                               (void *)v2_conn);
 
-  vde_component_transport_call_cm_accept_cb(v2_conn->transport, conn);
+  vde_transport_call_cm_accept_cb(v2_conn->transport, conn);
 
   return;
 
@@ -696,7 +696,7 @@ static int transport_vde2_init(vde_component *component, const char *dir)
     return -1;
   }
 
-  vde_component_set_transport_ops(component, &vde2_listen, &vde2_connect);
+  vde_transport_set_ops(component, &vde2_listen, &vde2_connect);
   vde_component_set_priv(component, (void *)tr);
   return 0;
 }
