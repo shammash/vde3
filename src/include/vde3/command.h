@@ -22,33 +22,44 @@
 
 #include <vde3/common.h>
 
-// TODO: funzioni per allocare/inizializzare comando e parametro
-
-// TODO(shammash):
-//  se si vogliono esporre delle funzionalita` dei comandi alle applicazioni si
-//  puo` considerare una cosa tipo:
-//   - funzionalita` esposta all'applicazione
-//    struct vlan *vlan_add(component, int puppa, int fuffa, char* name);
-//   - comando che wrappa in qualche modo vlan_add(), da cui poi viene generato
-//     automaticamente il wrapper vlan_add_cmq_wrapper()
-//    int vlan_add_cmd(component, int puppa, int fuffa, char* name, json_object);
+/**
+ * @brief The signature of a function implementing a command
+ *
+ * @param component The component executing the command
+ * @param in Command serialized parameters
+ * @param out Command output
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
+/* XXX: Define behaviour in case of error. Some ideas:
+ * - out sobject is used as an error as-is
+ * - out sobject is included in an error object with the following structure:
+ *   + err.code = errno
+ *   + err.msg  = out sobject
+ */
 typedef int (*command_func)(vde_component *component, vde_sobj *in,
                             vde_sobj **out);
 
-// un singolo argomento
-typedef struct {
+/**
+ * @brief Description of a single command argument
+ */
+struct vde_argument {
   char const * const name;
   char const * const description;
   char const * const type;
-} vde_argument;
+};
+typedef struct vde_argument vde_argument;
 
-// un comando
-typedef struct {
+/**
+ * @brief A command
+ */
+struct vde_command {
   char const * const name;
   command_func func;
   char const * const description;
   vde_argument const * const args;
-} vde_command;
+};
+typedef struct vde_command vde_command;
 
 static inline const char *vde_command_get_name(vde_command *command)
 {
