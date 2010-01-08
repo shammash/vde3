@@ -98,7 +98,9 @@ static int module_try_load(vde_context *ctx, char *path)
   goto exit;
 
 cleanup:
+  tmp_errno = errno;
   dlclose(handle);
+  errno = tmp_errno;
 exit:
   return rv;
 }
