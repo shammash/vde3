@@ -20,6 +20,16 @@
 
 #include <vde3.h>
 
+#include <stdlib.h>
+
+/**
+ * @brief This symbol will be searched when loading a module
+ */
+#ifndef VDE_MODULE_START
+#define VDE_MODULE_START vde_module_start
+#define VDE_MODULE_START_S "vde_module_start"
+#endif
+
 // le operazioni che il contesto invoca sul componente
 struct component_ops {
   // called when a context init a new component
@@ -45,6 +55,7 @@ struct vde_module {
   vde_component_kind kind;
   char* family;
   component_ops *cops;
+  void *dlhandle;
 };
 
 typedef struct vde_module vde_module;
@@ -56,13 +67,14 @@ const char *vde_module_get_family(vde_module *module);
 component_ops *vde_module_get_component_ops(vde_module *module);
 
 /**
- * @brief Function invoked when initializing a module, must be exported by
- * plugin modules.
+ * @brief Load vde modules found in path
  *
- * @param ctx The context
+ * @param ctx The context to load modules into
+ * @param path The search path of modules, if NULL use default path
  *
- * @return zero on success, -1 on error (and errno is set appropriately)
+ * @return 0 if every valid module has been successfully loaded,
+ *         -1 on error (and errno set appropriately)
  */
-int vde_module_init(vde_context *ctx);
+int vde_modules_load(vde_context *ctx, char **path);
 
 #endif /* __VDE3_MODULE_H__ */
