@@ -285,14 +285,8 @@ struct component_ops conn_manager_component_ops = {
   .set_policy = NULL,
 };
 
-struct vde_module conn_manager_module = {
+vde_module VDE_MODULE_START = {
   .kind = VDE_CONNECTION_MANAGER,
   .family = "default",
   .cops = &conn_manager_component_ops,
 };
-
-int conn_manager_module_init(vde_context *ctx)
-{
-  return vde_context_register_module(ctx, &conn_manager_module);
-}
-

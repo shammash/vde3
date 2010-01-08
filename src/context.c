@@ -91,8 +91,11 @@ int vde_context_new(vde_context **ctx)
   return 0;
 }
 
-int vde_context_init(vde_context *ctx, vde_event_handler *handler)
+int vde_context_init(vde_context *ctx, vde_event_handler *handler,
+                     char **modules_path)
 {
+  int tmp_errno;
+
   if (ctx == NULL || handler == NULL) {
     vde_error("%s: cannot initialize context", __PRETTY_FUNCTION__);
     errno = EINVAL;
@@ -105,10 +108,12 @@ int vde_context_init(vde_context *ctx, vde_event_handler *handler)
 
   // XXX temporary, should be done via a list of builtin modules vs dynamically
   // loaded modules
-  conn_manager_module_init(ctx);
-  transport_vde2_module_init(ctx);
-  engine_hub_module_init(ctx);
-  engine_ctrl_module_init(ctx);
+  if (vde_modules_load(ctx, modules_path)) {
+    tmp_errno = errno;
+    vde_error("%s: error while loading modules", __PRETTY_FUNCTION__);
+    errno = tmp_errno;
+    return -1;
+  }
 
   return 0;
 }
@@ -120,11 +125,6 @@ void vde_context_fini(vde_context *ctx)
     return;
   }
   ctx->event_handler = NULL;
-  /* XXX(shammash): modules here are not deleted because are supposed to be
-   *                always reachable via a global name in the module object
-   */
-  vde_list_delete(ctx->modules);
-  ctx->modules = NULL;
   // XXX: here components should be fini-shed, but that requires doing two
   // passes, first fini the connection managers and then the other components
   // because CM has dependency on both transport and engine.
@@ -132,6 +132,12 @@ void vde_context_fini(vde_context *ctx)
   // another option would be to have a global connection manager which manages
   // transports associated with engines, this should be investigated.
   vde_hash_delete(ctx->components);
+
+  // XXX remove every module and dlclose() its handle, this works because at
+  // this point no components should reference symbols in modules
+  vde_list_delete(ctx->modules);
+  ctx->modules = NULL;
+
   ctx->initialized = false;
   return;
 }
@@ -313,14 +319,19 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
 
   // module's component_ops sanity checks
   module_cops = vde_module_get_component_ops(module);
-  vde_assert(module_cops != NULL);
-  vde_assert(module_cops->init != NULL);
-  vde_assert(module_cops->fini != NULL);
+  if (module_cops == NULL ||
+      module_cops->init == NULL ||
+      module_cops->fini == NULL) {
+    vde_error("%s: invalid component ops struct found", __PRETTY_FUNCTION__);
+    errno = EINVAL;
+    return -1;
+  }
 
   ctx->modules = vde_list_prepend(ctx->modules, module);
   return 0;
 }
 
+// XXX these can be inlined?
 void *vde_context_event_add(vde_context *ctx, int fd, short events,
                             const struct timeval *timeout,
                             event_cb cb, void *arg)

@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     printf("no new ctx, %d\n", res);
   }
 
-  res = vde_context_init(ctx, &libevent_eh);
+  res = vde_context_init(ctx, &libevent_eh, NULL);
   if (res) {
     printf("no init ctx: %d\n", res);
   }

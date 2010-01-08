@@ -722,14 +722,8 @@ struct component_ops transport_vde2_component_ops = {
   .set_policy = NULL,
 };
 
-struct vde_module transport_vde2_module = {
+vde_module VDE_MODULE_START = {
   .kind = VDE_TRANSPORT,
   .family = "vde2",
   .cops = &transport_vde2_component_ops,
 };
-
-int transport_vde2_module_init(vde_context *ctx)
-{
-  return vde_context_register_module(ctx, &transport_vde2_module);
-}
-

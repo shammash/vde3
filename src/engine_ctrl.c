@@ -704,14 +704,8 @@ struct component_ops engine_ctrl_component_ops = {
   .set_policy = NULL,
 };
 
-struct vde_module engine_ctrl_module = {
+vde_module VDE_MODULE_START = {
   .kind = VDE_ENGINE,
   .family = "ctrl",
   .cops = &engine_ctrl_component_ops,
 };
-
-int engine_ctrl_module_init(vde_context *ctx)
-{
-  return vde_context_register_module(ctx, &engine_ctrl_module);
-}
-

@@ -214,13 +214,12 @@ int vde_context_new(vde_context **ctx);
  *
  * @param ctx The context to initialize
  * @param handler An implementation of vde_event_handler to use
+ * @param modules_path A NULL-terminated array of paths to load modules from
  *
  * @return zero on success, -1 on error (and errno is set appropriately)
  */
-// XXX consider passing a NULL-terminated array of modules search paths to
-// override the default one
-// XXX add a vde_context_default_modules_path() to get default search path
-int vde_context_init(vde_context *ctx, vde_event_handler *handler);
+int vde_context_init(vde_context *ctx, vde_event_handler *handler,
+                     char **modules_path);
 
 /**
  * @brief Stop and reset a VDE 3 context
@@ -339,6 +338,7 @@ void vvde_log(int priority, const char *format, va_list arg);
  */
 void vde_log(int priority, const char *format, ...);
 
+// XXX this could prepend __PRETTY_FUNCTION__ to avoid repeating
 #define vde_error(fmt, ...) vde_log(VDE3_LOG_ERROR, fmt, ##__VA_ARGS__)
 #define vde_warning(fmt, ...) vde_log(VDE3_LOG_WARNING, fmt, ##__VA_ARGS__)
 #define vde_notice(fmt, ...) vde_log(VDE3_LOG_NOTICE, fmt, ##__VA_ARGS__)

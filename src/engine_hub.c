@@ -224,14 +224,8 @@ struct component_ops engine_hub_component_ops = {
   .set_policy = NULL,
 };
 
-struct vde_module engine_hub_module = {
+vde_module VDE_MODULE_START = {
   .kind = VDE_ENGINE,
   .family = "hub",
   .cops = &engine_hub_component_ops,
 };
-
-int engine_hub_module_init(vde_context *ctx)
-{
-  return vde_context_register_module(ctx, &engine_hub_module);
-}
-
