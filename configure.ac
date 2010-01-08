@@ -67,6 +67,7 @@ AC_ARG_ENABLE(debug,
 if test x$enable_debug = xyes; then
   VDE_CPPFLAGS="$VDE_CPPFLAGS -DVDE3_DEBUG"
   VDE_CFLAGS="$VDE_CFLAGS -ggdb"
+  CFLAGS="" # reset CFLAGS otherwise defaults to -g -O2
 else
   VDE_CFLAGS="$VDE_CFLAGS -O2"
 fi

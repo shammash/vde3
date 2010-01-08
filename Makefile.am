@@ -3,7 +3,8 @@ ACLOCAL_AMFLAGS = -I m4
 # note: include builddir first in case wrappers are regenerated there
 AM_CPPFLAGS = -D_GNU_SOURCE $(VDE_CPPFLAGS) \
   -I$(top_srcdir)/src/include/ -I$(top_builddir)/src/ -I$(top_srcdir)/src/
-AM_CFLAGS = $(VDE_CFLAGS)
+
+AM_CFLAGS = $(VDE_CFLAGS) $(GLIB_CFLAGS) $(JSONC_CFLAGS)
 
 GEN_CHECKER = $(top_srcdir)/src/gen_checker.py
 
@@ -38,14 +39,10 @@ noinst_HEADERS = \
 
 VDE_SRC = \
   $(WRAPPERS_SRC) \
-  src/engine_ctrl.c \
-  src/engine_hub.c \
   src/context.c \
   src/component.c \
-  src/conn_manager.c \
   src/logging.c \
   src/module.c \
-  src/transport_vde2.c \
   src/connection.c \
   src/localconnection.c \
   src/common.c \
@@ -58,16 +55,38 @@ $(WRAPPERS_SRC): $(WRAPPERS_JSON)
 
 bin_PROGRAMS = src/vde_hub src/vde_hub2hub
 
+
+# dynamic modules
+modulesdir = $(pkglibdir)
+
+modules_LTLIBRARIES = src/engine_ctrl.la
+src_engine_ctrl_la_LDFLAGS = -module -avoid-version -export-dynamic
+
+modules_LTLIBRARIES += src/engine_hub.la
+src_engine_hub_la_LDFLAGS = -module -avoid-version -export-dynamic
+
+modules_LTLIBRARIES += src/conn_manager.la
+src_conn_manager_la_LDFLAGS = -module -avoid-version -export-dynamic
+
+modules_LTLIBRARIES += src/transport_vde2.la
+src_transport_vde2_la_LDFLAGS = -module -avoid-version -export-dynamic
+
+# libvde
 lib_LTLIBRARIES = src/libvde.la
 src_libvde_la_SOURCES = $(VDE_SRC)
-# XXX investigate -version-number and --export-dynamic
-src_libvde_la_LDFLAGS = $(GLIB_LIBS) $(JSONC_LIBS) -version-number 0:0:1 --export-dynamic
-src_libvde_la_CFLAGS = $(GLIB_CFLAGS) $(JSONC_CFLAGS) $(VDE_CFLAGS)
+# XXX investigate -version-number and -export-dynamic
+src_libvde_la_LDFLAGS = $(GLIB_LIBS) $(JSONC_LIBS) -ldl -version-number 0:0:1 -export-dynamic
+# XXX define this better
+src_libvde_la_CPPFLAGS = \
+  -DVDE_DEFAULT_MODULES_PATH='{"$(modulesdir)", "src/.libs", NULL}' \
+  $(AM_CPPFLAGS)
 
+# vde_hub
 src_vde_hub_SOURCES = src/vde_hub.c src/libevent_handler.c
 src_vde_hub_LDADD = src/libvde.la
 src_vde_hub_LDFLAGS = -levent
 
+# vde_hub2hub
 src_vde_hub2hub_SOURCES = src/vde_hub2hub.c src/libevent_handler.c
 src_vde_hub2hub_LDADD = src/libvde.la
 src_vde_hub2hub_LDFLAGS = -levent

@@ -39,10 +39,12 @@ m4/lt~obsolete.m4
 libtool
 ltmain.sh
 *.lo
+*.la
 .libs
 
 # binaries/libs
 src/libvde.la
 src/vde_hub
 src/vde_hub2hub
+tests/check_context
 *.o
