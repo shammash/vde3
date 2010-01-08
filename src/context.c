@@ -24,18 +24,6 @@
 #include <vde3/component.h>
 #include <vde3/context.h>
 
-struct vde_context {
-  bool initialized;
-  vde_event_handler event_handler;
-  // hash table vde_quark component_name: vde_component *component
-  vde_hash *components; /* XXX(shammash): couple this hash with a list to keep
-                           an order, needed in save configuration */
-  // list of vde_module*
-  vde_list *modules;
-  // configuration path
-  // list of startup commands (from configuration)
-};
-
 /**
  * @brief Lookup a vde 3 module in the context
  *
@@ -340,44 +328,5 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
 
   ctx->modules = vde_list_prepend(ctx->modules, module);
   return 0;
-}
-
-// XXX these can be inlined?
-void *vde_context_event_add(vde_context *ctx, int fd, short events,
-                            const struct timeval *timeout,
-                            event_cb cb, void *arg)
-{
-  vde_assert(ctx != NULL);
-  vde_assert(ctx->initialized == true);
-
-  return ctx->event_handler.event_add(fd, events, timeout, cb, arg);
-}
-
-void vde_context_event_del(vde_context *ctx, void *event)
-{
-  vde_assert(ctx != NULL);
-  vde_assert(ctx->initialized == true);
-  vde_assert(event != NULL);
-
-  ctx->event_handler.event_del(event);
-}
-
-void *vde_context_timeout_add(vde_context *ctx, short events,
-                              const struct timeval *timeout,
-                              event_cb cb, void *arg)
-{
-  vde_assert(ctx != NULL);
-  vde_assert(ctx->initialized == true);
-
-  return ctx->event_handler.timeout_add(timeout, events, cb, arg);
-}
-
-void vde_context_timeout_del(vde_context *ctx, void *timeout)
-{
-  vde_assert(ctx != NULL);
-  vde_assert(ctx->initialized == true);
-  vde_assert(timeout != NULL);
-
-  ctx->event_handler.timeout_del(timeout);
 }
 

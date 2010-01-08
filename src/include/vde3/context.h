@@ -18,7 +18,21 @@
 #ifndef __VDE3_CONTEXT_H__
 #define __VDE3_CONTEXT_H__
 
+#include <stdbool.h>
+
 #include <vde3/module.h>
+
+struct vde_context {
+  bool initialized;
+  vde_event_handler event_handler;
+  // hash table vde_quark component_name: vde_component *component
+  vde_hash *components; /* XXX(shammash): couple this hash with a list to keep
+                           an order, needed in save configuration */
+  // list of vde_module*
+  vde_list *modules;
+  // configuration path
+  // list of startup commands (from configuration)
+};
 
 /**
  * @brief Register a vde_module inside the context
@@ -33,16 +47,43 @@ int vde_context_register_module(vde_context *ctx, vde_module *module);
 vde_component* vde_context_get_component_by_qname(vde_context *ctx,
                                                   vde_quark qname);
 
-void *vde_context_event_add(vde_context *ctx, int fd, short events,
-                            const struct timeval *timeout,
-                            event_cb cb, void *arg);
+static inline void *vde_context_event_add(vde_context *ctx, int fd,
+                                          short events,
+                                          const struct timeval *timeout,
+                                          event_cb cb, void *arg)
+{
+  vde_assert(ctx != NULL);
+  vde_assert(ctx->initialized == true);
 
-void vde_context_event_del(vde_context *ctx, void *event);
+  return ctx->event_handler.event_add(fd, events, timeout, cb, arg);
+}
 
-void *vde_context_timeout_add(vde_context *ctx, short events,
-                              const struct timeval *timeout,
-                              event_cb cb, void *arg);
+static inline void vde_context_event_del(vde_context *ctx, void *event)
+{
+  vde_assert(ctx != NULL);
+  vde_assert(ctx->initialized == true);
+  vde_assert(event != NULL);
 
-void vde_context_timeout_del(vde_context *ctx, void *timeout);
+  ctx->event_handler.event_del(event);
+}
+
+static inline void *vde_context_timeout_add(vde_context *ctx, short events,
+                                            const struct timeval *timeout,
+                                            event_cb cb, void *arg)
+{
+  vde_assert(ctx != NULL);
+  vde_assert(ctx->initialized == true);
+
+  return ctx->event_handler.timeout_add(timeout, events, cb, arg);
+}
+
+static inline void vde_context_timeout_del(vde_context *ctx, void *timeout)
+{
+  vde_assert(ctx != NULL);
+  vde_assert(ctx->initialized == true);
+  vde_assert(timeout != NULL);
+
+  ctx->event_handler.timeout_del(timeout);
+}
 
 #endif /* __VDE3_CONTEXT_H__ */
