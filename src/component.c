@@ -306,15 +306,13 @@ int vde_component_signals_register(vde_component *component,
 int vde_component_signal_add(vde_component *component,
                              vde_signal *signal)
 {
+  vde_signal *dup;
   const char *sig_name;
   vde_quark qname;
 
   vde_assert(component != NULL);
   vde_assert(signal != NULL);
 
-  // XXX: signals must be duplicated before adding them to component->signals
-  // hash otherwise two components of the same family will share the list of
-  // callbacks
   sig_name = vde_signal_get_name(signal);
   qname = vde_quark_from_string(sig_name);
 
@@ -325,7 +323,16 @@ int vde_component_signal_add(vde_component *component,
     return -1;
   }
 
-  vde_hash_insert(component->signals, (long)qname, signal);
+  /* signals are duplicated otherwise two components of the same family end up
+   * sharing the same callback list */
+  dup = vde_signal_dup(signal);
+  if (dup == NULL) {
+    vde_error("%s: cannot duplicate signal");
+    errno = ENOMEM;
+    return -1;
+  }
+
+  vde_hash_insert(component->signals, (long)qname, dup);
 
   return 0;
 }
@@ -333,6 +340,7 @@ int vde_component_signal_add(vde_component *component,
 int vde_component_signal_del(vde_component *component,
                              vde_signal *signal)
 {
+  vde_signal *dup;
   const char *sig_name;
   vde_quark qname;
 
@@ -342,14 +350,15 @@ int vde_component_signal_del(vde_component *component,
   sig_name = vde_signal_get_name(signal);
   qname = vde_quark_try_string(sig_name);
 
-  if (!vde_hash_remove(component->signals, (long)qname)) {
-    vde_error("%s: unable to remove signal %s",
-              __PRETTY_FUNCTION__, sig_name);
+  if ((dup = vde_hash_lookup(component->signals, (long)qname)) == NULL) {
+    vde_error("%s: unable to remove signal %s", __PRETTY_FUNCTION__, sig_name);
     errno = ENOENT;
     return -1;
   }
+  vde_hash_remove(component->signals, (long)qname);
 
-  vde_signal_fini(signal, component);
+  vde_signal_fini(dup, component);
+  vde_signal_delete(dup);
 
   return 0;
 }
