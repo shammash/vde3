@@ -530,7 +530,7 @@ error:
 void vde2_accept(int listen_fd, short event_type, void *arg)
 {
   struct sockaddr sa;
-  socklen_t sa_len;
+  socklen_t sa_len = sizeof(struct sockaddr);
   int new;
   vde_connection *conn;
   struct vde2_conn *v2_conn;
