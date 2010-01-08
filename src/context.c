@@ -26,9 +26,7 @@
 
 struct vde_context {
   bool initialized;
-  vde_event_handler *event_handler; /* XXX(shammash): consider embedding the
-                                   structure in the context to save 1 pointer
-                                   jump for each event add */
+  vde_event_handler event_handler;
   // hash table vde_quark component_name: vde_component *component
   vde_hash *components; /* XXX(shammash): couple this hash with a list to keep
                            an order, needed in save configuration */
@@ -101,7 +99,15 @@ int vde_context_init(vde_context *ctx, vde_event_handler *handler,
     errno = EINVAL;
     return -1;
   }
-  ctx->event_handler = handler;
+
+  if (handler->event_add == NULL || handler->event_del == NULL ||
+      handler->timeout_add == NULL || handler->timeout_del == NULL) {
+    vde_error("%s: all event handler functions must be implemented",
+              __PRETTY_FUNCTION__);
+    errno = EINVAL;
+    return -1;
+  }
+  memcpy(&ctx->event_handler, handler, sizeof(vde_event_handler));
   ctx->modules = NULL;
   ctx->components = vde_hash_init();
   ctx->initialized = true;
@@ -124,7 +130,12 @@ void vde_context_fini(vde_context *ctx)
     vde_error("%s: cannot finalize context", __PRETTY_FUNCTION__);
     return;
   }
-  ctx->event_handler = NULL;
+
+  ctx->event_handler.event_add = NULL;
+  ctx->event_handler.event_del = NULL;
+  ctx->event_handler.timeout_add = NULL;
+  ctx->event_handler.timeout_del = NULL;
+
   // XXX: here components should be fini-shed, but that requires doing two
   // passes, first fini the connection managers and then the other components
   // because CM has dependency on both transport and engine.
@@ -339,7 +350,7 @@ void *vde_context_event_add(vde_context *ctx, int fd, short events,
   vde_assert(ctx != NULL);
   vde_assert(ctx->initialized == true);
 
-  return ctx->event_handler->event_add(fd, events, timeout, cb, arg);
+  return ctx->event_handler.event_add(fd, events, timeout, cb, arg);
 }
 
 void vde_context_event_del(vde_context *ctx, void *event)
@@ -348,7 +359,7 @@ void vde_context_event_del(vde_context *ctx, void *event)
   vde_assert(ctx->initialized == true);
   vde_assert(event != NULL);
 
-  ctx->event_handler->event_del(event);
+  ctx->event_handler.event_del(event);
 }
 
 void *vde_context_timeout_add(vde_context *ctx, short events,
@@ -358,7 +369,7 @@ void *vde_context_timeout_add(vde_context *ctx, short events,
   vde_assert(ctx != NULL);
   vde_assert(ctx->initialized == true);
 
-  return ctx->event_handler->timeout_add(timeout, events, cb, arg);
+  return ctx->event_handler.timeout_add(timeout, events, cb, arg);
 }
 
 void vde_context_timeout_del(vde_context *ctx, void *timeout)
@@ -367,6 +378,6 @@ void vde_context_timeout_del(vde_context *ctx, void *timeout)
   vde_assert(ctx->initialized == true);
   vde_assert(timeout != NULL);
 
-  ctx->event_handler->timeout_del(timeout);
+  ctx->event_handler.timeout_del(timeout);
 }
 
