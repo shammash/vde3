@@ -25,7 +25,6 @@ EXTRA_DIST = $(GEN_CHECKER) $(WRAPPERS_JSON)
 include_HEADERS = src/include/vde3.h
 
 noinst_HEADERS = \
-  $(WRAPPERS_HDR) \
   src/include/vde3/localconnection.h \
   src/include/vde3/common.h \
   src/include/vde3/attributes.h \
@@ -38,7 +37,6 @@ noinst_HEADERS = \
   src/include/vde3/module.h
 
 VDE_SRC = \
-  $(WRAPPERS_SRC) \
   src/context.c \
   src/component.c \
   src/logging.c \
@@ -60,9 +58,11 @@ bin_PROGRAMS = src/vde_hub src/vde_hub2hub
 modulesdir = $(pkglibdir)
 
 modules_LTLIBRARIES = src/engine_ctrl.la
+src_engine_ctrl_la_SOURCES = src/engine_ctrl.c src/engine_ctrl_commands.c
 src_engine_ctrl_la_LDFLAGS = -module -avoid-version -export-dynamic
 
 modules_LTLIBRARIES += src/engine_hub.la
+src_engine_hub_la_SOURCES = src/engine_hub.c src/engine_hub_commands.c
 src_engine_hub_la_LDFLAGS = -module -avoid-version -export-dynamic
 
 modules_LTLIBRARIES += src/conn_manager.la
