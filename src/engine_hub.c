@@ -213,6 +213,8 @@ void engine_hub_fini(vde_component *component)
     iter = vde_list_next(iter);
   }
   vde_list_delete(hub->ports);
+
+  vde_free(hub);
 }
 
 struct component_ops engine_hub_component_ops = {
