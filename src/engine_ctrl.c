@@ -403,7 +403,7 @@ int engine_ctrl_notify_add(vde_component *component, const char *full_path,
 {
   char *s_component_name, *signal_name, *reg_full_path;
   vde_component *s_component;
-  int rv;
+  int rv, tmp_errno = 0;
 
   // builtin command, casting component
   ctrl_conn *cc = (ctrl_conn *)component;
@@ -411,6 +411,7 @@ int engine_ctrl_notify_add(vde_component *component, const char *full_path,
   if (check_split_path(full_path, &s_component_name, &signal_name) == -1) {
     // XXX: what if errno == ENOMEM ?
     *out = vde_sobj_new_string("Signal path not well-formed");
+    tmp_errno = EINVAL;
     rv = -1;
     goto out;
   }
@@ -419,12 +420,14 @@ int engine_ctrl_notify_add(vde_component *component, const char *full_path,
                                           s_component_name);
   if (!s_component) {
     *out = vde_sobj_new_string("Component not found");
+    tmp_errno = ENOENT;
     rv = -1;
     goto cleannames;
   }
   rv = vde_component_signal_attach(s_component, signal_name, signal_callback,
                                    signal_destroy_callback, (void *)cc);
   if (rv != 0) {
+    tmp_errno = errno;
     *out = vde_sobj_new_string("Failed to attach to signal");
   } else {
     *out = vde_sobj_new_string("Signal attached");
@@ -437,6 +440,7 @@ cleannames:
   free(s_component_name);
   free(signal_name);
 out:
+  errno = tmp_errno;
   return rv;
 }
 
@@ -447,7 +451,7 @@ int engine_ctrl_notify_del(vde_component *component, const char *full_path,
   char *iter_path, *reg_full_path = NULL;
   vde_component *s_component;
   vde_list *iter;
-  int rv;
+  int rv, tmp_errno = 0;
 
   // builtin command, casting component
   ctrl_conn *cc = (ctrl_conn *)component;
@@ -464,6 +468,7 @@ int engine_ctrl_notify_del(vde_component *component, const char *full_path,
   }
   if (reg_full_path == NULL) {
     *out = vde_sobj_new_string("Signal not registered in connection");
+    tmp_errno = ENOENT;
     rv = -1;
     goto out;
   }
@@ -471,6 +476,7 @@ int engine_ctrl_notify_del(vde_component *component, const char *full_path,
   if (check_split_path(full_path, &s_component_name, &signal_name) == -1) {
     // XXX: what if errno == ENOMEM ?
     *out = vde_sobj_new_string("Signal path not well-formed");
+    tmp_errno = EINVAL;
     rv = -1;
     goto out;
   }
@@ -479,12 +485,14 @@ int engine_ctrl_notify_del(vde_component *component, const char *full_path,
                                           s_component_name);
   if (!s_component) {
     *out = vde_sobj_new_string("Component not found");
+    tmp_errno = ENOENT;
     rv = -1;
     goto cleannames;
   }
   rv = vde_component_signal_detach(s_component, signal_name, signal_callback,
                                    signal_destroy_callback, (void *)cc);
   if (rv != 0) {
+    tmp_errno = errno;
     *out = vde_sobj_new_string("Failed to detach from signal");
     goto cleannames;
   }
@@ -498,6 +506,7 @@ cleannames:
   free(s_component_name);
   free(signal_name);
 out:
+  errno = tmp_errno;
   return rv;
 }
 
