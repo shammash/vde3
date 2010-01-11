@@ -155,6 +155,17 @@ int vde_component_commands_register(vde_component *component,
                                     vde_command *commands);
 
 /**
+ * @brief vde_component utility to deregister commands
+ *
+ * @param component The component to remove commands from
+ * @param commands The NULL-terminated array of commands
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
+int vde_component_commands_deregister(vde_component *component,
+                                      vde_command *commands);
+
+/**
  * @brief vde_component utility to add a command
  *
  * @param component The component to add the command to
@@ -207,6 +218,17 @@ vde_command **vde_component_commands_list(vde_component *component);
  */
 int vde_component_signals_register(vde_component *component,
                                    vde_signal *signals);
+
+/**
+ * @brief vde_component utility to deregister signals
+ *
+ * @param component The component to remove signals from
+ * @param commands The NULL-terminated array of signals
+ *
+ * @return zero on success, -1 on error (and errno is set appropriately)
+ */
+int vde_component_signals_deregister(vde_component *component,
+                                     vde_signal *signals);
 
 /**
  * @brief vde_component utility to add a signal

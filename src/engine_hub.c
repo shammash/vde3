@@ -33,6 +33,7 @@
 
 
 // START temporary signals declaration
+// XXX as for commands, signals should be auto-generated
 #include <vde3/signal.h>
 static vde_signal engine_hub_signals [] = {
   { "port_new", NULL, NULL, NULL },
@@ -215,6 +216,9 @@ void engine_hub_fini(vde_component *component)
   vde_list_delete(hub->ports);
 
   vde_free(hub);
+
+  vde_component_commands_deregister(component, engine_hub_commands);
+  vde_component_signals_deregister(component, engine_hub_signals);
 }
 
 struct component_ops engine_hub_component_ops = {

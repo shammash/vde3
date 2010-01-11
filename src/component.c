@@ -219,6 +219,22 @@ int vde_component_commands_register(vde_component *component,
   return 0;
 }
 
+int vde_component_commands_deregister(vde_component *component,
+                                      vde_command *commands)
+{
+  vde_assert(component != NULL);
+  vde_assert(commands != NULL);
+
+  while (vde_command_get_name(commands) != NULL) {
+    if (vde_component_command_del(component, commands)) {
+      return -1;
+    }
+    commands++;
+  }
+
+  return 0;
+}
+
 int vde_component_command_add(vde_component *component,
                               vde_command *command)
 {
@@ -295,6 +311,23 @@ int vde_component_signals_register(vde_component *component,
 
   while (vde_signal_get_name(signals) != NULL) {
     if (vde_component_signal_add(component, signals)) {
+      return -1;
+    }
+
+    signals++;
+  }
+
+  return 0;
+}
+
+int vde_component_signals_deregister(vde_component *component,
+                                     vde_signal *signals)
+{
+  vde_assert(component != NULL);
+  vde_assert(signals != NULL);
+
+  while (vde_signal_get_name(signals) != NULL) {
+    if (vde_component_signal_del(component, signals)) {
       return -1;
     }
 
