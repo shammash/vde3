@@ -46,6 +46,7 @@ struct pending_conn {
 struct conn_manager {
   vde_component *transport;
   vde_component *engine;
+  vde_component *component;
   vde_list *pending_conns;
   int do_remote_authorization;
 };
@@ -75,10 +76,7 @@ int conn_manager_listen(vde_component *component)
 {
   conn_manager *cm = (conn_manager *)vde_component_get_priv(component);
 
-  // XXX check return of this
-  vde_transport_listen(cm->transport);
-
-  return 0;
+  return vde_transport_listen(cm->transport);
 }
 
 int conn_manager_connect(vde_component *component,
@@ -121,18 +119,21 @@ int conn_manager_connect(vde_component *component,
   cm = vde_component_get_priv(component);
   cm->pending_conns = vde_list_prepend(cm->pending_conns, pc);
 
-  // XXX check return of this
-  vde_transport_connect(cm->transport, conn);
-
-  return 0;
+  return vde_transport_connect(cm->transport, conn);
 }
 
 static int post_authorization(conn_manager *cm, struct pending_conn *pc)
 {
-  // XXX: this can fail, e.g.: maximum number of ports on a switch already
-  // reached..
-  vde_engine_new_connection(cm->engine, pc->conn, pc->lreq);
-  // if there's an application callback call it
+  // invoke user callbacks on error/success
+  if(vde_engine_new_connection(cm->engine, pc->conn, pc->lreq)) {
+    if (pc->error_cb) {
+      pc->error_cb(cm->component, pc->connect_cb_arg);
+    }
+  } else {
+    if (pc->success_cb) {
+      pc->success_cb(cm->component, pc->connect_cb_arg);
+    }
+  }
   cm->pending_conns = vde_list_remove(cm->pending_conns, pc);
   vde_free(pc); // XXX: free requests here ?
   return 0;
@@ -242,6 +243,7 @@ int conn_manager_init(vde_component *component, vde_component *transport,
 
   cm->transport = transport;
   cm->engine = engine;
+  cm->component = component;
   cm->do_remote_authorization = do_remote_authorization;
   cm->pending_conns = NULL;
 
@@ -273,7 +275,14 @@ int conn_manager_va_init(vde_component *component, va_list args)
 // XXX to be defined
 void conn_manager_fini(vde_component *component)
 {
+  conn_manager *cm = vde_component_get_priv(component);
+
   vde_assert(component != NULL);
+
+  vde_component_put(cm->transport, NULL);
+  vde_component_put(cm->engine, NULL);
+
+  // XXX what to do with cm->pending_conns if not empty?
 }
 
 struct component_ops conn_manager_component_ops = {
