@@ -84,6 +84,7 @@ def main():
     except (EOFError, KeyboardInterrupt):
       print "Got EOF"
       quit = True
+      break
     if cmd:
       data.sendto(cmd + '\x00', peername)
 
