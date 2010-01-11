@@ -30,17 +30,23 @@ PROMPT='vde> '
 _MAXPATH=1024
 _MAXRECV=4096
 
-thread_loop=True
 data = None
+ctl = None
+quit = False
 
 def get_from_data():
-  while thread_loop:
-    rlist, wlist, xlist = select.select([data], [], [], 1)
+  global quit
+
+  while not quit:
+    rlist, wlist, xlist = select.select([data, ctl], [], [])
     if data in rlist:
       read = data.recv(_MAXRECV)
       print repr(read)
       sys.stdout.write(PROMPT)
       sys.stdout.flush()
+    if ctl in rlist and ctl.recv(0) == '':
+      print "Connection closed by remote side"
+      quit = True
 
 def setterm():
   old = termios.tcgetattr(sys.stdin)
@@ -57,8 +63,8 @@ def setterm():
 
 
 def main():
-  global data
-  global thread_loop
+  global data, ctl
+  global quit
   ctl, datasock, peername = vde2_connect('/tmp/vde3_test_ctrl/ctl')
   print 'connected to %s.' % peername
   data = datasock
@@ -72,16 +78,17 @@ def main():
 
   th = threading.Thread(target = get_from_data, name = 'getter')
   th.start()
-  while True:
+  while not quit:
     try:
       cmd = raw_input(PROMPT)
-    except EOFError:
-      print 'Got EOF, quitting.'
-      thread_loop = False
-      th.join()
-      break
+    except (EOFError, KeyboardInterrupt):
+      print "Got EOF"
+      quit = True
     if cmd:
       data.sendto(cmd + '\x00', peername)
+
+  print 'Quitting.'
+  th.join(1)
 
   return 0
 
