@@ -52,7 +52,8 @@ static int is_builtin(vde_command *command) {
 }
 
 struct ctrl_engine {
-  // - aliases table
+  // XXX aliases table
+  vde_list *ctrl_conns;
   vde_component *component;
 };
 typedef struct ctrl_engine ctrl_engine;
@@ -224,6 +225,57 @@ static int rpc_10_sobj_validate_call(vde_sobj *sobj)
   return 0;
 }
 
+/**
+ * @brief Check if a full path is well formed. If it is, duplicate the
+ * component name and the callable path storing new memory in the passed
+ * references. Duplicated strings must be freed with free() and not vde_free()
+ *
+ * @param full_path The full path to check and eventually split
+ * @param component_name Reference to the pointer which will contain component
+ * name string
+ * @param callable_path Reference to the pointer which will contain callable
+ * path string
+ *
+ * @return zero if checks, split and string duplications succeded, -1 on error
+ * (no need to free duplicated strings in that case)
+ */
+static int check_split_path(const char *full_path, char **component_name,
+                            char **callable_path)
+{
+  char *sep;
+
+  vde_assert(full_path != NULL);
+  vde_assert(component_name != NULL);
+  vde_assert(callable_path != NULL);
+
+  sep = memchr(full_path, SEP_CHAR, strlen(full_path));
+  if (!sep) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  /* component_name length == 0  or callable_path length == 0 */
+  if ((sep == full_path) || (sep == (full_path + strlen(full_path) - 1))) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  *component_name = strndup(full_path, sep - full_path);
+  if (*component_name == NULL) {
+    errno = ENOMEM;
+    return -1;
+  }
+  *callable_path = strdup(sep + 1);
+  if (*callable_path == NULL) {
+    free(*component_name);
+    *component_name = NULL;
+    errno = ENOMEM;
+    return -1;
+  }
+
+  return 0;
+}
+
 static inline char *build_signal_path(vde_component *component,
                                       const char *signal_path)
 {
@@ -296,24 +348,19 @@ static void signal_destroy_callback(vde_component *component,
 int engine_ctrl_notify_add(vde_component *component, const char *full_path,
                            vde_sobj **out)
 {
-  char *sep, *s_component_name, *signal_name, *reg_full_path;
+  char *s_component_name, *signal_name, *reg_full_path;
   vde_component *s_component;
   int rv;
 
   // builtin command, casting component
   ctrl_conn *cc = (ctrl_conn *)component;
 
-  sep = memchr(full_path, SEP_CHAR, strlen(full_path));
-  if (!sep) {
-    *out = vde_sobj_new_string("Cannot find separator in signal path");
+  if (check_split_path(full_path, &s_component_name, &signal_name) == -1) {
+    // XXX: what if errno == ENOMEM ?
+    *out = vde_sobj_new_string("Signal path not well-formed");
     rv = -1;
     goto out;
   }
-
-  // XXX check for corner cases: full_path = '/' or 'foo/' or '/foo'
-
-  s_component_name = strndup(full_path, sep - full_path);
-  signal_name = strdup(sep + 1);
 
   s_component = vde_context_get_component(vde_connection_get_context(cc->conn),
                                           s_component_name);
@@ -343,7 +390,7 @@ out:
 int engine_ctrl_notify_del(vde_component *component, const char *full_path,
                            vde_sobj **out)
 {
-  char *sep, *s_component_name, *signal_name;
+  char *s_component_name, *signal_name;
   char *iter_path, *reg_full_path = NULL;
   vde_component *s_component;
   vde_list *iter;
@@ -368,17 +415,12 @@ int engine_ctrl_notify_del(vde_component *component, const char *full_path,
     goto out;
   }
 
-  sep = memchr(full_path, SEP_CHAR, strlen(full_path));
-  if (!sep) {
-    *out = vde_sobj_new_string("Cannot find separator in signal path");
+  if (check_split_path(full_path, &s_component_name, &signal_name) == -1) {
+    // XXX: what if errno == ENOMEM ?
+    *out = vde_sobj_new_string("Signal path not well-formed");
     rv = -1;
     goto out;
   }
-
-  // XXX check for corner cases: full_path = '/' or 'foo/' or '/foo'
-
-  s_component_name = strndup(full_path, sep - full_path);
-  signal_name = strdup(sep + 1);
 
   s_component = vde_context_get_component(vde_connection_get_context(cc->conn),
                                           s_component_name);
@@ -412,7 +454,7 @@ static void ctrl_engine_deserialize_string(char *string, void *arg)
   ctrl_conn *cc = (ctrl_conn *)arg;
   vde_sobj *in_sobj, *out_sobj = NULL, *mesg_id, *reply;
   const char *method_name;
-  char *sep, *component_name, *command_name;
+  char *component_name, *command_name;
   command_func func;
   int rv;
 
@@ -437,16 +479,11 @@ static void ctrl_engine_deserialize_string(char *string, void *arg)
 
   method_name = vde_sobj_get_string(vde_sobj_hash_lookup(in_sobj, "method"));
 
-  sep = memchr(method_name, SEP_CHAR, strlen(method_name));
-  if (!sep) {
-    vde_warning("%s: cannot find separator in method name",
-                __PRETTY_FUNCTION__);
+  if (check_split_path(method_name, &component_name, &command_name) == -1) {
+    // XXX: what if errno == ENOMEM ?
+    vde_warning("%s: method name not well-formed", __PRETTY_FUNCTION__);
     goto cleaninsobj;
   }
-  // XXX check for corner cases: method_name = '/' or 'foo/' or '/foo'
-
-  component_name = strndup(method_name, sep - method_name);
-  command_name = strdup(sep + 1);
 
   component = vde_context_get_component(vde_connection_get_context(cc->conn),
                                         component_name);
@@ -511,10 +548,11 @@ out:
  *
  * @return zero on success, an error code otherwise
  */
-static int vde_split_payload(vde_pkt *pkt,
+static int ctrl_split_payload(vde_pkt *pkt,
                              char *inbuf, size_t *inbuf_len, int inbuf_sz,
                              void (*func)(char *string, void *priv),
-                             void *priv) {
+                             void *priv)
+{
   char *buf, *next, *inbuf_tmp = NULL, *to_serial;
   int remaining, buf_len = 0, rv = 0;
 
@@ -578,22 +616,108 @@ exit:
   return rv;
 }
 
+static void ctrl_conn_fini_noengine(ctrl_conn *cc)
+{
+  int rv;
+  vde_pkt *pkt;
+  vde_list *iter;
+  char *sig_full_path, *component_name, *sig_path;
+  vde_context *ctx;
+  vde_component *component;
+
+  // cleanup outgoing packets
+  pkt = vde_queue_pop_tail(cc->out_queue);
+  while (pkt != NULL) {
+    vde_free(pkt);
+    pkt = vde_queue_pop_tail(cc->out_queue);
+  }
+  vde_queue_delete(cc->out_queue);
+
+  ctx = vde_connection_get_context(cc->conn);
+
+  // detach from all signals
+  iter = vde_list_first(cc->reg_signals);
+  while (iter != NULL) {
+    sig_full_path = vde_list_get_data(iter);
+    if (check_split_path(sig_full_path, &component_name, &sig_path) == -1) {
+      // XXX fatal here if errno != ENOMEM ?
+      vde_error("%s: cannot split path %s", __PRETTY_FUNCTION__,
+                sig_full_path);
+    } else {
+      component = vde_context_get_component(ctx, component_name);
+      if (!component) {
+        // XXX fatal here?
+        vde_error("%s: cannot lookup component %s", __PRETTY_FUNCTION__,
+                  component_name);
+      } else {
+        rv = vde_component_signal_detach(component, sig_path, signal_callback,
+                                         signal_destroy_callback, (void *)cc);
+        if (rv != 0) {
+          // XXX fatal here?
+          vde_error("%s: cannot detach %s", __PRETTY_FUNCTION__,
+                    sig_full_path);
+        }
+      }
+
+      free(component_name);
+      free(sig_path);
+    }
+    free(sig_full_path);
+
+    iter = vde_list_next(iter);
+  }
+  vde_list_delete(cc->reg_signals);
+
+  // free ctrl_conn
+  vde_free(cc);
+}
+
+static void ctrl_conn_fini(ctrl_conn *cc)
+{
+  // deregister from ctrl_engine
+  cc->engine->ctrl_conns = vde_list_remove(cc->engine->ctrl_conns, cc);
+
+  ctrl_conn_fini_noengine(cc);
+}
+
 int ctrl_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
 {
   ctrl_conn *cc = (ctrl_conn *)arg;
 
-  vde_debug("got control readcb");
-
   // XXX check pkt type is CTRL
-  if (vde_split_payload(pkt, cc->inbuf, &cc->inbuf_len, MAX_INBUF_SZ,
+
+  if (ctrl_split_payload(pkt, cc->inbuf, &cc->inbuf_len, MAX_INBUF_SZ,
                         ctrl_engine_deserialize_string, (void *)cc)) {
+
     // XXX gracefully handle cases where payload cannot fit in inbuf
+    vde_debug("%s: error splitting payload, closing", __PRETTY_FUNCTION__);
 
-    vde_debug("got control readcb error");
+    ctrl_conn_fini(cc);
 
-    // XXX fini ctrl_conn
     errno = EPIPE;
     return -1;
+  }
+
+  return 0;
+}
+
+int ctrl_engine_writecb(vde_connection *conn, vde_pkt *pkt, void *arg)
+{
+  vde_pkt *q_pkt;
+  int rv;
+  ctrl_conn *cc = (ctrl_conn *)arg;
+
+  // try to flush out queue if some packets are waiting
+  q_pkt = vde_queue_pop_tail(cc->out_queue);
+  while (q_pkt) {
+    rv = vde_connection_write(cc->conn, q_pkt);
+    if (rv != 0) {
+      // couldn't write, requeue
+      vde_queue_push_tail(cc->out_queue, q_pkt);
+      break;
+    }
+    vde_free(q_pkt);
+    q_pkt = vde_queue_pop_tail(cc->out_queue);
   }
 
   return 0;
@@ -602,31 +726,22 @@ int ctrl_engine_readcb(vde_connection *conn, vde_pkt *pkt, void *arg)
 int ctrl_engine_errorcb(vde_connection *conn, vde_pkt *pkt,
                                    vde_conn_error err, void *arg)
 {
-  //ctrl_conn *cc = (ctrl_conn *)arg;
+  ctrl_conn *cc = (ctrl_conn *)arg;
 
-  vde_debug("got control error cb");
-  // XXX fini ctrl_conn
+  if (err == CONN_WRITE_DELAY) {
+    // XXX: packet is dropped here, the whole message will be corrupted.
+    // To avoid this we must tell the connection to re-queue the packet.
+    // Another option is to share send-queue with the connection and thus
+    // re-queue the message by ourselves.
+    vde_error("%s: connection is dropping packets, expect corrupted messages",
+              __PRETTY_FUNCTION__);
+    return 0;
+  }
+
+  ctrl_conn_fini(cc);
+
   errno = EPIPE;
   return -1;
-}
-
-static void ctrl_conn_fini(ctrl_conn *cc)
-{
-  vde_pkt *pkt;
-
-  pkt = vde_queue_pop_tail(cc->out_queue);
-  while (pkt != NULL) {
-    vde_free(pkt);
-    pkt = vde_queue_pop_tail(cc->out_queue);
-  }
-  vde_queue_delete(cc->out_queue);
-
-  // XXX deregister cc from cc->engine list of connections
-  // XXX iterate over cc->reg_signals, for each full_path found:
-  //     split path
-  //     deregister signal from component
-  //     free full_path
-  //vde_free(cc);
 }
 
 int ctrl_engine_newconn(vde_component *component, vde_connection *conn,
@@ -635,20 +750,24 @@ int ctrl_engine_newconn(vde_component *component, vde_connection *conn,
   ctrl_engine *ctrl = vde_component_get_priv(component);
   ctrl_conn *cc;
 
-  // XXX check for NULL
   cc = vde_calloc(sizeof(ctrl_conn));
+  if (cc == NULL) {
+    vde_error("%s: could not allocate ctrl_conn", __PRETTY_FUNCTION__);
+    errno = ENOMEM;
+    return -1;
+  }
   cc->conn = conn;
   cc->out_queue = vde_queue_init();
   cc->engine = ctrl;
   cc->reg_signals = NULL;
 
-  // XXX register/deregister cc inside ctrl to keep a list of active cconns
+  ctrl->ctrl_conns = vde_list_prepend(ctrl->ctrl_conns, cc);
 
-  // XXX register write callback to flush queue conn
-  vde_connection_set_callbacks(conn, &ctrl_engine_readcb, NULL,
+  vde_connection_set_callbacks(conn, &ctrl_engine_readcb, &ctrl_engine_writecb,
                                &ctrl_engine_errorcb, (void *)cc);
   vde_connection_set_pkt_properties(conn, 0, 0);
   /*
+   * XXX: define send properties and policy for discarding packets
   send_timeout.tv_sec = TIMEOUT;
   send_timeout.tv_usec = 0;
   vde_connection_set_send_properties(conn, TIMES, &send_timeout);
@@ -693,6 +812,22 @@ int engine_ctrl_va_init(vde_component *component, va_list args)
 
 void engine_ctrl_fini(vde_component *component)
 {
+  vde_list *iter;
+  ctrl_conn *cc;
+  ctrl_engine *ctrl = vde_component_get_priv(component);
+
+  iter = vde_list_first(ctrl->ctrl_conns);
+  while (iter != NULL) {
+    cc = vde_list_get_data(iter);
+    vde_connection_fini(cc->conn);
+    vde_connection_delete(cc->conn);
+    ctrl_conn_fini_noengine(cc);
+
+    iter = vde_list_next(iter);
+  }
+  vde_list_delete(ctrl->ctrl_conns);
+
+  vde_free(ctrl);
 }
 
 struct component_ops engine_ctrl_component_ops = {
