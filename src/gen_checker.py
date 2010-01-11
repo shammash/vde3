@@ -109,11 +109,13 @@ def gen_wrapper(info):
   # sanity check on received json
   wrap.append('  if (!vde_sobj_is_type(in, vde_sobj_type_array)) {')
   wrap.append('    *out = vde_sobj_new_string("Did not receive an array");')
+  wrap.append('    errno = EINVAL;')
   wrap.append('    return -1;')
   wrap.append('  }')
   wrap.append('  if (vde_sobj_array_length(in) != %s) {' % num_params)
   wrap.append('    *out = vde_sobj_new_string("Expected %s params");' %
               num_params)
+  wrap.append('    errno = EINVAL;')
   wrap.append('    return -1;')
   wrap.append('  }')
   # check and convert parameters
@@ -126,6 +128,7 @@ def gen_wrapper(info):
                 (json_var, typemap[type][1]))
     wrap.append('    *out = vde_sobj_new_string("Param %s not a %s");' %
                 (var, type))
+    wrap.append('    errno = EINVAL;')
     wrap.append('    return -1;')
     wrap.append('  }')
     wrap.append('  %s = %s(%s);' % (var, typemap[type][2], json_var))
