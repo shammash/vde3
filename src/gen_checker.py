@@ -235,7 +235,7 @@ def main():
     cmd_out.write(el + '\n')
   cmd_out.write('\n')
 
-  cmd_out.write('static vde_command %s_commands [] = {\n' % basename)
+  cmd_out.write('UNUSED static vde_command %s_commands [] = {\n' % basename)
   commands.append('{ NULL, NULL, NULL, NULL },')
   for c in commands:
     cmd_out.write('  %s\n' % c)

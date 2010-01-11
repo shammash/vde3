@@ -90,6 +90,12 @@ typedef gchar vde_char;
 #define vde_assert(expr)
 #endif
 
+#ifdef __GNUC__
+#define UNUSED __attribute__ ((unused))
+#else
+#define UNUSED
+#endif
+
 // serializable object API
 typedef struct json_object vde_sobj;
 #define vde_sobj_to_string(o) json_object_to_json_string(o)
