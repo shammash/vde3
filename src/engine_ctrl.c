@@ -135,7 +135,7 @@ static int ctrl_engine_conn_write(ctrl_conn *cc, vde_sobj *out_obj) {
  * @brief Build a JSON-RPC 1.0 method call reply, one between result and error
  * must be NULL
  *
- * @param id The reply id, an integer
+ * @param id The reply id, an integer, can be NULL
  * @param result The object result
  * @param error The object error
  *
@@ -147,13 +147,66 @@ vde_sobj *rpc_10_build_reply(vde_sobj *id, vde_sobj *result, vde_sobj *error)
 
   vde_assert(XOR(result, error));
 
-  vde_assert(vde_sobj_is_type(id, vde_sobj_type_int));
+  // XXX consider splitting normal build_reply and build_reply with NULL id
+  vde_assert((id == NULL) ? 1 : vde_sobj_is_type(id, vde_sobj_type_int));
 
   // XXX check reply == NULL
   reply = vde_sobj_new_hash();
   vde_sobj_hash_insert(reply, "id", vde_sobj_get(id));
   vde_sobj_hash_insert(reply, "result", vde_sobj_get(result));
   vde_sobj_hash_insert(reply, "error", vde_sobj_get(error));
+
+  return reply;
+}
+
+/**
+ * @brief Build a JSON-RPC 1.0 method call error reply using a structured error
+ * format: {"code": error_number, "message": "error message"}
+ *
+ * @param id The reply id, an integer, can be NULL
+ * @param code The error code number, an integer
+ * @param msg The error message, a string
+ *
+ * @return The newly constructed reply, or NULL in case of error
+ */
+vde_sobj *rpc_XX_build_error_reply_sobj(vde_sobj *id, vde_sobj *code,
+                                        vde_sobj *msg)
+{
+  vde_sobj *reply;
+  // XXX check error == NULL
+  vde_sobj *error = vde_sobj_new_hash();
+
+  vde_sobj_hash_insert(error, "code", vde_sobj_get(code));
+  vde_sobj_hash_insert(error, "message", vde_sobj_get(msg));
+
+  reply = rpc_10_build_reply(id, NULL, error);
+
+  vde_sobj_put(error);
+
+  return reply;
+}
+
+/**
+ * @brief A simple wrapper around rpc_XX_build_error_reply_sobj() to simplify
+ * conversion from int/char to sobj for error parameters.
+ *
+ * @param id The reply id, an integer, can be NULL
+ * @param code The error code
+ * @param msg The error message
+ *
+ * @return The newly constructed reply, or NULL in cas of error
+ */
+vde_sobj *rpc_XX_build_error_reply(vde_sobj *id, int code, const char *msg)
+{
+  vde_sobj *reply;
+  // XXX check err_code / err_msg == NULL
+  vde_sobj *err_code = vde_sobj_new_int(code);
+  vde_sobj *err_msg = vde_sobj_new_string(msg);
+
+  reply = rpc_XX_build_error_reply_sobj(id, err_code, err_msg);
+
+  vde_sobj_put(err_code);
+  vde_sobj_put(err_msg);
 
   return reply;
 }
@@ -448,11 +501,10 @@ out:
   return rv;
 }
 
-// XXX write errors back to connection instead of vde_warning only
 static void ctrl_engine_deserialize_string(char *string, void *arg)
 {
   ctrl_conn *cc = (ctrl_conn *)arg;
-  vde_sobj *in_sobj, *out_sobj = NULL, *mesg_id, *reply;
+  vde_sobj *in_sobj, *out_sobj = NULL, *mesg_id, *reply, *err_code;
   const char *method_name;
   char *component_name, *command_name;
   command_func func;
@@ -463,12 +515,20 @@ static void ctrl_engine_deserialize_string(char *string, void *arg)
 
   in_sobj = vde_sobj_from_string(string);
   if (!in_sobj) {
-    vde_warning("%s: error deserializing input command", __PRETTY_FUNCTION__);
+    // XXX: here and below check reply == NULL
+    // and check ctrl_engine_conn_write()
+    reply = rpc_XX_build_error_reply(NULL, EINVAL,
+                                     "Cannot deserialize command");
+    ctrl_engine_conn_write(cc, reply);
+    vde_sobj_put(reply);
     goto out;
   }
 
   if (rpc_10_sobj_validate_call(in_sobj)) {
-    vde_warning("%s: invalid method call received", __PRETTY_FUNCTION__);
+    reply = rpc_XX_build_error_reply(NULL, EINVAL,
+                                     "Invalid method call received");
+    ctrl_engine_conn_write(cc, reply);
+    vde_sobj_put(reply);
     goto cleaninsobj;
   }
 
@@ -481,22 +541,27 @@ static void ctrl_engine_deserialize_string(char *string, void *arg)
 
   if (check_split_path(method_name, &component_name, &command_name) == -1) {
     // XXX: what if errno == ENOMEM ?
-    vde_warning("%s: method name not well-formed", __PRETTY_FUNCTION__);
+    reply = rpc_XX_build_error_reply(mesg_id, EINVAL,
+                                     "Method name not well-formed");
+    ctrl_engine_conn_write(cc, reply);
+    vde_sobj_put(reply);
     goto cleaninsobj;
   }
 
   component = vde_context_get_component(vde_connection_get_context(cc->conn),
                                         component_name);
   if (!component) {
-    vde_warning("%s: component name %s not found", __PRETTY_FUNCTION__,
-                component_name);
+    reply = rpc_XX_build_error_reply(mesg_id, ENOENT, "Component not found");
+    ctrl_engine_conn_write(cc, reply);
+    vde_sobj_put(reply);
     goto cleannames;
   }
 
   command = vde_component_command_get(component, command_name);
   if (!command) {
-    vde_warning("%s: command %s not found", __PRETTY_FUNCTION__,
-                command_name);
+    reply = rpc_XX_build_error_reply(mesg_id, ENOENT, "Command not found");
+    ctrl_engine_conn_write(cc, reply);
+    vde_sobj_put(reply);
     goto cleannames;
   }
 
@@ -513,13 +578,15 @@ static void ctrl_engine_deserialize_string(char *string, void *arg)
   }
 
   if (rv) {
-    reply = rpc_10_build_reply(mesg_id, NULL, out_sobj);
+    err_code = vde_sobj_new_int(errno);
+    reply = rpc_XX_build_error_reply_sobj(mesg_id, err_code, out_sobj);
+    vde_sobj_put(err_code);
+    vde_sobj_put(out_sobj);
   } else {
     reply = rpc_10_build_reply(mesg_id, out_sobj, NULL);
+    vde_sobj_put(out_sobj);
   }
   // XXX check reply == NULL
-
-  vde_sobj_put(out_sobj);
 
   // XXX check error
   ctrl_engine_conn_write(cc, reply);
