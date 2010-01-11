@@ -7,7 +7,7 @@
 
 // fixture components, always present
 vde_context *f_ctx;
-vde_event_handler f_eh;
+vde_event_handler f_eh = {0x1, 0x1, 0x1, 0x1};
 
 void
 setup (void)
@@ -47,7 +47,7 @@ END_TEST
 START_TEST (test_context_init)
 {
   int rv;
-  vde_event_handler eh;
+  vde_event_handler eh = {0x1, 0x1, 0x1, 0x1};
   vde_context *ctx;
 
   vde_context_new(&ctx);
@@ -61,12 +61,16 @@ START_TEST (test_context_init_invalid)
   int rv;
   vde_event_handler eh;
   vde_context *ctx;
+  char *mpath[] = {"nonexistantpath", NULL};
 
   rv = vde_context_init(NULL, &eh, NULL);
   fail_unless (rv == -1, "success on null ctx");
 
   rv = vde_context_init(ctx, NULL, NULL);
   fail_unless (rv == -1, "success on null eh");
+
+  rv = vde_context_init(ctx, NULL, mpath);
+  fail_unless (rv == -1, "success on invalid module path");
 }
 END_TEST
 
