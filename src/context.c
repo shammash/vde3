@@ -98,8 +98,6 @@ int vde_context_init(vde_context *ctx, vde_event_handler *handler,
   ctx->components = vde_hash_init();
   ctx->initialized = 1;
 
-  // XXX temporary, should be done via a list of builtin modules vs dynamically
-  // loaded modules
   if (vde_modules_load(ctx, modules_path)) {
     tmp_errno = errno;
     vde_error("%s: error while loading modules", __PRETTY_FUNCTION__);

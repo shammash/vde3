@@ -133,7 +133,6 @@ int vde_modules_load(vde_context *ctx, char **path)
     path = vde_modules_default_path();
   }
 
-  // XXX define an array of builtin init functions to call here?
   ftsp = fts_open(path, fts_options, NULL);
   if (!ftsp) {
     tmp_errno = errno;
@@ -157,7 +156,10 @@ int vde_modules_load(vde_context *ctx, char **path)
       }
       break;
     case FTS_ERR:
-      // XXX check error during traversal
+    case FTS_DNR:
+    case FTS_NS:
+      vde_warning("%s: error loading modules path %s: %s", __PRETTY_FUNCTION__,
+                  p->fts_path, strerror(p->fts_errno));
       break;
     case FTS_D:
       //vde_debug("examining dir %s", p->fts_path);

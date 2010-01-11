@@ -65,8 +65,8 @@ int vde_component_new(vde_component **component)
   return 0;
 }
 
-/* XXX(godog): add to the component something like a format string to validate
- * va_list?
+/*
+ *
  * XXX(shammash): instead of a va_list we can use a getsubopt(3) string, and add
  * the tokens and their description to the module
  */
@@ -81,7 +81,8 @@ int vde_component_init(vde_component *component, vde_quark qname,
   component->ctx = ctx;
   component->qname = qname;
   component->kind = vde_module_get_kind(module);
-  // XXX using the family string directly from module
+  // using family directly from the module, not a problem as long as modules
+  // are unloaded after components on context_fini (obviously)
   component->family = (char *)vde_module_get_family(module);
   component->cops = vde_module_get_component_ops(module);
   component->commands = vde_hash_init();
@@ -111,11 +112,11 @@ void vde_component_fini(vde_component *component)
   }
   */
 
-  // XXX clean these up before delete
-  //vde_hash_delete(component->commands);
-  //vde_hash_delete(component->signals);
-
   component->cops->fini(component);
+
+  // check that the component has cleaned up after itself
+  vde_assert(vde_hash_size(component->commands) == 0);
+  vde_assert(vde_hash_size(component->signals) == 0);
 
   component->initialized = false;
 }

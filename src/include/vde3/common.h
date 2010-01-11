@@ -59,6 +59,7 @@ typedef GHashTable vde_hash;
 #define vde_hash_insert(h, k, v) g_hash_table_insert(h, (gpointer)k, v)
 #define vde_hash_remove(h, k) g_hash_table_remove(h, (gconstpointer)k)
 #define vde_hash_lookup(h, k) g_hash_table_lookup(h, (gconstpointer)k)
+#define vde_hash_size(h) g_hash_table_size(h)
 #define vde_hash_delete(h) g_hash_table_destroy(h)
 
 typedef GQueue vde_queue;
