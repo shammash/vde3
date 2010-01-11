@@ -7,6 +7,11 @@ AC_CONFIG_SRCDIR([src/context.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
+# IMPORTANT: read before touching
+# http://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
+LIBVDE_VERSION=0:0:0
+AC_SUBST([LIBVDE_VERSION])
+
 # foreign doesn't require GNU standard files to be present
 # http://www.gnu.org/software/automake/manual/automake.html#Strictness
 AM_INIT_AUTOMAKE([dist-bzip2 subdir-objects color-tests foreign])
