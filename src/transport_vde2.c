@@ -696,7 +696,6 @@ static int transport_vde2_init(vde_component *component, const char *dir)
     return -1;
   }
 
-  vde_transport_set_ops(component, &vde2_listen, &vde2_connect);
   vde_component_set_priv(component, (void *)tr);
   return 0;
 }
@@ -726,4 +725,7 @@ vde_module VDE_MODULE_START = {
   .kind = VDE_TRANSPORT,
   .family = "vde2",
   .cops = &transport_vde2_component_ops,
+  .tr_listen = &vde2_listen,
+  .tr_connect = &vde2_connect,
 };
+

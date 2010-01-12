@@ -21,27 +21,6 @@
 #include <vde3/component.h>
 
 /**
- * @brief Function called on an engine to add a new connection. Engines must
- * implement it.
- *
- * @param engine The engine to add the connection to
- * @param conn The connection
- * @param req The connection parameters
- *
- * @return zero on success, -1 on error (and errno is set appropriately)
- */
-typedef int (*eng_new_conn)(vde_component *engine, vde_connection *conn,
-                            vde_request *req);
-
-/**
- * @brief Fill engine ops in a component
- *
- * @param engine The engine
- * @param new_conn New Connection op
- */
-void vde_engine_set_ops(vde_component *engine, eng_new_conn new_conn);
-
-/**
  * @brief Attach a connection to an engine
  *
  * @param engine The engine to attach the connection to

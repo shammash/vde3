@@ -29,21 +29,6 @@
 // defined here, including contex.h would required module.h in turn
 extern int vde_context_register_module(vde_context *ctx, vde_module *module);
 
-vde_component_kind vde_module_get_kind(vde_module *module)
-{
-  return module->kind;
-}
-
-const char *vde_module_get_family(vde_module *module)
-{
-  return module->family;
-}
-
-component_ops *vde_module_get_component_ops(vde_module *module)
-{
-  return module->cops;
-}
-
 /**
  * @brief Try loading a vde_module from path and register to context
  *
@@ -183,3 +168,4 @@ int vde_modules_load(vde_context *ctx, char **path)
 
   return rv;
 }
+

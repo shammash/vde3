@@ -21,27 +21,6 @@
 #include <vde3/component.h>
 
 /**
- * @brief Function called on a transport to set it in listen mode. Transports
- * must implement it.
- *
- * @param transport The transport
- *
- * @return zero on success, -1 on error (and errno is set appropriately)
- */
-typedef int (*tr_listen)(vde_component *transport);
-
-/**
- * @brief Function called on a transport to connect it. Transports must
- * implement it.
- *
- * @param transport The transport
- * @param conn The connection to connect
- *
- * @return zero on success, -1 on error (and errno is set appropriately)
- */
-typedef int (*tr_connect)(vde_component *transport, vde_connection *conn);
-
-/**
  * @brief Prototype of the callback called by the transport to notify a new
  * connection has been accepted.
  *
@@ -69,16 +48,6 @@ typedef void (*cm_connect_cb)(vde_connection *conn, void *arg);
  */
 typedef void (*cm_error_cb)(vde_connection *conn, int tr_errno,
                             void *arg);
-
-/**
- * @brief Fill the transport ops in a component
- *
- * @param transport The transport
- * @param listen Listen op
- * @param connect Connect op
- */
-void vde_transport_set_ops(vde_component *transport, tr_listen listen,
-                           tr_connect connect);
 
 /**
  * @brief Put the transport in listen state

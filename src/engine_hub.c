@@ -187,7 +187,6 @@ static int engine_hub_init(vde_component *component)
     return -1;
   }
 
-  vde_engine_set_ops(component, &hub_engine_newconn);
   vde_component_set_priv(component, (void *)hub);
   return 0;
 }
@@ -234,4 +233,6 @@ vde_module VDE_MODULE_START = {
   .kind = VDE_ENGINE,
   .family = "hub",
   .cops = &engine_hub_component_ops,
+  .eng_new_conn = &hub_engine_newconn,
 };
+

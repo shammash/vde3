@@ -255,10 +255,6 @@ int conn_manager_init(vde_component *component, vde_component *transport,
                                  &conn_manager_accept_cb,
                                  &conn_manager_error_cb, (void *)component);
 
-  // XXX(shammash): this will be probably done by vde_component_init()
-  vde_conn_manager_set_ops(component, &conn_manager_listen,
-                           &conn_manager_connect);
-
   vde_component_set_priv(component, cm);
   return 0;
 }
@@ -298,4 +294,7 @@ vde_module VDE_MODULE_START = {
   .kind = VDE_CONNECTION_MANAGER,
   .family = "default",
   .cops = &conn_manager_component_ops,
+  .cm_listen = &conn_manager_listen,
+  .cm_connect = &conn_manager_connect,
 };
+

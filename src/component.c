@@ -24,8 +24,6 @@
 #include <vde3/transport.h>
 #include <vde3/conn_manager.h>
 
-#include <vde3/module.h>
-
 struct vde_component {
   vde_context *ctx;
   component_ops *cops;
@@ -85,6 +83,19 @@ int vde_component_init(vde_component *component, vde_quark qname,
   // are unloaded after components on context_fini (obviously)
   component->family = (char *)vde_module_get_family(module);
   component->cops = vde_module_get_component_ops(module);
+  switch (component->kind) {
+    case VDE_CONNECTION_MANAGER:
+      component->cm_connect = vde_module_get_cm_connect(module);
+      component->cm_listen = vde_module_get_cm_listen(module);
+      break;
+    case VDE_ENGINE:
+      component->eng_new_conn = vde_module_get_eng_new_conn(module);
+      break;
+    case VDE_TRANSPORT:
+      component->tr_connect = vde_module_get_tr_connect(module);
+      component->tr_listen = vde_module_get_tr_listen(module);
+      break;
+  }
   component->commands = vde_hash_init();
   component->signals = vde_hash_init();
 
@@ -476,15 +487,6 @@ void vde_component_signal_raise(vde_component *component, const char *signal,
  *
  */
 
-void vde_engine_set_ops(vde_component *engine, eng_new_conn new_conn)
-{
-  vde_assert(engine != NULL);
-  vde_assert(engine->kind == VDE_ENGINE);
-  vde_assert(new_conn != NULL);
-
-  engine->eng_new_conn = new_conn;
-}
-
 int vde_engine_new_connection(vde_component *engine, vde_connection *conn,
                               vde_request *req)
 {
@@ -499,17 +501,6 @@ int vde_engine_new_connection(vde_component *engine, vde_connection *conn,
  * Transport-specific functions.
  *
  */
-
-void vde_transport_set_ops(vde_component *transport, tr_listen listen,
-                           tr_connect connect)
-{
-  vde_assert(transport != NULL);
-  vde_assert(listen != NULL);
-  vde_assert(connect != NULL);
-
-  transport->tr_connect = connect;
-  transport->tr_listen = listen;
-}
 
 int vde_transport_listen(vde_component *transport)
 {
@@ -580,17 +571,6 @@ void vde_transport_call_cm_error_cb(vde_component *transport,
  * Connection Manager-specific functions.
  *
  */
-
-void vde_conn_manager_set_ops(vde_component *cm, cm_listen listen,
-                              cm_connect connect)
-{
-  vde_assert(cm != NULL);
-  vde_assert(listen != NULL);
-  vde_assert(connect != NULL);
-
-  cm->cm_connect = connect;
-  cm->cm_listen = listen;
-}
 
 // XXX add application callback on accept?
 int vde_conn_manager_listen(vde_component *cm)

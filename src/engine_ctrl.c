@@ -875,7 +875,6 @@ static int engine_ctrl_init(vde_component *component)
     return -1;
   }
 
-  vde_engine_set_ops(component, &ctrl_engine_newconn);
   vde_component_set_priv(component, (void *)ctrl);
 
   return 0;
@@ -919,4 +918,5 @@ vde_module VDE_MODULE_START = {
   .kind = VDE_ENGINE,
   .family = "ctrl",
   .cops = &engine_ctrl_component_ops,
+  .eng_new_conn = &ctrl_engine_newconn,
 };
