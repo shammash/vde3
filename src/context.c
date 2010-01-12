@@ -214,7 +214,8 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name)
 vde_component* vde_context_get_component_by_qname(vde_context *ctx,
                                                   vde_quark qname)
 {
-  // XXX: assert on ctx == NULL
+  vde_assert(ctx != NULL);
+
   return vde_hash_lookup(ctx->components, (long)qname);
 }
 
@@ -263,7 +264,7 @@ int vde_context_component_del(vde_context *ctx, vde_component *component)
     errno = EBUSY;
     return -1;
   }
-  // XXX: assert on hash_remove
+
   vde_hash_remove(ctx->components, (long)qname);
 
   // here the component is deleted because it doesn't make sense to have it out

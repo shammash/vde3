@@ -79,15 +79,29 @@ int vde_connect_engines_unqueued(vde_context *ctx, vde_component *engine1,
                                  vde_request *req1, vde_component *engine2,
                                  vde_request *req2)
 {
-  // XXX: check ctx/engines not NULL
-  // XXX: request must be normalized here
+  int tmp_errno;
+
+  vde_assert(ctx != NULL);
+  vde_assert(engine1 != NULL);
+  vde_assert(engine2 != NULL);
+
+  // XXX: request must be normalized here (assert != NULL as well?)
 
   vde_connection *c1, *c2;
   vde_lc *lc1, *lc2;
 
-  // XXX: check alloc errors
   lc1 = (vde_lc *)vde_calloc(sizeof(struct vde_lc));
+  if (lc1 == NULL) {
+    vde_error("%s: cannot create local connection data");
+    tmp_errno = ENOMEM;
+    goto err_out;
+  }
   lc2 = (vde_lc *)vde_calloc(sizeof(struct vde_lc));
+  if (lc2 == NULL) {
+    vde_error("%s: cannot create local connection data");
+    tmp_errno = ENOMEM;
+    goto err_lc1;
+  }
 
   vde_connection_new(&c1);
   vde_connection_new(&c2);
@@ -101,10 +115,33 @@ int vde_connect_engines_unqueued(vde_context *ctx, vde_component *engine1,
   vde_connection_init(c1, ctx, 0, &vde_lc_write, &vde_lc_close, (void *)lc1);
   vde_connection_init(c2, ctx, 0, &vde_lc_write, &vde_lc_close, (void *)lc2);
 
-  // XXX: check new_connection errors
-  vde_engine_new_connection(engine1, c1, req1);
-  vde_engine_new_connection(engine2, c2, req2);
+  if (vde_engine_new_connection(engine1, c1, req1) != 0) {
+    vde_error("%s: cannot connect to first engine");
+    goto err_lc2;
+  }
+  if (vde_engine_new_connection(engine2, c2, req2) != 0) {
+    vde_error("%s: cannot connect to second engine");
+    goto err_eng1;
+  }
 
   return 0;
+
+err_eng1:
+  // XXX consider assert errno == EPIPE in these cases
+  if (vde_connection_call_error(c1, NULL, CONN_READ_CLOSED) &&
+      (errno == EPIPE)) {
+      vde_connection_fini(c1);
+      vde_connection_delete(c1);
+  } else {
+    vde_warning("%s: called fatal error but engine did not close",
+        __PRETTY_FUNCTION__);
+  }
+err_lc2:
+  free(lc2);
+err_lc1:
+  free(lc1);
+err_out:
+  errno = tmp_errno;
+  return -1;
 }
 

@@ -51,8 +51,12 @@ int vde_signal_attach(vde_signal *signal,
     iter = vde_list_next(iter);
   }
 
-  // XXX check entry == NULL
   entry = vde_calloc(sizeof(signal_cb));
+  if (entry == NULL) {
+    vde_error("%s: cannot create data for new callback", __PRETTY_FUNCTION__);
+    errno = ENOMEM;
+    return -1;
+  }
   entry->cb = cb;
   entry->destroy_cb = destroy_cb;
   entry->data = data;
