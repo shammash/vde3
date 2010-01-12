@@ -39,9 +39,15 @@ int vde_connection_init(vde_connection *conn, vde_context *ctx,
                         unsigned int payload_size, conn_be_write be_write,
                         conn_be_close be_close, void *be_priv)
 {
-  // XXX(shammash):
-  // - check errors, only be_priv can prolly be NULL
-  // - 'initialized' field needed
+  // XXX consider an 'initialized' field with more asserts
+
+  vde_assert(conn != NULL);
+  vde_assert(ctx != NULL);
+  vde_assert(payload_size > 0);
+  vde_assert(be_write != NULL);
+  vde_assert(be_close != NULL);
+  vde_assert(be_priv != NULL);
+
   conn->context = ctx;
   conn->max_pload = payload_size;
   conn->be_write = be_write;
@@ -52,10 +58,8 @@ int vde_connection_init(vde_connection *conn, vde_context *ctx,
 
 void vde_connection_fini(vde_connection *conn)
 {
-  // XXX(shammash):
-  // - check errors, conn can't be NULL (stuff initialized?)
-  // - this is expected to be called from connection owner so we don't need to
-  //   trigger a conn_error_cb() with a fatal error right ?
+  vde_assert(conn != NULL);
+
   conn->be_close(conn);
 }
 
@@ -63,9 +67,7 @@ void vde_connection_delete(vde_connection *conn)
 {
   vde_assert(conn != NULL);
 
-  // XXX(shammash):
-  // - check errors, conn can't be NULL (stuff initialized?)
-  // - free attributes here
+  // XXX free attributes here
   vde_free(conn);
 }
 
