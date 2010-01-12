@@ -312,17 +312,47 @@ int vde_context_register_module(vde_context *ctx, vde_module *module)
     return -1;
   }
 
+  // module's kind ops sanity checks
+  switch (kind) {
+    case VDE_CONNECTION_MANAGER:
+      if (vde_module_get_cm_connect(module) == NULL ||
+          vde_module_get_cm_listen(module) == NULL) {
+        vde_error("%s: invalid conn_manager ops in %s", __PRETTY_FUNCTION__,
+                  family);
+        goto err_einval;
+      }
+      break;
+    case VDE_ENGINE:
+      if (vde_module_get_eng_new_conn(module) == NULL) {
+        vde_error("%s: invalid engine ops in %s", __PRETTY_FUNCTION__,
+                  family);
+        goto err_einval;
+      }
+      break;
+    case VDE_TRANSPORT:
+      if (vde_module_get_tr_connect(module) == NULL ||
+          vde_module_get_tr_listen(module) == NULL) {
+        vde_error("%s: invalid transport ops in %s", __PRETTY_FUNCTION__,
+                  family);
+        goto err_einval;
+      }
+      break;
+  }
+
   // module's component_ops sanity checks
   module_cops = vde_module_get_component_ops(module);
   if (module_cops == NULL ||
       module_cops->init == NULL ||
       module_cops->fini == NULL) {
     vde_error("%s: invalid component ops struct found", __PRETTY_FUNCTION__);
-    errno = EINVAL;
-    return -1;
+    goto err_einval;
   }
 
   ctx->modules = vde_list_prepend(ctx->modules, module);
   return 0;
+
+err_einval:
+  errno = EINVAL;
+  return -1;
 }
 
