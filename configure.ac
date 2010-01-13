@@ -81,8 +81,13 @@ fi
 PKG_CHECK_MODULES([CHECK], [check >= 0.9.4], [have_check=yes], [have_check=no])
 AM_CONDITIONAL(CHECK, [test x$have_check = xyes])
 
+# check for doxygen
+AC_PATH_PROG(DOXYGEN, [doxygen], [no])
+AC_SUBST([DOXYGEN])
+AM_CONDITIONAL(DOXYGEN, [test x$DOXYGEN != xno])
+
 AC_SUBST([VDE_CPPFLAGS])
 AC_SUBST([VDE_CFLAGS])
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile doc/Doxyfile])
 AC_OUTPUT

@@ -20,7 +20,8 @@ BUILT_SOURCES = $(WRAPPERS_SRC)
 
 CLEANFILES = $(WRAPPERS_SRC) $(WRAPPERS_HDR)
 
-EXTRA_DIST = $(GEN_CHECKER) $(WRAPPERS_JSON) $(WRAPPERS_SRC) $(WRAPPERS_HDR)
+EXTRA_DIST = $(GEN_CHECKER) $(WRAPPERS_JSON) $(WRAPPERS_SRC) $(WRAPPERS_HDR) \
+  doc/Doxyfile
 
 include_HEADERS = src/include/vde3.h
 
@@ -95,10 +96,48 @@ src_vde_hub2hub_SOURCES = src/vde_hub2hub.c src/libevent_handler.c
 src_vde_hub2hub_LDADD = src/libvde.la
 src_vde_hub2hub_LDFLAGS = -levent
 
+
 if CHECK
 TESTS = tests/check_context
 check_PROGRAMS = tests/check_context
 tests_check_context_SOURCES = tests/check_context.c
 tests_check_context_CFLAGS = $(CHECK_CFLAGS) -I$(top_srcdir)/src/include/
 tests_check_context_LDADD = $(CHECK_LIBS) src/libvde.la
-endif
+endif # CHECK
+
+
+if DOXYGEN
+doxyinstdir = $(DESTDIR)$(htmldir)/doxygen/
+
+doxygen: doc/doxygen/html/index.html
+
+doc/doxygen/html/index.html: doc/Doxyfile
+	$(INSTALL) -d $(top_builddir)/doc/doxygen
+	$(AM_V_GEN)$(DOXYGEN) $(top_builddir)/doc/Doxyfile
+
+doxygen-clean:
+	-rm -rf $(top_builddir)/doc/doxygen
+
+doxygen-install:: doxygen
+	$(INSTALL) -d $(doxyinstdir)
+	(cd $(top_builddir)/doc/doxygen/html && \
+	for d in `find . -type d`; do $(INSTALL) -m755 -d  $(doxyinstdir)/$$d; done && \
+	for f in `find . -type f`; do $(INSTALL) -m644 $$f $(doxyinstdir)/$$f; done )
+
+doxygen-uninstall:
+	-rm -rf $(doxyinstdir)
+else
+doxygen-clean:
+doxygen-install:
+doxygen-uninstall:
+doxygen:
+	$(error "doxygen not found during configure")
+endif # DOXYGEN
+
+
+# automake local targets, invoked on make install/clean/uninstall
+install-data-local: doxygen-install
+
+clean-local: doxygen-clean
+
+uninstall-local: doxygen-uninstall

@@ -10,6 +10,8 @@ engine_hub_commands.c
 engine_hub_commands.h
 engine_ctrl_commands.c
 engine_ctrl_commands.h
+doc/Doxyfile
+doc/doxygen
 
 # autotools stuff
 Makefile
