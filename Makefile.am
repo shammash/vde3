@@ -113,7 +113,8 @@ if VALGRIND
 check-valgrind:
 	for t in $(TESTS); do \
 	  G_SLICE=always_malloc G_DEBUG=gc-friendly libtool --mode execute \
-	    $(VALGRIND) $(val_default_opts) $(VALGRIND_OPTS) $$t; \
+	    $(VALGRIND) --suppressions=$(top_srcdir)/tests/valgrind.supp \
+	      $(val_default_opts) $(VALGRIND_OPTS) $$t; \
 	done
 else
 check-valgrind:

@@ -5,6 +5,17 @@
 #include <check.h>
 #include <vde3.h>
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef HAVE_VALGRIND_VALGRIND_H
+#include <valgrind/valgrind.h>
+#define V_START_TEST(n) START_TEST(n) VALGRIND_PRINTF("starting test "#n"\n");
+#else
+#define V_START_TEST(n) START_TEST(n)
+#endif
+
 // fixture components, always present
 vde_context *f_ctx;
 vde_event_handler f_eh = {0x1, 0x1, 0x1, 0x1};
@@ -24,17 +35,18 @@ teardown (void)
 }
 
 
-START_TEST (test_context_new)
+V_START_TEST (test_context_new)
 {
   int rv;
   vde_context *ctx;
 
   rv = vde_context_new(&ctx);
   fail_unless (rv == 0, "fail on valid ctx");
+  vde_context_delete(ctx);
 }
 END_TEST
 
-START_TEST (test_context_new_invalid)
+V_START_TEST (test_context_new_invalid)
 {
   int rv;
 
@@ -44,7 +56,7 @@ START_TEST (test_context_new_invalid)
 END_TEST
 
 // XXX test module loading
-START_TEST (test_context_init)
+V_START_TEST (test_context_init)
 {
   int rv;
   vde_event_handler eh = {0x1, 0x1, 0x1, 0x1};
@@ -56,7 +68,7 @@ START_TEST (test_context_init)
 }
 END_TEST
 
-START_TEST (test_context_init_invalid)
+V_START_TEST (test_context_init_invalid)
 {
   int rv;
   vde_event_handler eh;
@@ -74,7 +86,7 @@ START_TEST (test_context_init_invalid)
 }
 END_TEST
 
-START_TEST (test_component_new)
+V_START_TEST (test_component_new)
 {
   int rv;
   vde_event_handler eh;
@@ -88,7 +100,7 @@ START_TEST (test_component_new)
 }
 END_TEST
 
-START_TEST (test_component_new_invalid)
+V_START_TEST (test_component_new_invalid)
 {
   int rv;
   vde_event_handler eh;
@@ -107,7 +119,7 @@ START_TEST (test_component_new_invalid)
 }
 END_TEST
 
-START_TEST (test_component_get)
+V_START_TEST (test_component_get)
 {
   int rv;
   vde_event_handler eh;
@@ -123,7 +135,7 @@ START_TEST (test_component_get)
 }
 END_TEST
 
-START_TEST (test_component_del)
+V_START_TEST (test_component_del)
 {
   int rv;
   vde_event_handler eh;
@@ -135,7 +147,7 @@ START_TEST (test_component_del)
 }
 END_TEST
 
-START_TEST (test_component_del_invalid)
+V_START_TEST (test_component_del_invalid)
 {
   int rv;
   vde_event_handler eh;
