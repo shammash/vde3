@@ -77,11 +77,18 @@ else
   VDE_CFLAGS="$VDE_CFLAGS -O2"
 fi
 
-# check for check
+# optional check for check
 PKG_CHECK_MODULES([CHECK], [check >= 0.9.4], [have_check=yes], [have_check=no])
 AM_CONDITIONAL(CHECK, [test x$have_check = xyes])
 
-# check for doxygen
+# optional check for valgrind
+AC_CHECK_HEADERS([valgrind/valgrind.h], have_valgrind_h=yes,
+                 have_valgrind_h=no)
+AC_PATH_PROG(VALGRIND, [valgrind], [no])
+AC_SUBST([VALGRIND])
+AM_CONDITIONAL(VALGRIND, [test x$VALGRIND != xno])
+
+# optional check for doxygen
 AC_PATH_PROG(DOXYGEN, [doxygen], [no])
 AC_SUBST([DOXYGEN])
 AM_CONDITIONAL(DOXYGEN, [test x$DOXYGEN != xno])

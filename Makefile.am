@@ -103,6 +103,25 @@ check_PROGRAMS = tests/check_context
 tests_check_context_SOURCES = tests/check_context.c
 tests_check_context_CFLAGS = $(CHECK_CFLAGS) -I$(top_srcdir)/src/include/
 tests_check_context_LDADD = $(CHECK_LIBS) src/libvde.la
+
+val_default_opts = --tool=memcheck -q --show-reachable=yes \
+  --leak-check=yes --num-callers=20 --track-fds=yes --read-var-info=yes \
+  --track-origins=yes
+# --log-file=<logfile>
+
+if VALGRIND
+check-valgrind:
+	for t in $(TESTS); do \
+	  G_SLICE=always_malloc G_DEBUG=gc-friendly libtool --mode execute \
+	    $(VALGRIND) $(val_default_opts) $(VALGRIND_OPTS) $$t; \
+	done
+else
+check-valgrind:
+	$(error "valgrind not found during configure")
+endif # VALGRIND
+else
+check:
+	$(error "check not found during configure")
 endif # CHECK
 
 
