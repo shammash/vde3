@@ -131,14 +131,14 @@ doxyinstdir = $(DESTDIR)$(htmldir)/doxygen/
 
 doxygen: doc/doxygen/html/index.html
 
-doc/doxygen/html/index.html: doc/Doxyfile
+doc/doxygen/html/index.html: doc/Doxyfile $(include_HEADERS) $(noinst_HEADERS)
 	$(INSTALL) -d $(top_builddir)/doc/doxygen
 	$(AM_V_GEN)$(DOXYGEN) $(top_builddir)/doc/Doxyfile
 
 doxygen-clean:
 	-rm -rf $(top_builddir)/doc/doxygen
 
-doxygen-install:: doxygen
+doxygen-install: doxygen
 	$(INSTALL) -d $(doxyinstdir)
 	(cd $(top_builddir)/doc/doxygen/html && \
 	for d in `find . -type d`; do $(INSTALL) -m755 -d  $(doxyinstdir)/$$d; done && \
