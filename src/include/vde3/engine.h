@@ -14,6 +14,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+/**
+ * @file
+ */
 
 #ifndef __VDE3_ENGINE_H__
 #define __VDE3_ENGINE_H__
@@ -25,6 +28,7 @@
  *
  * @param engine The engine to attach the connection to
  * @param conn The connection to attach
+ * @param req The request to be passed
  *
  * @return zero on success, -1 on error (and errno is set appropriately)
  */

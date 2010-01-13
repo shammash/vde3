@@ -14,7 +14,23 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+/**
+ * @file vde3.h
+ *
+ * Public header of VDE3.
+ */
 
+/**
+ * @mainpage
+ *
+ * @section intro Introduction
+ *
+ * intro
+ *
+ * @section notes Notes
+ *
+ * notes
+ */
 
 #ifndef __VDE3_H__
 #define __VDE3_H__
@@ -177,8 +193,13 @@ int vde_conn_manager_listen(vde_component *cm);
  * @brief Initiate a new connection using the underlying transport
  *
  * @param cm The connection manager for the connection
- * @param local_request The request for the local system
- * @param remote_request The request for the remote system
+ * @param local The request for the local system
+ * @param remote The request for the remote system
+ * @param success_cb A callback to be called on successful connect, can be
+ * NULL
+ * @param error_cb A callback to be called on error during connect, can be
+ * NULL
+ * @param arg A pointer to private data, passed to callbacks
  *
  * @return zero on success, -1 on error (and errno is set appropriately)
  */
@@ -243,7 +264,7 @@ void vde_context_delete(vde_context *ctx);
  * @param family The component family (unix, data, ...)
  * @param name The component unique name (NULL for auto generation)
  * @param component reference to new component pointer
- * @param args The arguments component-specific
+ * @param ... The arguments component-specific
  *
  * @return zero on success, -1 on error (and errno is set appropriately)
  */

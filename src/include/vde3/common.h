@@ -14,6 +14,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+/**
+ * @file
+ */
 
 #ifndef __VDE3_COMMON_H__
 #define __VDE3_COMMON_H__

@@ -14,6 +14,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+/**
+ * @file
+ */
 
 #ifndef __VDE3_COMPONENT_H__
 #define __VDE3_COMPONENT_H__
@@ -37,7 +40,7 @@ int vde_component_new(vde_component **component);
  * @brief Init a VDE 3 component
  *
  * @param component The component to init
- * @param quark The quark representing component name
+ * @param qname The quark representing component name
  * @param module The module which will implement the component functionalities
  * @param ctx The context in which the component will run
  * @param args Parameters for initialization of module properties
@@ -212,7 +215,7 @@ vde_command **vde_component_commands_list(vde_component *component);
  * @brief vde_component utility to register signals
  *
  * @param component The component to add signals to
- * @param commands The NULL-terminated array of signals
+ * @param signals The NULL-terminated array of signals
  *
  * @return zero on success, -1 on error (and errno is set appropriately)
  */
@@ -223,7 +226,7 @@ int vde_component_signals_register(vde_component *component,
  * @brief vde_component utility to deregister signals
  *
  * @param component The component to remove signals from
- * @param commands The NULL-terminated array of signals
+ * @param signals The NULL-terminated array of signals
  *
  * @return zero on success, -1 on error (and errno is set appropriately)
  */
