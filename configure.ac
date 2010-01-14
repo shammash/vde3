@@ -22,12 +22,6 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 
-# XXX check python for gen_checker?
-# note that it is not fatal to not have python at configure time
-# because generated wrappers are distributed!
-PYTHON=python
-AC_SUBST([PYTHON])
-
 # Checks for mandatory dependencies
 VDE_CHECK_LIB_HEADER([event], [event_init], [event.h], ,
                      AC_MSG_ERROR([Could not find libevent]))
@@ -92,6 +86,13 @@ AM_CONDITIONAL(VALGRIND, [test x$VALGRIND != xno])
 AC_PATH_PROG(DOXYGEN, [doxygen], [no])
 AC_SUBST([DOXYGEN])
 AM_CONDITIONAL(DOXYGEN, [test x$DOXYGEN != xno])
+
+# XXX optional check for python for gen_checker?
+# note that it is not fatal to not have python at configure time
+# because generated wrappers are distributed!
+AC_PATH_PROG(PYTHON, [python], [no])
+AC_SUBST([PYTHON])
+AM_CONDITIONAL(PYTHON, [test x$PYTHON != xno])
 
 AC_SUBST([VDE_CPPFLAGS])
 AC_SUBST([VDE_CFLAGS])
