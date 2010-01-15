@@ -1,0 +1,27 @@
+
+Not yet implemented
+-------------------
+
+- configuration load/save
+- getsubopts strings instead of va_list for components init (depends on
+  configuration load/save)
+- remote authorization + requests
+- commands permission level (depends on remote authorization)
+- signals wrappers autogeneration
+- aliases on ctrl engine
+- queued local connection
+- remove cached allocator
+- increase test coverage
+- test coverage metrics with gcov
+
+Partially unsolved problems
+---------------------------
+
+- memory model for packets: the caller informs the callee if packet
+  duplication is needed or not
+
+Problems yet to consider
+------------------------
+
+- multithread support
+
