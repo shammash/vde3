@@ -197,6 +197,14 @@ int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
   return 0;
 }
 
+static vde_component* vde_context_get_component_by_qname(vde_context *ctx,
+                                                  vde_quark qname)
+{
+  vde_assert(ctx != NULL);
+
+  return vde_hash_lookup(ctx->components, (long)qname);
+}
+
 vde_component* vde_context_get_component(vde_context *ctx, const char *name)
 {
   vde_quark qname;
@@ -209,14 +217,6 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name)
   }
   qname = vde_quark_try_string(name);
   return vde_context_get_component_by_qname(ctx, qname);
-}
-
-static vde_component* vde_context_get_component_by_qname(vde_context *ctx,
-                                                  vde_quark qname)
-{
-  vde_assert(ctx != NULL);
-
-  return vde_hash_lookup(ctx->components, (long)qname);
 }
 
 /**
