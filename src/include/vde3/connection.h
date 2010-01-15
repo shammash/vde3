@@ -28,12 +28,16 @@
 #include <vde3/packet.h>
 #include <vde3/common.h>
 
+
+/**
+ * @brief An error code passed to conn_error_cb
+ */
 enum vde_conn_error {
-  CONN_OK,
-  CONN_READ_CLOSED, // fatal error occurred during read
-  CONN_READ_DELAY, // non-fatal error occurred during read
-  CONN_WRITE_CLOSED,  // fatal error occurred during write
-  CONN_WRITE_DELAY, // non-fatal error occurred during write
+  CONN_OK, //!< Connection OK
+  CONN_READ_CLOSED, //!< fatal error occurred during read
+  CONN_READ_DELAY, //!< non-fatal error occurred during read
+  CONN_WRITE_CLOSED,  //!< fatal error occurred during write
+  CONN_WRITE_DELAY, //!< non-fatal error occurred during write
 };
 
 typedef enum vde_conn_error vde_conn_error;
@@ -129,8 +133,8 @@ typedef int (*conn_error_cb)(vde_connection *conn, vde_pkt *pkt,
                              vde_conn_error err, void *arg);
 
 
-/*
- * A vde connection
+/**
+ * @brief A vde connection.
  */
 struct vde_connection {
   vde_attributes *attributes;

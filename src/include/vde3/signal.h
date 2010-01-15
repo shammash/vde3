@@ -25,6 +25,10 @@
 #include <vde3/command.h>
 #include <vde3/common.h>
 
+
+/**
+ * @brief A vde signal
+ */
 struct vde_signal {
   char const * const name;
   char const * const description;

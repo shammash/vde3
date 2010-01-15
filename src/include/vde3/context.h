@@ -23,6 +23,9 @@
 
 #include <vde3/module.h>
 
+/**
+ * @brief A vde context
+ */
 struct vde_context {
   int initialized;
   vde_event_handler event_handler;

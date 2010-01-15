@@ -50,18 +50,19 @@
 #define VDE_EV_TIMEOUT  0x01
 
 /**
- * @brief The callback to be called on events, events must contain the event(s)
- * which are available on fd, plus VDE_EV_TIMEOUT if the callback is being
- * called due to a timeout.
+ * @brief The callback to be called on events.
+ *
+ * The events argument must contain the event(s) which are available on fd,
+ * plus VDE_EV_TIMEOUT if the callback is being called due to a timeout.
  */
 typedef void (*event_cb)(int fd, short events, void *arg);
 
 /**
- * @brief This is the event handler the application must supply. It contains
- * several functions pointers for handling events from file descriptors and
- * timeouts.
- * It is modeled after libevent and thus shares some API details.
+ * @brief This is the event handler the application must supply.
  *
+ * It contains several functions pointers for handling events from file
+ * descriptors and timeouts.  It is modeled after libevent and thus shares some
+ * API details.
  */
 struct vde_event_handler {
   /**
@@ -97,6 +98,8 @@ struct vde_event_handler {
   /**
    * @brief Function to delete an event
    *
+   * @param ev The event to delete, as returned by event_add
+   *
    * This function is called by vde to delete an event for which the callback
    * has not been called yet and/or to explicitly delete events with the
    * VDE_EV_PERSIST flag.
@@ -125,6 +128,8 @@ struct vde_event_handler {
   /**
    * @brief Function to delete a timeout
    *
+   * @param tout The timeout to delete, as returned by timeout_add
+   *
    * This function is called by vde to delete a timeout for which the callback
    * has not been called yet and/or to explicitly delete timeouts with the
    * VDE_EV_PERSIST flag.
@@ -152,6 +157,10 @@ typedef struct vde_request vde_request;
  *
  */
 
+
+/**
+ * @brief This enum represents the possible component kinds
+ */
 enum vde_component_kind {
   VDE_ENGINE,
   VDE_TRANSPORT,
@@ -173,11 +182,20 @@ struct vde_component;
 typedef struct vde_component vde_component;
 
 
-/*
- * Callbacks set by application to receive results of after a connect is
- * called on the connection manager.
+/**
+ * @brief The callback called by connection manager on successful connect
+ *
+ * @param cm The calling connection manager
+ * @param arg The callback private data
  */
 typedef void (*vde_connect_success_cb)(vde_component *cm, void *arg);
+
+/**
+ * @brief The callback called by connection manager on unsuccessful connect
+ *
+ * @param cm The calling connection manager
+ * @param arg The callback private data
+ */
 typedef void (*vde_connect_error_cb)(vde_component *cm, void *arg);
 
 /**
@@ -263,8 +281,8 @@ void vde_context_delete(vde_context *ctx);
  * @param kind The component kind  (transport, engine, ...)
  * @param family The component family (unix, data, ...)
  * @param name The component unique name (NULL for auto generation)
- * @param component reference to new component pointer
- * @param ... The arguments component-specific
+ * @param component The reference to new component pointer
+ * @param ... The component-specific arguments
  *
  * @return zero on success, -1 on error (and errno is set appropriately)
  */
@@ -273,8 +291,7 @@ int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
                               vde_component **component, ...);
 
 /**
- * @brief Component lookup
- *        Lookup for a component by name
+ * @brief Lookup a component by name
  *
  * @param ctx The context where to lookup
  * @param name The component name
@@ -287,7 +304,7 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name);
  * @brief Remove a component from a given context
  *
  * @param ctx The context where to remove from
- * @param component the component pointer to remove
+ * @param component The component to remove
  *
  * @return zero on success, -1 on error (and errno is set appropriately)
  */

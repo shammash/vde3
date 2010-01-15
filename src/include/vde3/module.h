@@ -99,16 +99,19 @@ typedef int (*tr_listen)(vde_component *transport);
 typedef int (*tr_connect)(vde_component *transport, vde_connection *conn);
 
 
-// le operazioni che il contesto invoca sul componente
+
+/**
+ * @brief Common component operations.
+ */
 struct component_ops {
-  // called when a context init a new component
   int (*init)(vde_component*, va_list);
-  // called when a context closes a component
+  //!< called when a context init a new component
   void (*fini)(vde_component*);
-  char* get_configuration; // called to get a serializable config
-  char* set_configuration; // called to set a serializable config
-  char* get_policy; // called to get a serializable policy
-  char* set_policy; // called to set a serializable policy
+  //!< called when a context closes a component
+  char* get_configuration; //!< called to get a serializable config
+  char* set_configuration; //!< called to set a serializable config
+  char* get_policy; //!< called to get a serializable policy
+  char* set_policy; //!< called to set a serializable policy
 };
 
 typedef struct component_ops component_ops;
@@ -120,16 +123,22 @@ typedef struct component_ops component_ops;
 
 // XXX(shammash): consider adding here a union with struct ops which are
 //                kind-related, it should make new components creation easier
+
+/**
+ * @brief A vde module.
+ *
+ * It is dynamically loaded and is used to implement a component.
+ */
 struct vde_module {
   vde_component_kind kind;
   char* family;
   component_ops *cops;
-  void *dlhandle;
   cm_connect cm_connect;
   cm_listen cm_listen;
   eng_new_conn eng_new_conn;
   tr_connect tr_connect;
   tr_listen tr_listen;
+  void *dlhandle;
 };
 
 typedef struct vde_module vde_module;
