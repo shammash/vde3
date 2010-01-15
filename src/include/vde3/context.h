@@ -45,9 +45,6 @@ struct vde_context {
  */
 int vde_context_register_module(vde_context *ctx, vde_module *module);
 
-vde_component* vde_context_get_component_by_qname(vde_context *ctx,
-                                                  vde_quark qname);
-
 static inline void *vde_context_event_add(vde_context *ctx, int fd,
                                           short events,
                                           const struct timeval *timeout,

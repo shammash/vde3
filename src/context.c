@@ -211,7 +211,7 @@ vde_component* vde_context_get_component(vde_context *ctx, const char *name)
   return vde_context_get_component_by_qname(ctx, qname);
 }
 
-vde_component* vde_context_get_component_by_qname(vde_context *ctx,
+static vde_component* vde_context_get_component_by_qname(vde_context *ctx,
                                                   vde_quark qname)
 {
   vde_assert(ctx != NULL);
