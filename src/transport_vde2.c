@@ -60,25 +60,23 @@
 
 enum request_type { REQ_NEW_CONTROL, REQ_NEW_PORT0 };
 
-struct request_v3 {
+// this is request_v3
+typedef struct {
   uint32_t magic;
   uint32_t version;
   enum request_type type;
   struct sockaddr_un sock;
   char description[];
-} __attribute__((packed));
-
-typedef struct request_v3 request;
+} __attribute__((packed)) vde2_request;
 // end of vde2 datasock.c
 
-struct vde2_pkt {
+typedef struct {
   unsigned int numtries;
   vde_pkt pkt;
   char data[PKT_DATA_SZ];
-};
-typedef struct vde2_pkt vde2_pkt;
+} vde2_pkt;
 
-struct vde2_conn {
+typedef struct {
   int data_fd;
   void *data_ev_rd;
   void *data_ev_wr;
@@ -87,20 +85,18 @@ struct vde2_conn {
   vde_queue *pkt_queue;
   struct sockaddr_un local_sa;
   struct sockaddr_un remote_sa;
-  request *remote_request;
+  vde2_request *remote_request;
   vde_connection *conn;
   vde_component *transport;
-};
-typedef struct vde2_conn vde2_conn;
+} vde2_conn;
 
-struct vde2_tr {
+typedef struct {
   char *vdesock_dir;
   int listen_fd;
   void *listen_event;
   unsigned int connections;
   vde_list *pending_conns;
-};
-typedef struct vde2_tr vde2_tr;
+} vde2_tr;
 
 void vde2_conn_read_ctl_event(int ctl_fd, short event_type, void *arg)
 {
@@ -464,7 +460,7 @@ void vde2_srv_get_request(int ctl_fd, short event_type, void *arg)
 {
   int len;
   char reqbuf[REQBUFLEN+1];
-  request *req=(request *)reqbuf;
+  vde2_request *req=(vde2_request *)reqbuf;
   vde2_conn *v2_conn = (vde2_conn *)arg;
   vde_connection *conn = v2_conn->conn;
   vde2_tr *tr = (vde2_tr *)vde_component_get_priv(v2_conn->transport);
@@ -501,7 +497,7 @@ void vde2_srv_get_request(int ctl_fd, short event_type, void *arg)
     }
 
     // XXX: for the moment we save whole request..
-    v2_conn->remote_request = (request *)vde_alloc(len);
+    v2_conn->remote_request = (vde2_request *)vde_alloc(len);
     if (!v2_conn->remote_request) {
       vde_error("%s: cannot allocate memory for remote request",
                 __PRETTY_FUNCTION__);
@@ -533,7 +529,7 @@ void vde2_accept(int listen_fd, short event_type, void *arg)
   socklen_t sa_len = sizeof(struct sockaddr);
   int new;
   vde_connection *conn;
-  struct vde2_conn *v2_conn;
+  vde2_conn *v2_conn;
   vde_component *component = (vde_component *)arg;
   vde_context *ctx = vde_component_get_context(component);
   vde2_tr *tr = (vde2_tr *)vde_component_get_priv(component);
@@ -553,7 +549,7 @@ void vde2_accept(int listen_fd, short event_type, void *arg)
     vde_error("%s: cannot create connection", __PRETTY_FUNCTION__);
     goto error_close;
   }
-  v2_conn = (struct vde2_conn *)vde_calloc(sizeof(struct vde2_conn));
+  v2_conn = (vde2_conn *)vde_calloc(sizeof(vde2_conn));
   if (!v2_conn) {
     vde_error("%s: cannot create connection backend", __PRETTY_FUNCTION__);
     goto error_conn_del;
@@ -712,7 +708,7 @@ void transport_vde2_fini(vde_component *component) {
   vde_assert(component != NULL);
 }
 
-struct component_ops transport_vde2_component_ops = {
+component_ops transport_vde2_component_ops = {
   .init = transport_vde2_va_init,
   .fini = transport_vde2_fini,
   .get_configuration = NULL,

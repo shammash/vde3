@@ -21,12 +21,11 @@
 
 #include <string.h>
 
-struct signal_cb {
+typedef struct {
   vde_signal_cb cb;
   vde_signal_destroy_cb destroy_cb;
   void *data;
-};
-typedef struct signal_cb signal_cb;
+} signal_cb;
 
 int vde_signal_attach(vde_signal *signal,
                       vde_signal_cb cb,

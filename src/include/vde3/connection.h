@@ -32,20 +32,17 @@
 /**
  * @brief An error code passed to conn_error_cb
  */
-enum vde_conn_error {
+typedef enum {
   CONN_OK, //!< Connection OK
   CONN_READ_CLOSED, //!< fatal error occurred during read
   CONN_READ_DELAY, //!< non-fatal error occurred during read
   CONN_WRITE_CLOSED,  //!< fatal error occurred during write
   CONN_WRITE_DELAY, //!< non-fatal error occurred during write
-};
-
-typedef enum vde_conn_error vde_conn_error;
+} vde_conn_error;
 
 /**
  * @brief A VDE 3 connection
  */
-struct vde_connection;
 typedef struct vde_connection vde_connection;
 
 /*

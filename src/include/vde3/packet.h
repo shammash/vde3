@@ -37,28 +37,24 @@
  * @brief A vde packet header.
  */
 // XXX(shammash): check alignment
-struct vde_hdr {
+typedef struct {
   uint8_t version; //!< Header version
   uint8_t type; //!< Type of payload
   uint16_t pkt_len; //!< Payload length
-};
-
-typedef struct vde_hdr vde_hdr;
+} vde_hdr;
 
 
 /**
  * @brief A vde packet.
  */
-struct vde_pkt {
+typedef struct {
   vde_hdr *hdr; //!< Pointer to vde_header inside data
   char *head; //!< Pointer to an empty head space inside data
   char *payload; //!< Pointer to payload inside data
   char *tail; //!< Pointer to an empty tail space inside data
   unsigned int data_size; //!< The total size of memory allocated in data
   char data[0]; //!< Allocated memory
-};
-
-typedef struct vde_pkt vde_pkt;
+} vde_pkt;
 
 /**
  * @brief Initialize vde packet fields.

@@ -43,15 +43,13 @@ struct pending_conn {
   void *connect_cb_arg;
 };
 
-struct conn_manager {
+typedef struct {
   vde_component *transport;
   vde_component *engine;
   vde_component *component;
   vde_list *pending_conns;
   int do_remote_authorization;
-};
-
-typedef struct conn_manager conn_manager;
+} conn_manager;
 
 static struct pending_conn *lookup_pending_conn(conn_manager *cm,
                                                 vde_connection *conn)
@@ -281,7 +279,7 @@ void conn_manager_fini(vde_component *component)
   // XXX what to do with cm->pending_conns if not empty?
 }
 
-struct component_ops conn_manager_component_ops = {
+component_ops conn_manager_component_ops = {
   .init = conn_manager_va_init,
   .fini = conn_manager_fini,
   .get_configuration = NULL,

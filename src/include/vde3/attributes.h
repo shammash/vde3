@@ -24,8 +24,7 @@
 #ifndef __VDE3_ATTRIBUTES_H__
 #define __VDE3_ATTRIBUTES_H__
 
-struct vde_attributes;
-
-typedef struct vde_attributes vde_attributes;
+typedef struct {
+} vde_attributes;
 
 #endif /* __VDE3_ATTRIBUTES_H__ */

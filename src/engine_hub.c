@@ -43,11 +43,10 @@ static vde_signal engine_hub_signals [] = {
 // END temporary signals declaration
 
 
-struct hub_engine {
+typedef struct {
   vde_component *component;
   vde_list *ports;
-};
-typedef struct hub_engine hub_engine;
+} hub_engine;
 
 int engine_hub_status(vde_component *component, vde_sobj **out)
 {
@@ -220,7 +219,7 @@ void engine_hub_fini(vde_component *component)
   vde_component_signals_deregister(component, engine_hub_signals);
 }
 
-struct component_ops engine_hub_component_ops = {
+component_ops engine_hub_component_ops = {
   .init = engine_hub_va_init,
   .fini = engine_hub_fini,
   .get_configuration = NULL,

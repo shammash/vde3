@@ -46,23 +46,21 @@ typedef int (*command_func)(vde_component *component, vde_sobj *in,
 /**
  * @brief Description of a single command argument
  */
-struct vde_argument {
+typedef struct {
   char const * const name;
   char const * const description;
   char const * const type;
-};
-typedef struct vde_argument vde_argument;
+} vde_argument;
 
 /**
  * @brief A command
  */
-struct vde_command {
+typedef struct {
   char const * const name;
   command_func func;
   char const * const description;
   vde_argument const * const args;
-};
-typedef struct vde_command vde_command;
+} vde_command;
 
 static inline const char *vde_command_get_name(vde_command *command)
 {

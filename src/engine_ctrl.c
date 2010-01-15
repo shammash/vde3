@@ -51,14 +51,13 @@ static int is_builtin(vde_command *command) {
   return 0;
 }
 
-struct ctrl_engine {
+typedef struct {
   // XXX aliases table
   vde_list *ctrl_conns;
   vde_component *component;
-};
-typedef struct ctrl_engine ctrl_engine;
+} ctrl_engine;
 
-struct ctrl_conn {
+typedef struct {
   vde_connection *conn;
   char inbuf[MAX_INBUF_SZ];
   size_t inbuf_len;
@@ -66,8 +65,7 @@ struct ctrl_conn {
   vde_list *reg_signals;
   // - permission level
   ctrl_engine *engine;
-};
-typedef struct ctrl_conn ctrl_conn;
+} ctrl_conn;
 
 static int ctrl_engine_conn_write(ctrl_conn *cc, vde_sobj *out_obj) {
   const char *out_str;
@@ -905,7 +903,7 @@ void engine_ctrl_fini(vde_component *component)
   vde_free(ctrl);
 }
 
-struct component_ops engine_ctrl_component_ops = {
+component_ops engine_ctrl_component_ops = {
   .init = engine_ctrl_va_init,
   .fini = engine_ctrl_fini,
   .get_configuration = NULL,

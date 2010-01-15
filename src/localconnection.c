@@ -26,11 +26,10 @@
  *
  */
 
-struct vde_lc {
+typedef struct __vde_lc {
   vde_connection *conn;
-  struct vde_lc *peer;
-};
-typedef struct vde_lc vde_lc;
+  struct __vde_lc *peer;
+} vde_lc;
 
 int vde_lc_write(vde_connection *conn, vde_pkt *pkt)
 {
@@ -90,13 +89,13 @@ int vde_connect_engines_unqueued(vde_context *ctx, vde_component *engine1,
   vde_connection *c1, *c2;
   vde_lc *lc1, *lc2;
 
-  lc1 = (vde_lc *)vde_calloc(sizeof(struct vde_lc));
+  lc1 = (vde_lc *)vde_calloc(sizeof(vde_lc));
   if (lc1 == NULL) {
     vde_error("%s: cannot create local connection data");
     tmp_errno = ENOMEM;
     goto err_out;
   }
-  lc2 = (vde_lc *)vde_calloc(sizeof(struct vde_lc));
+  lc2 = (vde_lc *)vde_calloc(sizeof(vde_lc));
   if (lc2 == NULL) {
     vde_error("%s: cannot create local connection data");
     tmp_errno = ENOMEM;

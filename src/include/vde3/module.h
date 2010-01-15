@@ -103,7 +103,7 @@ typedef int (*tr_connect)(vde_component *transport, vde_connection *conn);
 /**
  * @brief Common component operations.
  */
-struct component_ops {
+typedef struct {
   int (*init)(vde_component*, va_list);
   //!< called when a context init a new component
   void (*fini)(vde_component*);
@@ -112,9 +112,7 @@ struct component_ops {
   char* set_configuration; //!< called to set a serializable config
   char* get_policy; //!< called to get a serializable policy
   char* set_policy; //!< called to set a serializable policy
-};
-
-typedef struct component_ops component_ops;
+} component_ops;
 
 // XXX as of now modules can't be unloaded because components are using its
 // functions once they are in use.
@@ -129,7 +127,7 @@ typedef struct component_ops component_ops;
  *
  * It is dynamically loaded and is used to implement a component.
  */
-struct vde_module {
+typedef struct {
   vde_component_kind kind;
   char* family;
   component_ops *cops;
@@ -139,9 +137,7 @@ struct vde_module {
   tr_connect tr_connect;
   tr_listen tr_listen;
   void *dlhandle;
-};
-
-typedef struct vde_module vde_module;
+} vde_module;
 
 static inline vde_component_kind vde_module_get_kind(vde_module *module)
 {

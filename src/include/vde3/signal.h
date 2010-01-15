@@ -29,13 +29,12 @@
 /**
  * @brief A vde signal
  */
-struct vde_signal {
+typedef struct {
   char const * const name;
   char const * const description;
   vde_argument const * const args;
   vde_list * callbacks;
-};
-typedef struct vde_signal vde_signal;
+} vde_signal;
 
 /**
  * @brief Signature of a signal callback

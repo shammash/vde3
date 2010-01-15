@@ -64,7 +64,7 @@ typedef void (*event_cb)(int fd, short events, void *arg);
  * descriptors and timeouts.  It is modeled after libevent and thus shares some
  * API details.
  */
-struct vde_event_handler {
+typedef struct {
   /**
    * @brief Function to add a new event
    *
@@ -135,9 +135,7 @@ struct vde_event_handler {
    * VDE_EV_PERSIST flag.
    */
   void (*timeout_del)(void *tout);
-};
-
-typedef struct vde_event_handler vde_event_handler;
+} vde_event_handler;
 
 
 /*
@@ -146,10 +144,8 @@ typedef struct vde_event_handler vde_event_handler;
  */
 
 // XXX to be defined
-struct vde_request {
-};
-
-typedef struct vde_request vde_request;
+typedef struct {
+} vde_request;
 
 
 /*
@@ -161,20 +157,17 @@ typedef struct vde_request vde_request;
 /**
  * @brief This enum represents the possible component kinds
  */
-enum vde_component_kind {
+typedef enum {
   VDE_ENGINE,
   VDE_TRANSPORT,
   VDE_CONNECTION_MANAGER
-};
-typedef enum vde_component_kind vde_component_kind;
+} vde_component_kind;
 
 
 /*
  * component
  *
  */
-
-struct vde_component;
 
 /**
  * @brief VDE 3 Component
@@ -231,8 +224,6 @@ int vde_conn_manager_connect(vde_component *cm, vde_request *local,
  * context
  *
  */
-
-struct vde_context;
 
 /**
  * @brief VDE 3 Context
