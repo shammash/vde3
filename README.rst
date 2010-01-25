@@ -13,7 +13,7 @@ Mandatory build dependencies:
   debian: libevent-dev
 - json-c
   homepage: http://oss.metaparadigm.com/json-c/
-  debian: no package
+  debian: libjson0-dev
 
 Optional build dependencies:
 
