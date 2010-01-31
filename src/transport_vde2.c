@@ -266,7 +266,7 @@ int vde2_conn_write(vde_connection *conn, vde_pkt *pkt)
   vde2_conn *v2_conn = vde_connection_get_priv(conn);
 
   if (vde_queue_get_length(v2_conn->pkt_queue) >= MAXQLEN) {
-    vde_warning("%s: packet queue for %s is full, discarding",
+    vde_warning("%s: packet queue for %d is full, discarding",
                 __PRETTY_FUNCTION__, v2_conn->data_fd);
     errno = EAGAIN;
     return -1; // discard pkt
@@ -354,7 +354,7 @@ static int vde2_remove_sock_if_unused(struct sockaddr_un *sa_unix)
     if (errno == ECONNREFUSED) {
       if (unlink(sa_unix->sun_path) < 0) {
         vde_error("%s: failed to removed unused socket '%s': %s",
-            __PRETTY_FUNCTION__, sa_unix->sun_path,strerror(errno));
+            __PRETTY_FUNCTION__, sa_unix->sun_path, strerror(errno));
       }
       ret = 0;
     } else {
@@ -396,13 +396,13 @@ void vde2_srv_send_request(int ctl_fd, short event_type, void *arg)
 #ifdef VDE_DARWIN
   if (setsockopt(v2_conn->data_fd, SOL_SOCKET, SO_SNDBUF, &sockbufsize,
       optsize) < 0) {
-      vde_warning("%s: cannot set datagram send bufsize to %s on fd %d: %s",
+      vde_warning("%s: cannot set datagram send bufsize to %d on fd %d: %s",
                   __PRETTY_FUNCTION__, sockbufsize, v2_conn->data_fd,
                   strerror(errno));
   }
   if (setsockopt(v2_conn->data_fd, SOL_SOCKET, SO_RCVBUF, &sockbufsize,
       optsize) < 0) {
-      vde_warning("%s: cannot set datagram send bufsize to %s on fd %d: %s",
+      vde_warning("%s: cannot set datagram send bufsize to %d on fd %d: %s",
                   __PRETTY_FUNCTION__, sockbufsize, v2_conn->data_fd,
                   strerror(errno));
   }
