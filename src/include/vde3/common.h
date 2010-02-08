@@ -30,9 +30,9 @@
 #include <assert.h>
 #endif
 
-#define vde_cached_alloc(s) g_slice_alloc(s)
+#define vde_cached_alloc(s) g_malloc(s)
 #define vde_cached_calloc(s) g_slice_alloc0(s)
-#define vde_cached_free_type(t, d) g_slice_free(t, d)
+#define vde_cached_free_type(t, d) g_free(d)
 /*
  * XXX(shammash):
  *  This cannot be easily remapped to a non-sliced allocator, so let's not use
