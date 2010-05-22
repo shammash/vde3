@@ -26,8 +26,8 @@ int main(int argc, char **argv)
   int res;
   vde_context *ctx;
   vde_component *transport, *engine, *cm;
-
   vde_component *ctransport, *cengine, *ccm;
+  vde_sobj *params;
 
   event_init();
 
@@ -41,22 +41,26 @@ int main(int argc, char **argv)
     printf("no init ctx: %d\n", res);
   }
 
+  params = vde_sobj_from_string("{'path': '/tmp/vde3_test'}");
   res = vde_context_new_component(ctx, VDE_TRANSPORT, "vde2", "tr1", &transport,
-                                  "/tmp/vde3_test");
+                                  params);
   if (res) {
     printf("no new transport: %d\n", res);
   }
+  vde_sobj_put(params);
 
-  res = vde_context_new_component(ctx, VDE_ENGINE, "hub", "e1", &engine);
+  res = vde_context_new_component(ctx, VDE_ENGINE, "hub", "e1", &engine, NULL);
   if (res) {
     printf("no new engine: %d\n", res);
   }
 
+  params = vde_sobj_from_string("{'engine': 'e1', 'transport': 'tr1'}");
   res = vde_context_new_component(ctx, VDE_CONNECTION_MANAGER, "default", "cm1",
-                                  &cm, transport, engine, 0);
+                                  &cm, params);
   if (res) {
     printf("no new cm: %d\n", res);
   }
+  vde_sobj_put(params);
 
   res = vde_conn_manager_listen(cm);
   if (res) {
@@ -64,22 +68,26 @@ int main(int argc, char **argv)
   }
 
   // control part
+  params = vde_sobj_from_string("{'path': '/tmp/vde3_test_ctrl'}");
   res = vde_context_new_component(ctx, VDE_TRANSPORT, "vde2", "tr2", &ctransport,
-                                  "/tmp/vde3_test_ctrl");
+                                  params);
   if (res) {
     printf("no new ctransport: %d\n", res);
   }
+  vde_sobj_put(params);
 
-  res = vde_context_new_component(ctx, VDE_ENGINE, "ctrl", "e2", &cengine);
+  res = vde_context_new_component(ctx, VDE_ENGINE, "ctrl", "e2", &cengine, NULL);
   if (res) {
     printf("no new cengine: %d\n", res);
   }
 
+  params = vde_sobj_from_string("{'engine': 'e2', 'transport': 'tr2'}");
   res = vde_context_new_component(ctx, VDE_CONNECTION_MANAGER, "default", "cm2",
-                                  &ccm, ctransport, cengine, 0);
+                                  &ccm, params);
   if (res) {
     printf("no new ccm: %d\n", res);
   }
+  vde_sobj_put(params);
 
   res = vde_conn_manager_listen(ccm);
   if (res) {
