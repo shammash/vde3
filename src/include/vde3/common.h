@@ -21,7 +21,6 @@
 #ifndef __VDE3_COMMON_H__
 #define __VDE3_COMMON_H__
 
-#include <json.h>
 #include <glib.h>
 
 #include <errno.h>

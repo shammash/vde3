@@ -39,6 +39,9 @@
 #include <syslog.h>
 #include <sys/types.h>
 
+/* included for vde_sobj */
+#include <json.h>
+
 /*
  * event handler
  *
