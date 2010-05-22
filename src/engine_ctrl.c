@@ -849,7 +849,7 @@ int ctrl_engine_newconn(vde_component *component, vde_connection *conn,
   return 0;
 }
 
-static int engine_ctrl_init(vde_component *component)
+static int engine_ctrl_init(vde_component *component, vde_sobj *params)
 {
   int tmp_errno;
   ctrl_engine *ctrl;
@@ -878,11 +878,6 @@ static int engine_ctrl_init(vde_component *component)
   return 0;
 }
 
-int engine_ctrl_va_init(vde_component *component, va_list args)
-{
-  return engine_ctrl_init(component);
-}
-
 void engine_ctrl_fini(vde_component *component)
 {
   vde_list *iter;
@@ -904,7 +899,7 @@ void engine_ctrl_fini(vde_component *component)
 }
 
 component_ops engine_ctrl_component_ops = {
-  .init = engine_ctrl_va_init,
+  .init = engine_ctrl_init,
   .fini = engine_ctrl_fini,
   .get_configuration = NULL,
   .set_configuration = NULL,
