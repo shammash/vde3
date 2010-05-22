@@ -26,6 +26,7 @@ int main(int argc, char **argv)
   int res;
   vde_context *ctx;
   vde_component *tr1, *tr2, *e1, *e2, *cm1, *cm2;
+  vde_sobj *params;
 
   event_init();
 
@@ -39,44 +40,52 @@ int main(int argc, char **argv)
     printf("no init ctx: %d\n", res);
   }
 
+  params = vde_sobj_from_string("{'path': '/tmp/vde3_test_1'}");
   res = vde_context_new_component(ctx, VDE_TRANSPORT, "vde2", "tr1", &tr1,
-                                  "/tmp/vde3_test_1");
+                                  params);
   if (res) {
     printf("no new tr1: %d\n", res);
   }
+  vde_sobj_put(params);
 
-  res = vde_context_new_component(ctx, VDE_ENGINE, "hub", "e1", &e1);
+  res = vde_context_new_component(ctx, VDE_ENGINE, "hub", "e1", &e1, NULL);
   if (res) {
     printf("no new e1: %d\n", res);
   }
 
+  params = vde_sobj_from_string("{'engine': 'e1', 'transport': 'tr1'}");
   res = vde_context_new_component(ctx, VDE_CONNECTION_MANAGER, "default", "cm1",
-                                  &cm1, tr1, e1, 0);
+                                  &cm1, params);
   if (res) {
     printf("no new cm1: %d\n", res);
   }
+  vde_sobj_put(params);
 
   res = vde_conn_manager_listen(cm1);
   if (res) {
     printf("no listen on cm1: %d\n", res);
   }
 
+  params = vde_sobj_from_string("{'path': '/tmp/vde3_test_2'}");
   res = vde_context_new_component(ctx, VDE_TRANSPORT, "vde2", "tr2", &tr2,
-                                  "/tmp/vde3_test_2");
+                                  params);
   if (res) {
     printf("no new tr2: %d\n", res);
   }
+  vde_sobj_put(params);
 
-  res = vde_context_new_component(ctx, VDE_ENGINE, "hub", "e2", &e2);
+  res = vde_context_new_component(ctx, VDE_ENGINE, "hub", "e2", &e2, NULL);
   if (res) {
     printf("no new e2: %d\n", res);
   }
 
+  params = vde_sobj_from_string("{'engine': 'e2', 'transport': 'tr2'}");
   res = vde_context_new_component(ctx, VDE_CONNECTION_MANAGER, "default", "cm2",
-                                  &cm2, tr2, e2, 0);
+                                  &cm2, params);
   if (res) {
     printf("no new cm2: %d\n", res);
   }
+  vde_sobj_put(params);
 
   res = vde_conn_manager_listen(cm2);
   if (res) {
