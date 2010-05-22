@@ -32,6 +32,17 @@ PKG_CHECK_MODULES(GLIB, glib-2.0, ,
 PKG_CHECK_MODULES(JSONC, json, ,
                   AC_MSG_ERROR([Could not find json-c]))
 
+# check for python and python-simplejson used by gen_checker.py
+AC_PATH_PROG(PYTHON, [python], AC_MSG_ERROR([Could not find python]))
+AC_SUBST([PYTHON])
+
+AC_MSG_CHECKING([for python-simplejson module])
+
+$PYTHON -c 'import simplejson' >/dev/null 2>&1
+AS_IF([test "x$?" == "x0"], AC_MSG_RESULT([found]),
+                            AC_MSG_RESULT([not found])
+                            AC_MSG_ERROR([Could not find python-simplejson]))
+
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h limits.h stdint.h stdlib.h string.h sys/socket.h \
                   sys/time.h syslog.h unistd.h])
@@ -86,13 +97,6 @@ AM_CONDITIONAL(VALGRIND, [test x$VALGRIND != xno])
 AC_PATH_PROG(DOXYGEN, [doxygen], [no])
 AC_SUBST([DOXYGEN])
 AM_CONDITIONAL(DOXYGEN, [test x$DOXYGEN != xno])
-
-# XXX optional check for python for gen_checker?
-# note that it is not fatal to not have python at configure time
-# because generated wrappers are distributed!
-AC_PATH_PROG(PYTHON, [python], [no])
-AC_SUBST([PYTHON])
-AM_CONDITIONAL(PYTHON, [test x$PYTHON != xno])
 
 AC_SUBST([VDE_CPPFLAGS])
 AC_SUBST([VDE_CFLAGS])
