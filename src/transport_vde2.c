@@ -664,14 +664,30 @@ int vde2_connect(vde_component *component, vde_connection *conn)
   return -1;
 }
 
-static int transport_vde2_init(vde_component *component, const char *dir)
+static int transport_vde2_init(vde_component *component, vde_sobj *params)
 {
 
   vde2_tr *tr;
+  vde_sobj *path_sobj;
+  const char *path;
 
   vde_assert(component != NULL);
 
-  if (strlen(dir) > UNIX_PATH_MAX - 4) { // we will add '/ctl' later
+  if (!params || !vde_sobj_is_type(params, vde_sobj_type_hash)) {
+    vde_error("%s: no parameters hash received", __PRETTY_FUNCTION__);
+    errno = EINVAL;
+    return -1;
+  }
+
+  path_sobj = vde_sobj_hash_lookup(params, "path");
+  if (!path_sobj || !vde_sobj_is_type(path_sobj, vde_sobj_type_string)) {
+    vde_error("%s: no directory path received", __PRETTY_FUNCTION__);
+    errno = EINVAL;
+    return -1;
+  }
+  path = vde_sobj_get_string(path_sobj);
+
+  if (strlen(path) > UNIX_PATH_MAX - 4) { // we will add '/ctl' later
     vde_error("%s: directory name is too long", __PRETTY_FUNCTION__);
     errno = EINVAL;
     return -1;
@@ -684,7 +700,7 @@ static int transport_vde2_init(vde_component *component, const char *dir)
   }
 
   // XXX: path needs to be normalized/checked somewhere
-  tr->vdesock_dir = strdup(dir);
+  tr->vdesock_dir = strdup(path);
   if (tr->vdesock_dir == NULL) {
     vde_free(tr);
     vde_error("%s: could not allocate private path", __PRETTY_FUNCTION__);
@@ -696,20 +712,13 @@ static int transport_vde2_init(vde_component *component, const char *dir)
   return 0;
 }
 
-int transport_vde2_va_init(vde_component *component, va_list args)
-{
-  const char *path = va_arg(args, const char *);
-
-  return transport_vde2_init(component, path);
-}
-
 // XXX to be defined
 void transport_vde2_fini(vde_component *component) {
   vde_assert(component != NULL);
 }
 
 component_ops transport_vde2_component_ops = {
-  .init = transport_vde2_va_init,
+  .init = transport_vde2_init,
   .fini = transport_vde2_fini,
   .get_configuration = NULL,
   .set_configuration = NULL,
