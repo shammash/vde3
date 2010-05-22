@@ -167,7 +167,7 @@ vde_sobj *vde_sobj_from_string(const char *string);
 #define vde_sobj_is_type(o, t) json_object_is_type(o, t)
 #define vde_sobj_type_int json_type_int
 #define vde_sobj_type_double json_type_double
-#define vde_sobj_type_bool json_type_bool
+#define vde_sobj_type_bool json_type_boolean
 #define vde_sobj_type_string json_type_string
 #define vde_sobj_type_array json_type_array
 #define vde_sobj_type_hash json_type_object
