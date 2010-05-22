@@ -104,7 +104,7 @@ typedef int (*tr_connect)(vde_component *transport, vde_connection *conn);
  * @brief Common component operations.
  */
 typedef struct {
-  int (*init)(vde_component*, va_list);
+  int (*init)(vde_component*, vde_sobj *);
   //!< called when a context init a new component
   void (*fini)(vde_component*);
   //!< called when a context closes a component

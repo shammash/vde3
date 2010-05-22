@@ -63,13 +63,8 @@ int vde_component_new(vde_component **component)
   return 0;
 }
 
-/*
- *
- * XXX(shammash): instead of a va_list we can use a getsubopt(3) string, and add
- * the tokens and their description to the module
- */
 int vde_component_init(vde_component *component, vde_quark qname,
-                       vde_module *module, vde_context *ctx, va_list args)
+                       vde_module *module, vde_context *ctx, vde_sobj *params)
 {
   int retval, tmp_errno;
 
@@ -99,7 +94,7 @@ int vde_component_init(vde_component *component, vde_quark qname,
   component->commands = vde_hash_init();
   component->signals = vde_hash_init();
 
-  retval = component->cops->init(component, args);
+  retval = component->cops->init(component, params);
   if (retval) {
     tmp_errno = errno;
     vde_error("%s: cannot initialize component", __PRETTY_FUNCTION__);

@@ -43,12 +43,12 @@ int vde_component_new(vde_component **component);
  * @param qname The quark representing component name
  * @param module The module which will implement the component functionalities
  * @param ctx The context in which the component will run
- * @param args Parameters for initialization of module properties
+ * @param params Parameters for initialization of module properties
  *
  * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_component_init(vde_component *component, vde_quark qname,
-                       vde_module *module, vde_context *ctx, va_list args);
+                       vde_module *module, vde_context *ctx, vde_sobj *params);
 
 /**
  * @brief Stop and reset a VDE 3 component

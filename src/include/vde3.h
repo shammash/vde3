@@ -316,13 +316,13 @@ void vde_context_delete(vde_context *ctx);
  * @param family The component family (unix, data, ...)
  * @param name The component unique name (NULL for auto generation)
  * @param component The reference to new component pointer
- * @param ... The component-specific arguments
+ * @param params The component-specific parameters
  *
  * @return zero on success, -1 on error (and errno is set appropriately)
  */
 int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
                               const char *family, const char *name,
-                              vde_component **component, ...);
+                              vde_component **component, vde_sobj *params);
 
 /**
  * @brief Lookup a component by name

@@ -149,11 +149,10 @@ void vde_context_delete(vde_context *ctx)
 
 int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
                                const char *family, const char *name,
-                               vde_component **component, ...)
+                               vde_component **component, vde_sobj *params)
 {
   vde_quark qname;
   vde_module *module;
-  va_list arg;
   int refcount, tmp_errno;
 
   if (ctx == NULL || ctx->initialized != 1) {
@@ -182,15 +181,13 @@ int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
     return -1;
   }
   qname = vde_quark_from_string(name);
-  va_start(arg, component);
-  if (vde_component_init(*component, qname, module, ctx, arg)) {
+  if (vde_component_init(*component, qname, module, ctx, params)) {
     tmp_errno = errno;
     vde_component_delete(*component);
     vde_error("%s: cannot init new component", __PRETTY_FUNCTION__);
     errno = tmp_errno;
     return -1;
   }
-  va_end(arg);
   // cast to long because vde_hash_insert keys are pointers
   vde_hash_insert(ctx->components, (long)qname, *component);
   vde_component_get(*component, &refcount);
