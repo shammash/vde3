@@ -151,7 +151,7 @@ int hub_engine_newconn(vde_component *component, vde_connection *conn,
 }
 
 // XXX: add a max_ports argument?
-static int engine_hub_init(vde_component *component)
+static int engine_hub_init(vde_component *component, vde_sobj *params)
 {
   int tmp_errno;
   hub_engine *hub;
@@ -190,11 +190,6 @@ static int engine_hub_init(vde_component *component)
   return 0;
 }
 
-int engine_hub_va_init(vde_component *component, va_list args)
-{
-  return engine_hub_init(component);
-}
-
 void engine_hub_fini(vde_component *component)
 {
 
@@ -220,7 +215,7 @@ void engine_hub_fini(vde_component *component)
 }
 
 component_ops engine_hub_component_ops = {
-  .init = engine_hub_va_init,
+  .init = engine_hub_init,
   .fini = engine_hub_fini,
   .get_configuration = NULL,
   .set_configuration = NULL,
