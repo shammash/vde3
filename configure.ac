@@ -14,7 +14,7 @@ AC_SUBST([LIBVDE_VERSION])
 
 # foreign doesn't require GNU standard files to be present
 # http://www.gnu.org/software/automake/manual/automake.html#Strictness
-AM_INIT_AUTOMAKE([dist-bzip2 subdir-objects color-tests foreign])
+AM_INIT_AUTOMAKE([dist-bzip2 subdir-objects foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Checks for programs.
