@@ -208,30 +208,86 @@ void conn_manager_error_cb(vde_connection *conn, int tr_errno,
 // XXX: cm_read_cb / cm_error_cb, they need to be different for accept/connect
 // callbacks?
 
-// XXX: is it better to pass transport/engine as a quark/string?
-int conn_manager_init(vde_component *component, vde_component *transport,
-                      vde_component *engine, int do_remote_authorization)
+int conn_manager_init(vde_component *component, vde_sobj *params)
 {
   conn_manager *cm;
+  int remote_auth;
+  vde_component *engine, *transport;
+  vde_sobj *engine_sobj, *transport_sobj, *remote_auth_sobj;
+  const char *engine_name, *transport_name;
+  vde_context *ctx = vde_component_get_context(component);
 
-  if (component == NULL || transport == NULL || engine == NULL) {
-    vde_error("%s: either component, transport or engine is NULL",
-              __PRETTY_FUNCTION__);
+  vde_assert(component != NULL);
+
+  if (!params || !vde_sobj_is_type(params, vde_sobj_type_hash)) {
+    vde_error("%s: no parameters hash received", __PRETTY_FUNCTION__);
     errno = EINVAL;
     return -1;
   }
+
+  /* pick transport */
+  transport_sobj = vde_sobj_hash_lookup(params, "transport");
+  if (!transport_sobj || !vde_sobj_is_type(transport_sobj,
+                                           vde_sobj_type_string)) {
+    vde_error("%s: no transport name specified", __PRETTY_FUNCTION__);
+    errno = EINVAL;
+    return -1;
+  }
+  transport_name = vde_sobj_get_string(transport_sobj);
+
+  transport = vde_context_get_component(ctx, transport_name);
+  if (!transport) {
+    vde_error("%s: transport %s not found in context", __PRETTY_FUNCTION__,
+              transport_name);
+    errno = EINVAL;
+    return -1;
+  }
+
   if (vde_component_get_kind(transport) != VDE_TRANSPORT) {
     vde_error("%s: component transport is not a transport",
               __PRETTY_FUNCTION__);
     errno = EINVAL;
     return -1;
   }
+
+  /* pick engine */
+  engine_sobj = vde_sobj_hash_lookup(params, "engine");
+  if (!engine_sobj || !vde_sobj_is_type(engine_sobj, vde_sobj_type_string)) {
+    vde_error("%s: no engine name specified", __PRETTY_FUNCTION__);
+    errno = EINVAL;
+    return -1;
+  }
+  engine_name = vde_sobj_get_string(engine_sobj);
+
+  engine = vde_context_get_component(ctx, engine_name);
+  if (!engine) {
+    vde_error("%s: engine %s not found in context", __PRETTY_FUNCTION__,
+              engine_name);
+    errno = EINVAL;
+    return -1;
+  }
+
   if (vde_component_get_kind(engine) != VDE_ENGINE) {
     vde_error("%s: component engine is not a engine",
               __PRETTY_FUNCTION__);
     errno = EINVAL;
     return -1;
   }
+
+  /* remote authorization, not enabled by default */
+  remote_auth_sobj = vde_sobj_hash_lookup(params, "remote_authorization");
+  if (!remote_auth_sobj) {
+    remote_auth = 0;
+  } else {
+    if (!vde_sobj_is_type(remote_auth_sobj, vde_sobj_type_bool)) {
+      vde_error("%s: wrong remote authorization param", __PRETTY_FUNCTION__);
+      errno = EINVAL;
+      return -1;
+    }
+    remote_auth = vde_sobj_get_bool(remote_auth_sobj);
+  }
+
+  /* create connection manager */
   cm = (conn_manager *)vde_calloc(sizeof(conn_manager));
   if (cm == NULL) {
     vde_error("%s: could not allocate private data", __PRETTY_FUNCTION__);
@@ -242,7 +298,7 @@ int conn_manager_init(vde_component *component, vde_component *transport,
   cm->transport = transport;
   cm->engine = engine;
   cm->component = component;
-  cm->do_remote_authorization = do_remote_authorization;
+  cm->do_remote_authorization = remote_auth;
   cm->pending_conns = NULL;
 
   /* Increase reference counter of tracked components */
@@ -255,15 +311,6 @@ int conn_manager_init(vde_component *component, vde_component *transport,
 
   vde_component_set_priv(component, cm);
   return 0;
-}
-
-int conn_manager_va_init(vde_component *component, va_list args)
-{
-  vde_component *transport = va_arg(args, vde_component *);
-  vde_component *engine = va_arg(args, vde_component *);
-  int remote_auth = va_arg(args, int);
-
-  return conn_manager_init(component, transport, engine, remote_auth);
 }
 
 // XXX to be defined
@@ -280,7 +327,7 @@ void conn_manager_fini(vde_component *component)
 }
 
 component_ops conn_manager_component_ops = {
-  .init = conn_manager_va_init,
+  .init = conn_manager_init,
   .fini = conn_manager_fini,
   .get_configuration = NULL,
   .set_configuration = NULL,
