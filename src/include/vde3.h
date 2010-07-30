@@ -40,7 +40,7 @@
 #include <sys/types.h>
 
 /* included for vde_sobj */
-#include <json.h>
+#include <json/json.h>
 
 /*
  * event handler
