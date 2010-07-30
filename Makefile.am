@@ -108,7 +108,7 @@ if CHECK
 TESTS = tests/check_context
 check_PROGRAMS = tests/check_context
 tests_check_context_SOURCES = tests/check_context.c
-tests_check_context_CFLAGS = $(CHECK_CFLAGS) -I$(top_srcdir)/src/include/
+tests_check_context_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS) -I$(top_srcdir)/src/include/
 tests_check_context_LDADD = $(CHECK_LIBS) src/libvde.la
 
 val_default_opts = --tool=memcheck -q --show-reachable=yes \
