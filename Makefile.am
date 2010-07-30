@@ -107,11 +107,14 @@ src_vde_hub2hub_LDFLAGS = -levent
 
 
 if CHECK
-TESTS = tests/check_context
-check_PROGRAMS = tests/check_context
+TESTS = tests/check_context tests/check_vde_ordhash
+check_PROGRAMS = tests/check_context tests/check_vde_ordhash
 tests_check_context_SOURCES = tests/check_context.c
 tests_check_context_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS) -I$(top_srcdir)/src/include/
 tests_check_context_LDADD = $(CHECK_LIBS) src/libvde.la
+tests_check_vde_ordhash_SOURCES = tests/check_vde_ordhash.c
+tests_check_vde_ordhash_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS) -I$(top_srcdir)/src/include/
+tests_check_vde_ordhash_LDADD = $(CHECK_LIBS) src/libvde.la
 
 val_default_opts = --tool=memcheck -q --show-reachable=yes \
   --leak-check=yes --num-callers=20 --track-fds=yes --read-var-info=yes \
