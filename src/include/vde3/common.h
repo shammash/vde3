@@ -49,9 +49,12 @@
 
 typedef GList vde_list;
 #define vde_list_first(list) g_list_first(list)
+#define vde_list_last(list) g_list_last(list)
 #define vde_list_next(list) g_list_next(list)
+#define vde_list_prev(list) g_list_previous(list)
 #define vde_list_length(list) g_list_length(list)
 #define vde_list_get_data(list) g_list_nth_data(list, 0)
+#define vde_list_append(list, data) g_list_append(list, data)
 #define vde_list_prepend(list, data) g_list_prepend(list, data)
 #define vde_list_remove(list, data) g_list_remove(list, data)
 #define vde_list_delete(list) g_list_free(list)
