@@ -18,7 +18,7 @@
 
 // fixture components, always present
 vde_context *f_ctx;
-vde_event_handler f_eh = {0x1, 0x1, 0x1, 0x1};
+vde_event_handler f_eh = {(void *)0x1, (void *)0x1, (void *)0x1, (void *)0x1};
 
 void
 setup (void)
@@ -59,7 +59,7 @@ END_TEST
 V_START_TEST (test_context_init)
 {
   int rv;
-  vde_event_handler eh = {0x1, 0x1, 0x1, 0x1};
+  vde_event_handler eh = {(void *)0x1, (void *)0x1, (void *)0x1, (void *)0x1};
   vde_context *ctx;
 
   vde_context_new(&ctx);
@@ -92,7 +92,8 @@ V_START_TEST (test_component_new)
   vde_event_handler eh;
   vde_component *comp;
 
-  rv = vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "test_e", &comp);
+  rv = vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "test_e", &comp,
+                                 NULL);
   fail_unless(rv == 0, "new fails on valid arguments %s", strerror(errno));
 
   rv = vde_context_component_del(f_ctx, comp);
@@ -107,13 +108,16 @@ V_START_TEST (test_component_new_invalid)
   vde_component *comp;
 
   rv = vde_context_new_component(f_ctx, VDE_ENGINE,
-                                 "thisisnotsupposedtoexists", "test", &comp);
+                                 "thisisnotsupposedtoexists", "test", &comp,
+                                 NULL);
   fail_unless(rv == -1 && errno == ENOENT, "success on unknown family %s",
               strerror(errno));
 
 
-  vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "testname", &comp);
-  rv = vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "testname", &comp);
+  vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "testname", &comp,
+                            NULL);
+  rv = vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "testname", &comp,
+                                 NULL);
   fail_unless(rv == -1 && errno == EEXIST,
               "success on double new component %s", strerror(errno));
 }
@@ -125,7 +129,7 @@ V_START_TEST (test_component_get)
   vde_event_handler eh;
   vde_component *comp;
 
-  vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "test_e", &comp);
+  vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "test_e", &comp, NULL);
 
   fail_unless(vde_context_get_component(f_ctx, "test_e") == comp,
               "fail to return component");
@@ -141,7 +145,7 @@ V_START_TEST (test_component_del)
   vde_event_handler eh;
   vde_component *comp;
 
-  vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "test_e", &comp);
+  vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "test_e", &comp, NULL);
   rv = vde_context_component_del(f_ctx, comp);
   fail_unless(rv == 0, "del fails on valid arguments %s", strerror(errno));
 }
@@ -157,7 +161,7 @@ V_START_TEST (test_component_del_invalid)
   fail_unless(rv == -1 && errno == EINVAL, "success on NULL component %s",
               strerror(errno));
 
-  vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "test_e", &comp);
+  vde_context_new_component(f_ctx, VDE_ENGINE, "hub", "test_e", &comp, NULL);
   vde_context_component_del(f_ctx, comp);
   rv = vde_context_component_del(f_ctx, comp);
   fail_unless(rv == -1 && errno == ENOENT, "success on double del %s",
