@@ -38,6 +38,7 @@
 #include <stdarg.h>
 #include <syslog.h>
 #include <sys/types.h>
+#include <sys/time.h>
 
 /* included for vde_sobj */
 #include <json.h>
