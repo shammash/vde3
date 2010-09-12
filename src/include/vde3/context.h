@@ -22,6 +22,7 @@
 #define __VDE3_CONTEXT_H__
 
 #include <vde3/module.h>
+#include <vde3/vde_ordhash.h>
 
 /**
  * @brief A vde context
@@ -30,8 +31,7 @@ struct vde_context {
   int initialized;
   vde_event_handler event_handler;
   // hash table vde_quark component_name: vde_component *component
-  vde_hash *components; /* XXX(shammash): couple this hash with a list to keep
-                           an order, needed in save configuration */
+  vde_ordhash *components;
   // list of vde_module*
   vde_list *modules;
   // configuration path

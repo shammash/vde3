@@ -95,7 +95,7 @@ int vde_context_init(vde_context *ctx, vde_event_handler *handler,
   }
   memcpy(&ctx->event_handler, handler, sizeof(vde_event_handler));
   ctx->modules = NULL;
-  ctx->components = vde_hash_init();
+  ctx->components = vde_ordhash_new();
   ctx->initialized = 1;
 
   if (vde_modules_load(ctx, modules_path)) {
@@ -110,6 +110,9 @@ int vde_context_init(vde_context *ctx, vde_event_handler *handler,
 
 void vde_context_fini(vde_context *ctx)
 {
+  vde_ordhash_entry *components_iter;
+  vde_component *component;
+
   if (ctx == NULL || ctx->initialized != 1) {
     vde_error("%s: cannot finalize context", __PRETTY_FUNCTION__);
     return;
@@ -120,13 +123,46 @@ void vde_context_fini(vde_context *ctx)
   ctx->event_handler.timeout_add = NULL;
   ctx->event_handler.timeout_del = NULL;
 
-  // XXX: here components should be fini-shed, but that requires doing two
-  // passes, first fini the connection managers and then the other components
-  // because CM has dependency on both transport and engine.
+  /*
+   * Finishing components in two steps: first fini connection managers and then
+   * all other components because connection managers have a dependency on both
+   * transports and engines.
+   */
 
-  // another option would be to have a global connection manager which manages
-  // transports associated with engines, this should be investigated.
-  vde_hash_delete(ctx->components);
+  // XXX another option would be to have a global connection manager which
+  // manages transports associated with engines, this should be investigated.
+
+  components_iter = vde_ordhash_first(ctx->components);
+  while (components_iter != NULL) {
+    component = (vde_component *)vde_ordhash_entry_lookup(ctx->components,
+                                                          components_iter);
+    if (vde_component_get_kind(component) == VDE_CONNECTION_MANAGER) {
+      vde_component_fini(component);
+    }
+    components_iter = vde_ordhash_next(components_iter);
+  }
+
+  components_iter = vde_ordhash_first(ctx->components);
+  while (components_iter != NULL) {
+    component = (vde_component *)vde_ordhash_entry_lookup(ctx->components,
+                                                          components_iter);
+    if (vde_component_get_kind(component) != VDE_CONNECTION_MANAGER) {
+      vde_component_fini(component);
+    }
+    components_iter = vde_ordhash_next(components_iter);
+  }
+
+  components_iter = vde_ordhash_first(ctx->components);
+  while (components_iter != NULL) {
+    component = (vde_component *)vde_ordhash_entry_lookup(ctx->components,
+                                                          components_iter);
+    vde_component_delete(component);
+    components_iter = vde_ordhash_next(components_iter);
+  }
+
+  vde_ordhash_remove_all(ctx->components);
+
+  vde_ordhash_delete(ctx->components);
 
   // XXX remove every module and dlclose() its handle, this works because at
   // this point no components should reference symbols in modules
@@ -188,8 +224,8 @@ int vde_context_new_component(vde_context *ctx, vde_component_kind kind,
     errno = tmp_errno;
     return -1;
   }
-  // cast to long because vde_hash_insert keys are pointers
-  vde_hash_insert(ctx->components, (long)qname, *component);
+  // cast because vde_hash_insert keys are pointers
+  vde_ordhash_insert(ctx->components, (void *)qname, *component);
   vde_component_get(*component, &refcount);
   return 0;
 }
@@ -199,7 +235,7 @@ static vde_component* vde_context_get_component_by_qname(vde_context *ctx,
 {
   vde_assert(ctx != NULL);
 
-  return vde_hash_lookup(ctx->components, (long)qname);
+  return vde_ordhash_lookup(ctx->components, (void *)qname);
 }
 
 vde_component* vde_context_get_component(vde_context *ctx, const char *name)
@@ -262,7 +298,7 @@ int vde_context_component_del(vde_context *ctx, vde_component *component)
     return -1;
   }
 
-  vde_hash_remove(ctx->components, (long)qname);
+  vde_ordhash_remove(ctx->components, (void *)qname);
 
   // here the component is deleted because it doesn't make sense to have it out
   // of the vde_context
