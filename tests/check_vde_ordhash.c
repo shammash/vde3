@@ -34,8 +34,8 @@ teardown (void)
 
 V_START_TEST (test_ordhash_insert_lookup_remove)
 {
-  void *fk = 1, *fv = 2, *rfv = NULL;
-  void *sk = 3, *sv = 4, *rsv = NULL;
+  void *fk = (void *)1, *fv = (void *)2, *rfv = NULL;
+  void *sk = (void *)3, *sv = (void *)4, *rsv = NULL;
   int rv = 0;
 
   vde_ordhash_insert(f_oh, fk, fv);

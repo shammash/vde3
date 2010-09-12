@@ -109,7 +109,7 @@ void vde_ordhash_remove_all(vde_ordhash *oh) {
   vde_list *head;
   void *k;
   vde_assert(oh != NULL);
-  while (head = vde_list_first(oh->list)){
+  while ((head = vde_list_first(oh->list))){
     k = vde_list_get_data(head);
     vde_ordhash_remove(oh, k);
   }
