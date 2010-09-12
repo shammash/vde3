@@ -311,7 +311,7 @@ static int check_split_path(const char *full_path, char **component_name,
     return -1;
   }
 
-  *component_name = strndup(full_path, sep - full_path);
+  *component_name = vde_strndup(full_path, sep - full_path);
   if (*component_name == NULL) {
     errno = ENOMEM;
     return -1;
@@ -430,7 +430,7 @@ int engine_ctrl_notify_add(vde_component *component, const char *full_path,
   } else {
     *out = vde_sobj_new_string("Signal attached");
     // XXX check NULL
-    reg_full_path = strndup(full_path, strlen(full_path));
+    reg_full_path = vde_strndup(full_path, strlen(full_path));
     cc->reg_signals = vde_list_prepend(cc->reg_signals, reg_full_path);
   }
 
