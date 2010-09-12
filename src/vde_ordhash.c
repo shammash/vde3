@@ -86,7 +86,7 @@ vde_ordhash_entry *vde_ordhash_prev(vde_ordhash_entry *e) {
   return (vde_ordhash_entry *)vde_list_prev(e);
 }
 
-void *vde_ordhash_lookup_entry(vde_ordhash *oh, vde_ordhash_entry *e) {
+void *vde_ordhash_entry_lookup(vde_ordhash *oh, vde_ordhash_entry *e) {
   void *k, *v;
   vde_assert(oh != NULL);
   vde_assert(e != NULL);
@@ -94,5 +94,24 @@ void *vde_ordhash_lookup_entry(vde_ordhash *oh, vde_ordhash_entry *e) {
   v = vde_hash_lookup(oh->hash, k);
   vde_assert(v); /* Ensure the given entry has a corresponding value */
   return v;
+}
+
+void *vde_ordhash_entry_getkey(vde_ordhash *oh, vde_ordhash_entry *e) {
+  void *k;
+  vde_assert(oh != NULL);
+  vde_assert(e != NULL);
+  k = vde_list_get_data((vde_list *)e);
+  vde_assert(k); /* Ensure the given entry has a corresponding key */
+  return k;
+}
+
+void vde_ordhash_remove_all(vde_ordhash *oh) {
+  vde_list *head;
+  void *k;
+  vde_assert(oh != NULL);
+  while (head = vde_list_first(oh->list)){
+    k = vde_list_get_data(head);
+    vde_ordhash_remove(oh, k);
+  }
 }
 

@@ -123,13 +123,31 @@ vde_ordhash_entry *vde_ordhash_next(vde_ordhash_entry *e);
 vde_ordhash_entry *vde_ordhash_prev(vde_ordhash_entry *e);
 
 /**
- * @brief Lookup an element in the ordhash by its entry
+ * @brief Lookup a value in the ordhash by its entry
  *
- * @param oh The ordhash to lookup the element into
+ * @param oh The ordhash to lookup the value into
  * @param e The entry
  *
- * @return The element if success, NULL if no element has been found
+ * @return The value if success, NULL if no element has been found
  */
-void *vde_ordhash_lookup_entry(vde_ordhash *oh, vde_ordhash_entry *e);
+void *vde_ordhash_entry_lookup(vde_ordhash *oh, vde_ordhash_entry *e);
+
+/**
+ * @brief Lookup a key in the ordhash by its entry
+ *
+ * @param oh The ordhash to lookup the key into
+ * @param e The entry
+ *
+ * @return The key if success, NULL if no element has been found
+ */
+void *vde_ordhash_entry_getkey(vde_ordhash *oh, vde_ordhash_entry *e);
+
+/**
+ * @brief Remove all the key,value pairs from the ordhash. You have to make
+ * sure that any dynamically allocated memory is cleaned by yourself.
+ *
+ * @param oh The ordhash to remove all the elements from
+ */
+void vde_ordhash_remove_all(vde_ordhash *oh);
 
 #endif /* __VDE_ORDHASH_H__ */
