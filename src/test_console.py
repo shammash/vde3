@@ -30,6 +30,12 @@ PROMPT='vde> '
 _MAXPATH=1024
 _MAXRECV=4096
 
+pack_unpack = { 'darwin': ('<IIIh104s128s', '<h104s'),
+                'linux2': ('<IIIh108s128s', '<h108s'),
+              }
+
+PACK_STR, UNPACK_STR = pack_unpack[sys.platform]
+
 data = None
 ctl = None
 quit = False
@@ -38,7 +44,7 @@ def get_from_data():
   global quit
 
   while not quit:
-    rlist, wlist, xlist = select.select([data, ctl], [], [])
+    rlist, wlist, xlist = select.select([data, ctl], [], [], 1.0)
     if data in rlist:
       read = data.recv(_MAXRECV)
       print repr(read)
@@ -114,12 +120,12 @@ def vde2_connect(remote_address, local_address=None):
     pass
 
   data_sock.bind(local_address)
-  data = struct.pack("<IIIh108s128s", 0xfeedface, 3, 0, 1, local_address,
+  data = struct.pack(PACK_STR, 0xfeedface, 3, 0, 1, local_address,
                      "vde minimal console")
   ctl_sock.send(data)
 
   data = ctl_sock.recv(_MAXPATH)
-  peer_address = struct.unpack("<h108s", data)[1].split('\x00')[0]
+  peer_address = struct.unpack(UNPACK_STR, data)[1].split('\x00')[0]
 
   return (ctl_sock, data_sock, peer_address)
 
