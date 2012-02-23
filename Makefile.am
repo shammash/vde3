@@ -64,7 +64,7 @@ dist-hook:
 	rm -f $(addprefix $(top_distdir)/,$(WRAPPERS_SRC))
 	rm -f $(addprefix $(top_distdir)/,$(WRAPPERS_HDR))
 
-bin_PROGRAMS = src/vde_hub src/vde_hub2hub
+bin_PROGRAMS = src/vde_hub src/vde_hub2hub tests/speedtest tests/speedtest_recv
 
 
 # dynamic modules
@@ -89,7 +89,7 @@ lib_LTLIBRARIES = src/libvde.la
 src_libvde_la_SOURCES = $(VDE_SRC)
 # XXX consider adding -export-symbols <file.sym>
 src_libvde_la_LDFLAGS = $(GLIB_LIBS) $(JSONC_LIBS) -ldl -export-dynamic \
-  -version-info $(LIBVDE_VERSION)
+  -version-info $(LIBVDE_VERSION) 
 # XXX define this better
 src_libvde_la_CPPFLAGS = \
   -DVDE_DEFAULT_MODULES_PATH='{"$(modulesdir)", "src/.libs", NULL}' \
@@ -105,6 +105,13 @@ src_vde_hub2hub_SOURCES = src/vde_hub2hub.c src/libevent_handler.c
 src_vde_hub2hub_LDADD = src/libvde.la $(JSONC_LIBS)
 src_vde_hub2hub_LDFLAGS = -levent
 
+# speedtest
+tests_speedtest_SOURCES = tests/speedtest.c
+tests_speedtest_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS) -I$(top_srcdir)/src/include/
+tests_speedtest_LDADD = $(CHECK_LIBS) -lvdeplug
+tests_speedtest_recv_SOURCES = tests/speedtest_recv.c
+tests_speedtest_recv_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS) -I$(top_srcdir)/src/include/
+tests_speedtest_recv_LDADD = $(CHECK_LIBS) -lvdeplug
 
 if CHECK
 TESTS = tests/check_context tests/check_vde_ordhash
@@ -172,4 +179,4 @@ install-data-local: doxygen-install
 
 clean-local: doxygen-clean
 
-uninstall-local: doxygen-uninstall
+
