@@ -38,6 +38,7 @@ int main (int argc, char **argv) {
 	unsigned long long *count;
 	int rate = 0;
 	unsigned long long interval = 0;
+	unsigned long long burst = 1, f;
 
 	if ((argc != 2) && (argc != 3)) {
 		printf("Usage: %s sock [rate in frame/s]\n", argv[0]);
@@ -51,11 +52,12 @@ int main (int argc, char **argv) {
 			exit(1);
 		}
 		interval = 1000000 / rate;
-		if (interval < 1) {
-			printf("Warning: frame rate %s is too high, framerate is unlimited.\n", argv[2]);
-		} else {
-			printf ("Inter-frame interval %llu μs\n", interval);
+		if (interval < 1000) {
+			burst = rate / 1000;
+			interval = 1000;
 		}
+		printf ("Inter-frame interval %llu μs\n", interval);
+		printf ("Frame burst: %llu\n", burst);
 	}
 
 
@@ -75,8 +77,10 @@ int main (int argc, char **argv) {
 	signal(SIGALRM, exiting);
 	alarm(30);
 	while(1) {
-		vde_send(plug, buf, n, 0);
-		(*count)++;
+		for (f = 0; f < burst; f++) {
+			vde_send(plug, buf, n, 0);
+			(*count)++;
+		}
 		if (interval)
 			usleep(interval);
 	}
