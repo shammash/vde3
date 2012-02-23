@@ -41,9 +41,9 @@ void print_statistics(int signo)
 {
 	static int test = 0;
 	t_end = gettimeofdayms();
-	printf("Sent %llu packets in %llu seconds, Bandwidth: %lld MB/s - out of order: %llu, lost: %llu\n", counter,
+	printf("Sent %llu packets in %llu seconds, Bandwidth: %lld Mbit/s - out of order: %llu, lost: %llu\n", counter,
 		(t_end - t_start)/1000,
-		((counter*BUFSIZE)/(1000*(t_end - t_start))),
+		(((counter*BUFSIZE) << 3)/(1000*(t_end - t_start))),
 		reordered, lost);
 	t_start = t_end;
 	counter = 0;
