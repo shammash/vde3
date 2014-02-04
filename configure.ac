@@ -26,6 +26,8 @@ AC_PROG_LIBTOOL
 VDE_CHECK_LIB_HEADER([event], [event_init], [event.h], ,
                      AC_MSG_ERROR([Could not find libevent]))
 
+VDE_CHECK_LIB_HEADER([vdeplug], [vde_send], [libvdeplug.h], , )
+
 PKG_CHECK_MODULES(GLIB, glib-2.0, ,
                   AC_MSG_ERROR([Could not find glib 2.0]))
 
